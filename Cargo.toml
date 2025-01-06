@@ -1,0 +1,15 @@
+[package]
+name = "pymagba_binding"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "pymagba_binding"
+crate-type = ["cdylib"]
+
+
+[dependencies]
+magba = { version = "0.1.0", path = "../../rust/magba" }
+ndarray = "0.16.1"
+numpy = "0.23.0"
+pyo3 = { version = "0.23.3", features = ["extension-module"] }
