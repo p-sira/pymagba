@@ -5,7 +5,7 @@
 
 use nalgebra::{Point3, Vector3};
 use numpy::{PyArray1, ToPyArray};
-use pyo3::prelude::*;
+use pyo3::{ffi::c_str, prelude::*};
 
 pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(axial_cyl_b_cyl, m)?)?;
@@ -36,9 +36,20 @@ pub fn axial_cyl_b(
     radius: f64,
     height: f64,
     pol_z: f64,
-) -> Bound<'_, PyArray1<f64>> {
-    let b = magba::field::axial_cyl_b(Point3::from(point), radius, height, pol_z);
-    vec![b.x, b.y, b.z].to_pyarray(py)
+) -> PyResult<Bound<'_, PyArray1<f64>>> {
+    let b = match magba::field::axial_cyl_b(Point3::from(point), radius, height, pol_z) {
+        Ok(result) => result,
+        Err(_) => {
+            PyErr::warn(
+                py,
+                &py.get_type::<pyo3::exceptions::PyUserWarning>(),
+                c_str!("fn axial_cyl_b: Fails to compute. Check parameters. Defaulting to [0.0; 3]"),
+                0,
+            )?;
+            Vector3::zeros()
+        }
+    };
+    Ok(vec![b.x, b.y, b.z].to_pyarray(py))
 }
 
 #[pyfunction]
