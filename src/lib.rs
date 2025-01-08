@@ -4,7 +4,7 @@
  */
 
 use pyo3::prelude::*;
-mod fields;
+mod field;
 mod special;
 
 macro_rules! add_submodule {
@@ -18,6 +18,6 @@ macro_rules! add_submodule {
 #[pymodule]
 fn pymagba_binding(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     add_submodule!(special, "special", py, m);
-    add_submodule!(fields, "fields", py, m);
+    add_submodule!(field, "fields", py, m);
     Ok(())
 }
