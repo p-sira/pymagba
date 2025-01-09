@@ -3,98 +3,48 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-use nalgebra::{Point3, Vector3};
-use numpy::{PyArray1, ToPyArray};
-use pyo3::{ffi::c_str, prelude::*};
+use nalgebra::{Point3, Quaternion, UnitQuaternion, Vector3};
+use numpy::{PyArray2, PyReadonlyArray2};
+use pyo3::{exceptions::PyRuntimeError, prelude::*};
+
+use crate::{
+    convert::{pyarray_to_points_vec, vec_to_pyarray},
+    fn_err,
+};
 
 pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(axial_cyl_b_cyl, m)?)?;
-    m.add_function(wrap_pyfunction!(axial_cyl_b, m)?)?;
-    m.add_function(wrap_pyfunction!(diametric_cyl_b, m)?)?;
-    m.add_function(wrap_pyfunction!(diametric_cyl_b_cyl, m)?)?;
-    m.add_function(wrap_pyfunction!(cyl_b_cyl, m)?)?;
     m.add_function(wrap_pyfunction!(cyl_b, m)?)?;
     Ok(())
 }
 
 #[pyfunction]
-pub fn axial_cyl_b_cyl(
-    py: Python,
-    r: f64,
-    z: f64,
-    radius: f64,
-    height: f64,
-    pol_z: f64,
-) -> Bound<'_, PyArray1<f64>> {
-    magba::field::axial_cyl_b_cyl(r, z, radius, height, pol_z).to_pyarray(py)
-}
-
-#[pyfunction]
-pub fn axial_cyl_b(
-    py: Python,
-    point: [f64; 3],
-    radius: f64,
-    height: f64,
-    pol_z: f64,
-) -> PyResult<Bound<'_, PyArray1<f64>>> {
-    let b = match magba::field::axial_cyl_b(Point3::from(point), radius, height, pol_z) {
-        Ok(result) => result,
-        Err(_) => {
-            PyErr::warn(
-                py,
-                &py.get_type::<pyo3::exceptions::PyUserWarning>(),
-                c_str!("fn axial_cyl_b: Fails to compute. Check parameters. Defaulting to [0.0; 3]"),
-                0,
-            )?;
-            Vector3::zeros()
-        }
-    };
-    Ok(vec![b.x, b.y, b.z].to_pyarray(py))
-}
-
-#[pyfunction]
-pub fn diametric_cyl_b_cyl(
-    py: Python,
-    cyl_point: [f64; 3],
-    radius: f64,
-    height: f64,
-    pol_r: f64,
-) -> Bound<'_, PyArray1<f64>> {
-    magba::field::diametric_cyl_b_cyl(cyl_point, radius, height, pol_r).to_pyarray(py)
-}
-
-#[pyfunction]
-pub fn diametric_cyl_b(
-    py: Python,
-    point: [f64; 3],
-    radius: f64,
-    height: f64,
-    pol_r: f64,
-) -> Bound<'_, PyArray1<f64>> {
-    let b = magba::field::diametric_cyl_b(Point3::from(point), radius, height, pol_r);
-    vec![b.x, b.y, b.z].to_pyarray(py)
-}
-
-#[pyfunction]
-pub fn cyl_b_cyl(
-    py: Python,
-    cyl_point: [f64; 3],
-    radius: f64,
-    height: f64,
-    pol_r: f64,
-    pol_z: f64,
-) -> Bound<'_, PyArray1<f64>> {
-    magba::field::cyl_b_cyl(cyl_point, radius, height, pol_r, pol_z).to_pyarray(py)
-}
-
-#[pyfunction]
-pub fn cyl_b(
-    py: Python,
-    point: [f64; 3],
+pub fn cyl_b<'py>(
+    py: Python<'py>,
+    point_array: PyReadonlyArray2<f64>,
+    position: [f64; 3],
+    orientation: [f64; 4],
     radius: f64,
     height: f64,
     pol: [f64; 3],
-) -> Bound<'_, PyArray1<f64>> {
-    let b = magba::field::cyl_b(Point3::from(point), radius, height, Vector3::from(pol));
-    vec![b.x, b.y, b.z].to_pyarray(py)
+) -> PyResult<Bound<'py, PyArray2<f64>>> {
+    let points = pyarray_to_points_vec(point_array)?;
+    let position = Point3::from(position);
+    let orientation = UnitQuaternion::from_quaternion(Quaternion::new(
+        orientation[0],
+        orientation[1],
+        orientation[2],
+        orientation[3],
+    ));
+
+    match magba::field::cyl_b_vec(
+        &points,
+        &position,
+        &orientation,
+        radius,
+        height,
+        &Vector3::from(pol),
+    ) {
+        Ok(result) => Ok(vec_to_pyarray(py, result)),
+        Err(e) => fn_err!("cyl_b", e),
+    }
 }

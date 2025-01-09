@@ -2,3 +2,4 @@ pip-tools
 magpylib
 maturin
 pytest
+pyo3_runtime
