@@ -36,6 +36,8 @@ packaging==24.2
     #   matplotlib
     #   plotly
     #   pytest
+patchelf==0.17.2.1
+    # via -r requirements.in
 pillow==11.1.0
     # via matplotlib
 pip-tools==7.4.1

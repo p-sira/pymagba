@@ -126,7 +126,7 @@ class SourceCollection(Source):
                     type_entry[param] = np.array(())
 
                 new_params = [getattr(new_source, param) for new_source in new_sources]
-                type_entry[param] = np.array(type_entry[param].tolist() + new_params)
+                type_entry[param] = np.array(type_entry[param].tolist() + new_params) # type: ignore
 
     def get_B(self, points: NDArray) -> NDArray:
         points = wrap_points2d(points)

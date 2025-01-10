@@ -1,0 +1,23 @@
+[project]
+name = "pymagba"
+version = "0.1.0"
+authors = [{ name = "Sira Pornsiriprasert", email = "code@psira.me" }]
+description = "Performant magnetic computation powered by Rust"
+readme = "README.rst"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+[tool.maturin]
+python-source = "python"
+module-name = "pymagba.pymagba_binding"
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

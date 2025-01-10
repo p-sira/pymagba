@@ -4,7 +4,7 @@
 # type: ignore
 
 from warnings import warn
-import pymagba_binding as pmb
+import pymagba.pymagba_binding as pmb
 import numpy as np
 from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation
@@ -22,7 +22,7 @@ def cyl_B(
     orientation = tuple(orientation.as_quat(scalar_first=True))
     polarization = tuple(polarization)
     try:
-        return pmb.field.cyl_b(
+        return pmb.field.cyl_B(
             points, position, orientation, radius, height, polarization
         )
     except RuntimeError as e:
@@ -42,7 +42,7 @@ def sum_multiple_cyl_B(
         [orientation.as_quat(scalar_first=True) for orientation in orientations]
     )
     try:
-        return pmb.field.sum_multiple_cyl_b(
+        return pmb.field.sum_multiple_cyl_B(
             points, positions, orientations, radii, heights, polarizations
         )
     except RuntimeError as e:

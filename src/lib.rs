@@ -9,6 +9,7 @@ mod helper;
 mod convert;
 
 #[pymodule]
+#[pyo3(name="pymagba_binding")]
 fn pymagba_binding(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     add_submodule!(field, "field", py, m);
     Ok(())

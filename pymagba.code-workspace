@@ -7,7 +7,7 @@
 			"path": "../../rust/magba"
 		}
 	],
-	"settings": {
+  	"settings": {
 		"psi-header.variables": [
 			[
 				"project",

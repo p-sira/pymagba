@@ -16,13 +16,14 @@ use crate::{
 };
 
 pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(cyl_b, m)?)?;
-    m.add_function(wrap_pyfunction!(sum_multiple_cyl_b, m)?)?;
+    m.add_function(wrap_pyfunction!(cyl_B, m)?)?;
+    m.add_function(wrap_pyfunction!(sum_multiple_cyl_B, m)?)?;
     Ok(())
 }
 
+#[allow(non_snake_case)]
 #[pyfunction]
-pub fn cyl_b<'py>(
+pub fn cyl_B<'py>(
     py: Python<'py>,
     point_array: PyReadonlyArray2<f64>,
     position: [f64; 3],
@@ -40,7 +41,7 @@ pub fn cyl_b<'py>(
         orientation[3],
     ));
 
-    match magba::field::cyl_b(
+    match magba::field::cyl_B(
         &points,
         &position,
         &orientation,
@@ -49,12 +50,12 @@ pub fn cyl_b<'py>(
         &Vector3::from(pol),
     ) {
         Ok(result) => Ok(vec_to_pyarray(py, result)),
-        Err(e) => fn_err!("cyl_b", e),
+        Err(e) => fn_err!("cyl_B", e),
     }
 }
 
 #[pyfunction]
-pub fn sum_multiple_cyl_b<'py>(
+pub fn sum_multiple_cyl_B<'py>(
     py: Python<'py>,
     point_array: PyReadonlyArray2<f64>,
     position_array: PyReadonlyArray2<f64>,
@@ -70,7 +71,7 @@ pub fn sum_multiple_cyl_b<'py>(
     let heights = pyarray_to_float_vec(height_array);
     let pols = pyarray_to_vector_vec(pol_array)?;
 
-    match magba::field::sum_multiple_cyl_b(
+    match magba::field::sum_multiple_cyl_B(
         &points,
         &positions,
         &orientations,
@@ -79,6 +80,6 @@ pub fn sum_multiple_cyl_b<'py>(
         &pols,
     ) {
         Ok(result) => Ok(vec_to_pyarray(py, result)),
-        Err(e) => fn_err!("sum_multiple_cyl_b", e),
+        Err(e) => fn_err!("sum_multiple_cyl_B", e),
     }
 }
