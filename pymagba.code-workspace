@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../rust/magba"
+		}
+	],
+	"settings": {
+		"psi-header.variables": [
+			[
+				"project",
+				"PyMagba"
+			],
+			[
+				"license",
+				"The 3-Clause BSD"
+			],
+			[
+				"yearpublished",
+				"2025"
+			]
+		]
+	}
+}

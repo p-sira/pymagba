@@ -3,19 +3,22 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 use nalgebra::Point3;
+use nalgebra::Quaternion;
+use nalgebra::UnitQuaternion;
 use nalgebra::Vector3;
+use numpy::PyReadonlyArray1;
 use numpy::{PyArray2, PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::Bound;
 use pyo3::PyResult;
 use pyo3::Python;
 
-pub fn pyarray_to_points_vec(array: PyReadonlyArray2<f64>) -> PyResult<Vec<Point3<f64>>> {
+pub fn pyarray_to_point_vec(array: PyReadonlyArray2<f64>) -> PyResult<Vec<Point3<f64>>> {
     // Check if the input has the correct dimensions
     let shape = array.shape();
     if shape.len() != 2 || shape[1] != 3 {
         return Err(PyRuntimeError::new_err(
-            "fn array_to_points_vec: Input array must have shape (n, 3).",
+            "fn array_to_point_vec: Input array must have shape (n, 3).",
         ));
     }
 
@@ -27,6 +30,48 @@ pub fn pyarray_to_points_vec(array: PyReadonlyArray2<f64>) -> PyResult<Vec<Point
         .collect();
 
     Ok(points)
+}
+
+pub fn pyarray_to_vector_vec(array: PyReadonlyArray2<f64>) -> PyResult<Vec<Vector3<f64>>> {
+    // Check if the input has the correct dimensions
+    let shape = array.shape();
+    if shape.len() != 2 || shape[1] != 3 {
+        return Err(PyRuntimeError::new_err(
+            "fn array_to_vector_vec: Input array must have shape (n, 4).",
+        ));
+    }
+
+    let array_slice = array.as_array();
+    let vectors = array_slice
+        .rows()
+        .into_iter()
+        .map(|row| Vector3::new(row[0], row[1], row[2]))
+        .collect();
+
+    Ok(vectors)
+}
+
+pub fn pyarray_to_quat_vec(array: PyReadonlyArray2<f64>) -> PyResult<Vec<UnitQuaternion<f64>>> {
+    // Check if the input has the correct dimensions
+    let shape = array.shape();
+    if shape.len() != 2 || shape[1] != 4 {
+        return Err(PyRuntimeError::new_err(
+            "fn array_to_quat_vec: Input array must have shape (n, 4).",
+        ));
+    }
+
+    let array_slice = array.as_array();
+    let quats = array_slice
+        .rows()
+        .into_iter()
+        .map(|row| UnitQuaternion::from_quaternion(Quaternion::new(row[0], row[1], row[2], row[3])))
+        .collect();
+
+    Ok(quats)
+}
+
+pub fn pyarray_to_float_vec(array: PyReadonlyArray1<f64>) -> Vec<f64> {
+    array.as_array().to_vec()
 }
 
 pub fn vec_to_pyarray<'py>(py: Python<'py>, vec: Vec<Vector3<f64>>) -> Bound<'py, PyArray2<f64>> {
