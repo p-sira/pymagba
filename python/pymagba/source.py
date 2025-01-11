@@ -4,14 +4,13 @@
 from abc import ABC
 from collections.abc import Iterable
 from enum import StrEnum
-from typing import cast
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import ArrayLike, NDArray
 from scipy.spatial.transform import Rotation
 
 from pymagba import field
-from pymagba.transform import Transform
-from pymagba.util import wrap_points2d
+from pymagba.transform import FloatArray, Transform
+from pymagba.util import float_array, wrap_vectors2d
 
 
 class SourceType(StrEnum):
@@ -24,7 +23,7 @@ class Source(ABC, Transform):
         self,
         source_type: SourceType,
         field_params: list[str],
-        position: NDArray,
+        position: ArrayLike,
         orientation: Rotation,
     ) -> None:
         self._source_type = source_type
@@ -32,19 +31,19 @@ class Source(ABC, Transform):
         super().__init__(position, orientation)
 
     @staticmethod
-    def _B_func(points: NDArray) -> NDArray:
+    def _B_func(points: ArrayLike) -> FloatArray:
         raise NotImplementedError
 
-    def get_B(self, points: NDArray) -> NDArray:
-        return self._B_func(wrap_points2d(points))
+    def get_B(self, points: ArrayLike) -> FloatArray:
+        return self._B_func(points)
 
 
 class SourceCollection(Source):
     def __init__(
         self,
         sources: Iterable[Source] = [],
-        position=np.zeros(3),
-        orientation=Rotation.identity(),
+        position: ArrayLike = (0, 0, 0),
+        orientation: Rotation = Rotation.identity(),
     ) -> None:
         self.sources: dict[SourceType, dict[str, NDArray]] = {}
         self._add_sources(self.sources, sources)
@@ -53,17 +52,18 @@ class SourceCollection(Source):
         super().__init__(SourceType.COLLECTION, field_params, position, orientation)
 
     @property
-    def position(self) -> NDArray:
+    def position(self) -> FloatArray:
         return self._position
 
     @position.setter
-    def position(self, new_position) -> None:
+    def position(self, new_position: ArrayLike) -> None:
+        new_position = float_array(new_position)
         translation = new_position - self._position
         self._move_children(translation)
         self._position = new_position
 
     @property
-    def orientation(self) -> NDArray:
+    def orientation(self) -> Rotation:
         return self._orientation
 
     @orientation.setter
@@ -93,11 +93,12 @@ class SourceCollection(Source):
                 ]
             )
 
-    def move(self, translation: NDArray) -> None:
+    def move(self, translation: ArrayLike) -> None:
+        translation = float_array(translation)
         self._move_children(translation)
         self._position += translation
 
-    def rotate(self, rotation: NDArray) -> None:
+    def rotate(self, rotation: Rotation) -> None:
         self._rotate_children(rotation)
         self._orientation = rotation * self._orientation
 
@@ -121,39 +122,40 @@ class SourceCollection(Source):
                 source_dict[new_source_type] = {}
 
             type_entry = source_dict[new_source_type]
+            # Add all parameters necessary for calculations
             for param in new_sources[0]._field_params:
                 if param not in type_entry:
                     type_entry[param] = np.array(())
 
                 new_params = [getattr(new_source, param) for new_source in new_sources]
-                type_entry[param] = np.array(type_entry[param].tolist() + new_params) # type: ignore
+                type_entry[param] = np.array(type_entry[param].tolist() + new_params)  # type: ignore
 
-    def get_B(self, points: NDArray) -> NDArray:
-        points = wrap_points2d(points)
-        B_net = np.zeros(points.shape)
-
+    def get_B(self, points: ArrayLike) -> FloatArray:
+        points = wrap_vectors2d(points)
+        B_net = np.zeros((len(points), 3), dtype=float)
         for source_type, sources in self.sources.items():
             match source_type:
                 case SourceType.CYLINDER:
                     B_net += field.sum_multiple_cyl_B(
                         points,
-                        np.array(sources["position"]),
-                        np.array(sources["orientation"]),
-                        np.array(sources["radius"]),
-                        np.array(sources["height"]),
-                        np.array(sources["polarization"]),
+                        sources["position"],
+                        sources["orientation"],
+                        sources["radius"],
+                        sources["height"],
+                        sources["polarization"],
                     )
+
         return B_net
 
 
 class CylinderMagnet(Source):
     def __init__(
         self,
-        position: NDArray = np.zeros(3),
+        position: ArrayLike = (0, 0, 0),
         orientation: Rotation = Rotation.identity(),
         radius: float = 1,
         height: float = 1,
-        polarization: NDArray = np.array([0, 0, 1]),
+        polarization: ArrayLike = (0, 0, 1),
     ) -> None:
         self.radius = radius
         self.height = height

@@ -4,3 +4,5 @@ maturin
 pytest
 pyo3_runtime
 patchelf
+scipy
+magpylib

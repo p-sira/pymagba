@@ -57,12 +57,12 @@ pub fn cyl_B<'py>(
 #[pyfunction]
 pub fn sum_multiple_cyl_B<'py>(
     py: Python<'py>,
-    point_array: PyReadonlyArray2<f64>,
-    position_array: PyReadonlyArray2<f64>,
-    orientation_array: PyReadonlyArray2<f64>,
-    radius_array: PyReadonlyArray1<f64>,
-    height_array: PyReadonlyArray1<f64>,
-    pol_array: PyReadonlyArray2<f64>,
+    point_array: PyReadonlyArray2<'py, f64>,
+    position_array: PyReadonlyArray2<'py, f64>,
+    orientation_array: PyReadonlyArray2<'py, f64>,
+    radius_array: PyReadonlyArray1<'py, f64>,
+    height_array: PyReadonlyArray1<'py, f64>,
+    pol_array: PyReadonlyArray2<'py, f64>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let points = pyarray_to_point_vec(point_array)?;
     let positions = pyarray_to_point_vec(position_array)?;

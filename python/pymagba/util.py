@@ -2,18 +2,36 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
+
+type FloatArray = NDArray[np.floating]
 
 
-def wrap_points2d(points: NDArray) -> NDArray:
-    if len(points.shape) == 1:
-        # It is a single point, wrap it once
-        points = np.array([points])
+def wrap_vectors2d(array: ArrayLike) -> FloatArray:
+    """Wrap array of vectors to 2D and cast to float, throws error when inappropriate shape is given
 
-    if len(points.shape) == 2:
-        # It is an array of points
-        return points
+    Args:
+        array (ArrayLike): Array of vector(s)
 
-    raise ValueError(
-        "points argument must be an array of point (x,y,z) or an array of points (Nx3)."
-    )
+    Raises:
+        ValueError: Inappropriate shape
+
+    Returns:
+        FloatArray: Array of vectors (Nx3)
+    """
+    array = np.array(array, dtype=float)
+
+    if array.shape[-1] == 3:
+        if len(array.shape) == 2:
+            # It is an array of points
+            return array
+
+        if len(array.shape) == 1:
+            # It is a single point, wrap it once
+            return np.array([array], dtype=float)
+
+    raise ValueError("inputs must have length of 3 or Nx3.")
+
+
+def float_array(array: ArrayLike) -> FloatArray:
+    return np.array(array, dtype=float)
