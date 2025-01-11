@@ -16,14 +16,13 @@ use crate::{
 };
 
 pub fn register_functions(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(cyl_B, m)?)?;
-    m.add_function(wrap_pyfunction!(sum_multiple_cyl_B, m)?)?;
+    m.add_function(wrap_pyfunction!(cyl_b, m)?)?;
+    m.add_function(wrap_pyfunction!(sum_multiple_cyl_b, m)?)?;
     Ok(())
 }
 
-#[allow(non_snake_case)]
-#[pyfunction]
-pub fn cyl_B<'py>(
+#[pyfunction(name = "cyl_B")]
+pub fn cyl_b<'py>(
     py: Python<'py>,
     point_array: PyReadonlyArray2<f64>,
     position: [f64; 3],
@@ -54,8 +53,8 @@ pub fn cyl_B<'py>(
     }
 }
 
-#[pyfunction]
-pub fn sum_multiple_cyl_B<'py>(
+#[pyfunction(name = "sum_multiple_cyl_B")]
+pub fn sum_multiple_cyl_b<'py>(
     py: Python<'py>,
     point_array: PyReadonlyArray2<'py, f64>,
     position_array: PyReadonlyArray2<'py, f64>,
