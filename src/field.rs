@@ -28,7 +28,7 @@ pub fn cyl_b<'py>(
     height: f64,
     pol: [f64; 3],
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
-    let points = pyarray_to_point_vec(point_array.to_owned_array())?;
+    let points = pyarray_to_point_vec(&point_array.to_owned_array())?;
     let position = Point3::from(position);
     let orientation = UnitQuaternion::from_quaternion(Quaternion::new(
         orientation[0],
@@ -49,7 +49,7 @@ pub fn cyl_b<'py>(
     });
 
     match result {
-        Ok(result) => Ok(vec_to_pyarray(py, result)),
+        Ok(result) => Ok(vec_to_pyarray(py, &result)),
         Err(e) => fn_err!("cyl_B", e),
     }
 }
@@ -77,12 +77,12 @@ pub fn sum_multiple_cyl_b<'py>(
     // Release GIL during conversion
     let (points, positions, orientations, radii, heights, pols) = py.allow_threads(move || {
         (
-            pyarray_to_point_vec(point_array),
-            pyarray_to_point_vec(position_array),
-            pyarray_to_quat_vec(orientation_array),
+            pyarray_to_point_vec(&point_array),
+            pyarray_to_point_vec(&position_array),
+            pyarray_to_quat_vec(&orientation_array),
             radius_array.to_vec(),
             height_array.to_vec(),
-            pyarray_to_vector_vec(pol_array),
+            pyarray_to_vector_vec(&pol_array),
         )
     });
     // Request GIL and raise Error if needed
@@ -102,7 +102,7 @@ pub fn sum_multiple_cyl_b<'py>(
 
     // Request GIL and return
     match result {
-        Ok(result) => Ok(vec_to_pyarray(py, result)),
+        Ok(result) => Ok(vec_to_pyarray(py, &result)),
         Err(e) => fn_err!("sum_multiple_cyl_B", e),
     }
 }

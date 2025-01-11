@@ -13,7 +13,7 @@ use pyo3::Bound;
 use pyo3::PyResult;
 use pyo3::Python;
 
-pub fn pyarray_to_point_vec(array: Array2<f64>) -> PyResult<Vec<Point3<f64>>> {
+pub fn pyarray_to_point_vec(array: &Array2<f64>) -> PyResult<Vec<Point3<f64>>> {
     // Check if the input has the correct dimensions
     let shape = array.shape();
     if shape.len() != 2 || shape[1] != 3 {
@@ -31,7 +31,7 @@ pub fn pyarray_to_point_vec(array: Array2<f64>) -> PyResult<Vec<Point3<f64>>> {
     Ok(points)
 }
 
-pub fn pyarray_to_vector_vec(array: Array2<f64>) -> PyResult<Vec<Vector3<f64>>> {
+pub fn pyarray_to_vector_vec(array: &Array2<f64>) -> PyResult<Vec<Vector3<f64>>> {
     // Check if the input has the correct dimensions
     let shape = array.shape();
     if shape.len() != 2 || shape[1] != 3 {
@@ -49,7 +49,7 @@ pub fn pyarray_to_vector_vec(array: Array2<f64>) -> PyResult<Vec<Vector3<f64>>> 
     Ok(vectors)
 }
 
-pub fn pyarray_to_quat_vec(array: Array2<f64>) -> PyResult<Vec<UnitQuaternion<f64>>> {
+pub fn pyarray_to_quat_vec(array: &Array2<f64>) -> PyResult<Vec<UnitQuaternion<f64>>> {
     // Check if the input has the correct dimensions
     let shape = array.shape();
     if shape.len() != 2 || shape[1] != 4 {
@@ -67,7 +67,7 @@ pub fn pyarray_to_quat_vec(array: Array2<f64>) -> PyResult<Vec<UnitQuaternion<f6
     Ok(quats)
 }
 
-pub fn vec_to_pyarray(py: Python, vec: Vec<Vector3<f64>>) -> Bound<'_, PyArray2<f64>> {
+pub fn vec_to_pyarray<'py>(py: Python<'py>, vec: &Vec<Vector3<f64>>) -> Bound<'py, PyArray2<f64>> {
     let rows: Vec<Vec<f64>> = vec.into_iter().map(|v| vec![v.x, v.y, v.z]).collect();
     PyArray2::from_vec2(py, &rows).unwrap()
 }
