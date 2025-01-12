@@ -2,16 +2,11 @@
  * Magba is licensed under The 3-Clause BSD, see LICENSE.
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
-use nalgebra::Point3;
-use nalgebra::Quaternion;
-use nalgebra::UnitQuaternion;
-use nalgebra::Vector3;
+use nalgebra::{Point3, Quaternion, UnitQuaternion, Vector3};
 use ndarray::Array2;
 use numpy::PyArray2;
 use pyo3::exceptions::PyRuntimeError;
-use pyo3::Bound;
-use pyo3::PyResult;
-use pyo3::Python;
+use pyo3::prelude::*;
 
 pub fn pyarray_to_point_vec(array: &Array2<f64>) -> PyResult<Vec<Point3<f64>>> {
     // Check if the input has the correct dimensions

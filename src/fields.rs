@@ -38,7 +38,7 @@ pub fn cyl_b<'py>(
     ));
 
     let result = py.allow_threads(move || {
-        magba::field::cyl_B(
+        magba::fields::cyl_B(
             &points,
             &position,
             &orientation,
@@ -90,7 +90,7 @@ pub fn sum_multiple_cyl_b<'py>(
 
     // Release GIL during B field computation
     let result = py.allow_threads(move || {
-        magba::field::sum_multiple_cyl_B(
+        magba::fields::sum_multiple_cyl_B(
             &points,
             &positions,
             &orientations,

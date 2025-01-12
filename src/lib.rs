@@ -5,12 +5,12 @@
 
 use pyo3::prelude::*;
 mod convert;
-mod field;
+mod fields;
 mod helper;
 
 #[pymodule(gil_used = false)]
 #[pyo3(name = "pymagba_binding")]
 fn pymagba_binding(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    add_submodule!(field, "field", py, m);
+    add_submodule!(fields, "fields", py, m);
     Ok(())
 }

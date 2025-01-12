@@ -2,9 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"path": "../../rust/magba"
 		}
 	],
   	"settings": {
@@ -21,6 +18,7 @@
 				"yearpublished",
 				"2025"
 			]
-		]
+		],
+		"rust-analyzer.cargo.noDefaultFeatures": true,
 	}
 }

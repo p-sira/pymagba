@@ -4,4 +4,4 @@
 """
 Magba binding for python
 """
-from . import field, source
+from . import fields, sources

@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
-import pymagba.pymagba_binding as pmb
+import pymagba.pymagba_binding as magba
 from pymagba.util import FloatArray, float_array, wrap_vectors2d
 
 # Important! All numpy arguments must be explicitly casted as float!
@@ -34,7 +34,7 @@ def cyl_B(
     polarization = tuple(float_array(polarization))
 
     try:
-        return pmb.field.cyl_B(
+        return magba.fields.cyl_B(
             points, position, orientation, radius, height, polarization
         )
     except RuntimeError as e:
@@ -59,7 +59,7 @@ def sum_multiple_cyl_B(
     heights = float_array(heights)
     polarizations = wrap_vectors2d(polarizations)
     try:
-        return pmb.field.sum_multiple_cyl_B(
+        return magba.fields.sum_multiple_cyl_B(
             points, positions, orientations, radii, heights, polarizations
         )
     except RuntimeError as e:

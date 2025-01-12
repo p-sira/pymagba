@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.spatial.transform import Rotation
 
-from pymagba import field
+from pymagba import fields
 from pymagba.transform import FloatArray, Transform
 from pymagba.util import float_array, wrap_vectors2d
 
@@ -136,7 +136,7 @@ class SourceCollection(Source):
         for source_type, sources in self.sources.items():
             match source_type:
                 case SourceType.CYLINDER:
-                    B_net += field.sum_multiple_cyl_B(
+                    B_net += fields.sum_multiple_cyl_B(
                         points,
                         sources["position"],
                         sources["orientation"],
@@ -162,7 +162,7 @@ class CylinderMagnet(Source):
         self.polarization = polarization
 
         field_params = ["position", "orientation", "radius", "height", "polarization"]
-        self._B_func = lambda points: field.cyl_B(
+        self._B_func = lambda points: fields.cyl_B(
             points,
             self.position,
             self.orientation,
