@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 from scipy.spatial.transform import Rotation
 from numpy.testing import assert_allclose
-from pymagba.fields import *
-from pymagba.sources import CylinderMagnet
+from pymagba.fields.fields import *
+from pymagba.sources.sources import CylinderMagnet
 
 
 def test_axial_b_vs_magpy() -> None:

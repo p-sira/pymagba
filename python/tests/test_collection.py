@@ -4,7 +4,7 @@
 
 from numpy.testing import assert_allclose
 from scipy.spatial.transform import Rotation
-from pymagba.sources import CylinderMagnet, SourceCollection
+from pymagba.sources.sources import CylinderMagnet, SourceCollection
 import numpy as np
 
 
