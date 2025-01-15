@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.spatial.transform import Rotation
 
-from pymagba import fields
+from pymagba.fields import fields
 from pymagba.transform import FloatArray, Transform
 from pymagba.util import float_array, wrap_vectors2d
 
