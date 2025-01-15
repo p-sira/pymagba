@@ -2,7 +2,7 @@ pip-tools
 magpylib
 maturin
 pytest
-pyo3_runtime
+pytest-benchmark
 patchelf
 scipy
 magpylib

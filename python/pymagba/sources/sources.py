@@ -3,7 +3,7 @@
 
 from abc import ABC
 from collections.abc import Iterable
-from enum import StrEnum
+from enum import Enum
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.spatial.transform import Rotation
@@ -13,7 +13,7 @@ from pymagba.transform import FloatArray, Transform
 from pymagba.util import float_array, wrap_vectors2d
 
 
-class SourceType(StrEnum):
+class SourceType(str, Enum):
     COLLECTION = "SourceCollection"
     CYLINDER = "CylinderMagnet"
 

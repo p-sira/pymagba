@@ -4,7 +4,7 @@
 import numpy as np
 from numpy.typing import NDArray, ArrayLike
 
-type FloatArray = NDArray[np.floating]
+FloatArray = NDArray[np.floating]
 
 
 def wrap_vectors2d(array: ArrayLike) -> FloatArray:
