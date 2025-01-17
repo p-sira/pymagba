@@ -7,7 +7,7 @@ import pytest
 from pytest_benchmark.plugin import benchmark
 from scipy.spatial.transform import Rotation
 
-from pymagba.sources.sources import CylinderMagnet
+from pymagba.sources import CylinderMagnet
 from pymagba.util import FloatArray
 
 
