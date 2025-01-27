@@ -53,9 +53,9 @@ def compute_magpy(observers: FloatArray, args):
     magpylib._src.fields.field_BH_cylinder.BHJM_magnet_cylinder("B", observers, *args)
 
 
-def test_magba(benchmark, observers, magba_args):
+def test_cyl_field_magba(benchmark, observers, magba_args):
     benchmark(compute_magba, observers, magba_args)
 
 
-def test_magpy(benchmark, observers, magpy_args):
+def test_cyl_field_magpy(benchmark, observers, magpy_args):
     benchmark(compute_magpy, observers, magpy_args)

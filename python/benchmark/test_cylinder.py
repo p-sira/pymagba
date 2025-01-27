@@ -60,11 +60,11 @@ def compute_magpy(magnet: Cylinder, observers: FloatArray):
     magnet.getB(observers)
 
 
-def test_magba(benchmark, magba_magnet, observers):
+def test_cylinder_magba(benchmark, magba_magnet, observers):
     benchmark(compute_magba, magba_magnet, observers)
 
 
-def test_magpy(benchmark, magpy_magnet, observers):
+def test_cylinder_magpy(benchmark, magpy_magnet, observers):
     benchmark(compute_magpy, magpy_magnet, observers)
 
 
