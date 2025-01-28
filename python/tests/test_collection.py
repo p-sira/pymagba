@@ -9,17 +9,17 @@ from typing import Any
 import magpylib as magpy
 import numpy as np
 from numpy.testing import assert_allclose
-from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation
 from tests.testing_util import get_small_grid
 
 from pymagba.sources import CylinderMagnet, SourceCollection
+from pymagba.util import FloatArray
 
 
 class CollectionTestData(ABC):
     @staticmethod
     @abstractmethod
-    def get_points() -> NDArray:
+    def get_points() -> FloatArray:
         pass
 
     @staticmethod
@@ -137,7 +137,7 @@ def test_collection_cylinder() -> None:
 
 class CylinderTestData(CollectionTestData):
     @staticmethod
-    def get_points() -> NDArray:
+    def get_points() -> FloatArray:
         return get_small_grid()
 
     CYLINDER_POSITIONS = np.array(
