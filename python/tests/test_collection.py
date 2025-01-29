@@ -2,140 +2,64 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 
-from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
 import magpylib as magpy
 import numpy as np
-from numpy.testing import assert_allclose
 from scipy.spatial.transform import Rotation
-from tests.testing_util import get_small_grid
+from tests.testing_util import (
+    TestData,
+    generate_general_expected_results,
+    get_small_grid,
+    run_test_general,
+)
 
 from pymagba.sources import CylinderMagnet, SourceCollection
 from pymagba.util import FloatArray
 
 
-class CollectionTestData(ABC):
-    @staticmethod
-    @abstractmethod
-    def get_points() -> FloatArray:
-        pass
-
-    @staticmethod
-    def _get_test_data_paths(data_file_name: str) -> list[Path]:
-        """This function helps with numbering."""
-        return [
-            Path(f"python/tests/data/collection/") / (data_file_name + f"{i}.npy")
-            for i in range(5)
-        ]
-
-    @staticmethod
-    @abstractmethod
-    def get_test_data_paths() -> list[Path]:
-        """Get actual data paths."""
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def get_test_params() -> list[Any]:
-        """List of params for:
-        - magnets.position
-        - magnets.orientation
-        - magnets.move
-        - magnets.rotate
-        """
-        pass
-
-
-def _generate_collection_general_expected(
-    magnets: list, test_data_class: type[CollectionTestData]
-) -> None:
-    collection = magpy.Collection(magnets)
-    points = test_data_class.get_points()
-    data_paths = test_data_class.get_test_data_paths()
-    test_params = test_data_class.get_test_params()
-
-    # Get starting field
-    np.save(data_paths[0], collection.getB(points))
-
-    # Set parent position
-    collection.position = test_params[0]
-    np.save(data_paths[1], collection.getB(points))
-
-    # Set parent orientation
-    collection.orientation = test_params[1]
-    np.save(data_paths[2], collection.getB(points))
-
-    # Move parent
-    collection.move(test_params[2])
-    np.save(data_paths[3], collection.getB(points))
-
-    # Rotate parent
-    collection.rotate(test_params[3])
-    np.save(data_paths[4], collection.getB(points))
-
-
 def generate_collection_cylinder_expected():
-    magnets = [
-        magpy.magnet.Cylinder(
-            position,
-            orientation,
-            (CylinderTestData.CYLINDER_RADIUS * 2, CylinderTestData.CYLINDER_HEIGHT),
-            CylinderTestData.CYLINDER_POL,
-        )
-        for position, orientation in zip(
-            CylinderTestData.CYLINDER_POSITIONS, CylinderTestData.CYLINDER_ORIENTATIONS
-        )
-    ]
-    _generate_collection_general_expected(magnets, CylinderTestData)
-
-
-def _test_collection_general(
-    magnets: list, test_data_class: type[CollectionTestData]
-) -> None:
-    collection = SourceCollection(magnets)
-    points = test_data_class.get_points()
-    data_paths = test_data_class.get_test_data_paths()
-    test_params = test_data_class.get_test_params()
-
-    # Get starting field
-    assert_allclose(collection.get_B(points), np.load(data_paths[0]))
-
-    # Set parent position
-    collection.position = test_params[0]
-    assert_allclose(collection.get_B(points), np.load(data_paths[1]))
-
-    # Set parent orientation
-    collection.orientation = test_params[1]
-    assert_allclose(collection.get_B(points), np.load(data_paths[2]))
-
-    # Move parent
-    collection.move(test_params[2])
-    assert_allclose(collection.get_B(points), np.load(data_paths[3]))
-
-    # Rotate parent
-    collection.rotate(test_params[3])
-    assert_allclose(collection.get_B(points), np.load(data_paths[4]))
+    magnet = magpy.Collection(
+        [
+            magpy.magnet.Cylinder(
+                position,
+                orientation,
+                (
+                    CollectionCylinderTestData.CYLINDER_RADIUS * 2,
+                    CollectionCylinderTestData.CYLINDER_HEIGHT,
+                ),
+                CollectionCylinderTestData.CYLINDER_POL,
+            )
+            for position, orientation in zip(
+                CollectionCylinderTestData.CYLINDER_POSITIONS,
+                CollectionCylinderTestData.CYLINDER_ORIENTATIONS,
+            )
+        ]
+    )
+    generate_general_expected_results(magnet, CollectionCylinderTestData)
 
 
 def test_collection_cylinder() -> None:
-    magnets = [
-        CylinderMagnet(
-            position,
-            orientation,
-            CylinderTestData.CYLINDER_RADIUS,
-            CylinderTestData.CYLINDER_HEIGHT,
-            CylinderTestData.CYLINDER_POL,
-        )
-        for position, orientation in zip(
-            CylinderTestData.CYLINDER_POSITIONS, CylinderTestData.CYLINDER_ORIENTATIONS
-        )
-    ]
-    _test_collection_general(magnets, CylinderTestData)
+    magnets = SourceCollection(
+        [
+            CylinderMagnet(
+                position,
+                orientation,
+                CollectionCylinderTestData.CYLINDER_RADIUS,
+                CollectionCylinderTestData.CYLINDER_HEIGHT,
+                CollectionCylinderTestData.CYLINDER_POL,
+            )
+            for position, orientation in zip(
+                CollectionCylinderTestData.CYLINDER_POSITIONS,
+                CollectionCylinderTestData.CYLINDER_ORIENTATIONS,
+            )
+        ]
+    )
+    run_test_general(magnets, CollectionCylinderTestData)
 
 
-class CylinderTestData(CollectionTestData):
+class CollectionCylinderTestData(TestData):
     @staticmethod
     def get_points() -> FloatArray:
         return get_small_grid()
@@ -193,7 +117,7 @@ class CylinderTestData(CollectionTestData):
 
     @staticmethod
     def get_test_data_paths() -> list[Path]:
-        return CollectionTestData._get_test_data_paths("collection-cylinder-data")
+        return TestData._get_test_data_paths("collection/collection-cylinder-data")
 
     @staticmethod
     def get_test_params() -> list[Any]:

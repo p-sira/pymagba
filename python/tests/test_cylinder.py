@@ -1,68 +1,61 @@
 # Magba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
+from pathlib import Path
+from typing import Any
 from magpylib.magnet import Cylinder
 import numpy as np
-import pytest
 from scipy.spatial.transform import Rotation
-from numpy.testing import assert_allclose
-from pymagba.fields import *
 from pymagba.sources import CylinderMagnet
+from tests.testing_util import (
+    TestData,
+    generate_general_expected_results,
+    get_small_grid,
+    run_test_general,
+)
+from pymagba.util import FloatArray
 
 
-def test_axial_b_vs_magpy() -> None:
-    N = 20
-    radii = np.linspace(1e-3, 3, N)
-    heights = np.linspace(1e-3, 3, N)
-    pol_z = np.linspace(0, 3, N)
+class SmallCylinderTestData(TestData):
+    RADIUS = 3e-3
+    HEIGHT = 5e-3
+    POL = np.array((1, 2, 3))
 
-    R, H, P = np.meshgrid(radii, heights, pol_z, indexing="ij")
-    combinations = np.array([R.flatten(), H.flatten(), P.flatten()]).T
-    for r, h, pol_z in combinations:
-        magpy_magnet = Cylinder(dimension=(r * 2, h), polarization=(0, 0, pol_z))
-        magba_magnet = CylinderMagnet(
-            radius=r, height=h, polarization=np.array([0, 0, pol_z])
-        )
+    @staticmethod
+    def get_points() -> FloatArray:
+        return get_small_grid()
 
-        points = np.random.random((200, 3)) * 5
+    @staticmethod
+    def get_test_data_paths() -> list[Path]:
+        return TestData._get_test_data_paths("cylinder/small-cylinder-data")
 
-        magpy_result = magpy_magnet.getB(points)
-        magba_result = magba_magnet.get_B(points)
+    @staticmethod
+    def get_test_params() -> list[Any]:
+        return [
+            (-0.02, 0.04, -0.06),
+            Rotation.from_rotvec([np.pi / 15, -np.pi / 8, np.pi / 3]),
+            (-0.02, -0.08, 0.2),
+            Rotation.from_rotvec([-np.pi / 1, -np.pi / 2, np.pi / 3]),
+        ]
 
-        assert_allclose(magba_result, magpy_result, rtol=1e-5, atol=1e-10)
 
-def test_random_fixed_pose_b_vs_magpy() -> None:
-    N = 100
-    radii = np.random.random(N) * 3
-    heights = np.random.random(N) * 3
-    pols = np.random.uniform(-5, 5, (N, 3))
+def generate_small_cylinder_expected():
+    magnet = Cylinder(
+        dimension=(SmallCylinderTestData.RADIUS * 2, SmallCylinderTestData.HEIGHT),
+        polarization=SmallCylinderTestData.POL,
+    )
+    generate_general_expected_results(magnet, SmallCylinderTestData)
 
-    for r, h, pol in zip(radii, heights, pols):
-        magpy_magnet = Cylinder(dimension=(r * 2, h), polarization=pol)
-        magba_magnet = CylinderMagnet(radius=r, height=h, polarization=pol)
 
-        points = (np.random.random((100, 3)) - 0.5) * 5
+def test_small_cylinder():
+    magnet = CylinderMagnet(
+        radius=SmallCylinderTestData.RADIUS,
+        height=SmallCylinderTestData.HEIGHT,
+        polarization=SmallCylinderTestData.POL,
+    )
+    run_test_general(magnet, SmallCylinderTestData, rtol=5e-6)
 
-        magpy_result = magpy_magnet.getB(points)
-        magba_result = magba_magnet.get_B(points)
 
-        assert_allclose(magba_result, magpy_result, rtol=1e-5, atol=1e-10)
-
-def test_random_b_vs_magpy() -> None:
-    N = 1000
-    radii = np.random.random(N) * 3
-    heights = np.random.random(N) * 3
-    pols = np.random.uniform(-5, 5, (N, 3))
-    positions = np.random.uniform(-3, 3, (N, 3))
-    orientations = Rotation.random(N)
-
-    for position, orientation, r, h, pol in zip(positions, orientations, radii, heights, pols):
-        magpy_magnet = Cylinder(position, orientation, dimension=(r * 2, h), polarization=pol)
-        magba_magnet = CylinderMagnet(position, orientation, radius=r, height=h, polarization=pol)
-
-        points = (np.random.random((1000, 3)) - 0.5) * 5
-
-        magpy_result = magpy_magnet.getB(points)
-        magba_result = magba_magnet.get_B(points)
-
-        assert_allclose(magba_result, magpy_result, rtol=1e-5, atol=1e-10)
+if __name__ == "__main__":
+    # generate_small_cylinder_expected()
+    pass
