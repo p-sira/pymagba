@@ -36,4 +36,4 @@ class Transform:
         self._position += float_array(translation)
 
     def rotate(self, rotation: Rotation) -> None:
-        self._orientation.apply(rotation)
+        self._orientation = rotation * self._orientation
