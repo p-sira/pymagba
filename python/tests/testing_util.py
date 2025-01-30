@@ -81,9 +81,6 @@ def run_test_general(magnet, test_data_class: type[TestData], rtol=1e-6, atol=0)
     data_paths = test_data_class.get_test_data_paths()
     test_params = test_data_class.get_test_params()
 
-    print(type(magnet))
-    print("here")
-
     assert_allclose(magnet.get_B(points), np.load(data_paths[0]), rtol, atol)
 
     magnet.position = test_params[0]
