@@ -25,6 +25,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Build & install binding
-      run: maturin develop --release
+      run: |
+        maturin build --release
+        pip install target/wheels/*
     - name: Run python test
       run: pytest python/tests/
