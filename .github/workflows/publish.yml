@@ -8,6 +8,11 @@ name: Pymagba Maturin CI
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
 
 permissions:
   contents: read
