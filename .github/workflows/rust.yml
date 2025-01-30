@@ -1,0 +1,25 @@
+name: Pymagba Rust CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "src/**"
+      - "Cargo.toml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "src/**"
+      - "Cargo.toml"
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: maturin build
+    - name: Run python test
+      run: pytest python/tests/
