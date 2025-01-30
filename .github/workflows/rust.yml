@@ -1,6 +1,7 @@
 name: Pymagba Rust CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
     paths:
@@ -19,7 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Build
-      run: maturin build
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
+    - name: Build & install binding
+      run: |
+        maturin build --release
+        python -m pip install target/wheels/*
     - name: Run python test
       run: pytest python/tests/
