@@ -5,4 +5,3 @@ pytest
 pytest-benchmark
 patchelf
 scipy
-magpylib
