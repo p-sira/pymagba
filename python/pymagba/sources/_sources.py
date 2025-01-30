@@ -1,41 +1,68 @@
 # PyMagba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from enum import Enum
+from typing import Any
+
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.spatial.transform import Rotation
 
 from pymagba.fields import _fields
-from pymagba.transform import FloatArray, Transform
-from pymagba.util import float_array, wrap_vectors2d
+from pymagba.transform import Transform
+from pymagba.util import FloatArray, float_array, wrap_vectors2d
 
 
+# This can use type StrEnum on Python 3.11
 class SourceType(str, Enum):
     COLLECTION = "SourceCollection"
     CYLINDER = "CylinderMagnet"
+
+
+def _collection_get_B(
+    points: FloatArray, sources_dict: dict[SourceType, dict]
+) -> FloatArray:
+    B_net = np.zeros((len(points), 3), dtype=float)
+    for source_type, source_properties in sources_dict.items():
+        B_net += COLLECTION_FIELD_FUNC[source_type](
+            points,
+            source_properties["position"],
+            source_properties["orientation"],
+            *[source_properties[param] for param in FIELD_PARAMS[source_type]],
+        )
+
+    return B_net
+
+
+# Parameter of the source type used in field calculation. Position and orientation
+# are implied as the second and third parameters. The first parameter of the field
+# functions are points (observer position).
+FIELD_PARAMS: dict[SourceType, tuple[str, ...]] = {
+    SourceType.COLLECTION: ("sources",),
+    SourceType.CYLINDER: ("radius", "height", "polarization"),
+}
+
+COLLECTION_FIELD_FUNC = {
+    SourceType.COLLECTION: _collection_get_B,
+    SourceType.CYLINDER: _fields.sum_multiple_cyl_B,
+}
 
 
 class Source(ABC, Transform):
     def __init__(
         self,
         source_type: SourceType,
-        field_params: list[str],
         position: ArrayLike,
         orientation: Rotation,
     ) -> None:
         self._source_type = source_type
-        self._field_params = field_params
         super().__init__(position, orientation)
 
-    @staticmethod
-    def _B_func(points: ArrayLike) -> FloatArray:
-        raise NotImplementedError
-
+    @abstractmethod
     def get_B(self, points: ArrayLike) -> FloatArray:
-        return self._B_func(points)
+        raise NotImplementedError
 
 
 class SourceCollection(Source):
@@ -45,11 +72,11 @@ class SourceCollection(Source):
         position: ArrayLike = (0, 0, 0),
         orientation: Rotation = Rotation.identity(),
     ) -> None:
-        self.sources: dict[SourceType, dict[str, NDArray]] = {}
-        self._add_sources(self.sources, sources)
+        self._sources: dict[SourceType, dict[str, Any]] = {}
+        self._n_sources = 0
+        self.add_sources(sources)
 
-        field_params = ["position", "orientation", "sources"]
-        super().__init__(SourceType.COLLECTION, field_params, position, orientation)
+        super().__init__(SourceType.COLLECTION, position, orientation)
 
     @property
     def position(self) -> FloatArray:
@@ -73,25 +100,18 @@ class SourceCollection(Source):
         self._orientation = new_orientation
 
     def _move_children(self, translation: NDArray) -> None:
-        for source_properties in self.sources.values():
+        for source_properties in self._sources.values():
             source_properties["position"] += translation
 
     def _rotate_children(self, rotation: Rotation) -> None:
-        for source_properties in self.sources.values():
+        for source_params in self._sources.values():
             # Calculate new positions
-            source_properties["position"] -= self._position
-            source_properties["position"] = rotation.apply(
-                source_properties["position"]
-            )
-            source_properties["position"] += self._position
+            source_params["position"] -= self._position
+            source_params["position"] = rotation.apply(source_params["position"])
+            source_params["position"] += self._position
 
             # Rotate to new orientations
-            source_properties["orientation"] = np.array(
-                [
-                    rotation * orientation
-                    for orientation in source_properties["orientation"]
-                ]
-            )
+            source_params["orientation"] = rotation * source_params["orientation"]
 
     def move(self, translation: ArrayLike) -> None:
         translation = float_array(translation)
@@ -102,50 +122,52 @@ class SourceCollection(Source):
         self._rotate_children(rotation)
         self._orientation = rotation * self._orientation
 
-    @staticmethod
-    def _add_sources(
-        source_dict: dict[SourceType, dict[str, NDArray]], sources: Iterable[Source]
-    ) -> None:
-        new_sources_by_type: dict[SourceType, list[Source]] = {}
-        # Sort new_sources into dict first, so the property of each SourceType and be
-        # extracted at once, minimizing list conversion
-        for source in sources:
-            if source._source_type in new_sources_by_type:
-                # SourceType entry found, add new item to list
-                new_sources_by_type[source._source_type].append(source)
-            else:
-                # No entry yet, create new entry and fill with itself
-                new_sources_by_type.update({source._source_type: [source]})
+    def add_sources(self, sources: Iterable[Source]) -> None:
+        # For every new source
+        for x, source in enumerate(sources):
+            i = x + self._n_sources  # Assign index in the collection
 
-        for new_source_type, new_sources in new_sources_by_type.items():
-            if not new_source_type in source_dict:
-                source_dict[new_source_type] = {}
+            type_group = self._sources.setdefault(source._source_type, {})
 
-            type_entry = source_dict[new_source_type]
-            # Add all parameters necessary for calculations
-            for param in new_sources[0]._field_params:
-                if param not in type_entry:
-                    type_entry[param] = np.array(())
+            #
+            # Index, position, and orientation
+            #
+            type_group.setdefault("index", [])
+            type_group.setdefault("position", [])
+            type_group.setdefault("orientation", [])
 
-                new_params = [getattr(new_source, param) for new_source in new_sources]
-                type_entry[param] = np.array(type_entry[param].tolist() + new_params)  # type: ignore
+            type_group["position"] = list(type_group["position"])
+            type_group["orientation"] = list(type_group["orientation"])
+
+            type_group["index"].append(i)
+            type_group["position"].append(source.position)
+            type_group["orientation"].append(source.orientation.as_quat())
+
+            #
+            # Other field parameters
+            #
+            for param in FIELD_PARAMS[source._source_type]:
+                type_group.setdefault(
+                    param, []
+                )  # Defaults to empty list if key not found
+                type_group[param] = list(
+                    type_group[param]
+                )  # Convert the parameter field to list
+                type_group[param].append(
+                    getattr(source, param)
+                )  # Add the source parameter
+
+        # Loop through the sources dict again to turn some parameters to nparray
+        for source_type, source_type_params in self._sources.items():
+            source_type_params["position"] = np.array(source_type_params["position"])
+            source_type_params["orientation"] = Rotation.from_quat(
+                source_type_params["orientation"]
+            )
+            for param in FIELD_PARAMS[source_type]:
+                source_type_params[param] = np.array(source_type_params[param])
 
     def get_B(self, points: ArrayLike) -> FloatArray:
-        points = wrap_vectors2d(points)
-        B_net = np.zeros((len(points), 3), dtype=float)
-        for source_type, sources in self.sources.items():
-            match source_type:
-                case SourceType.CYLINDER:
-                    B_net += _fields.sum_multiple_cyl_B(
-                        points,
-                        sources["position"],
-                        sources["orientation"],
-                        sources["radius"],
-                        sources["height"],
-                        sources["polarization"],
-                    )
-
-        return B_net
+        return _collection_get_B(wrap_vectors2d(points), self._sources)
 
 
 class CylinderMagnet(Source):
@@ -161,14 +183,14 @@ class CylinderMagnet(Source):
         self.height = height
         self.polarization = polarization
 
-        field_params = ["position", "orientation", "radius", "height", "polarization"]
-        self._B_func = lambda points: _fields.cyl_B(
-            points,
+        super().__init__(SourceType.CYLINDER, position, orientation)
+
+    def get_B(self, points: ArrayLike):
+        return _fields.cyl_B(
+            wrap_vectors2d(points),
             self.position,
             self.orientation,
             self.radius,
             self.height,
             self.polarization,
         )
-
-        super().__init__(SourceType.CYLINDER, field_params, position, orientation)
