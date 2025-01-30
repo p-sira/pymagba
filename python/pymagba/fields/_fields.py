@@ -51,7 +51,7 @@ def sum_multiple_cyl_B(
     polarizations: ArrayLike,
 ) -> FloatArray:
     """Note: orientations is a "single" Rotation instance where inside holds a list of Rotations
-    Beware of using functions that collapse the inner Rotations together.""""
+    Beware of using functions that collapse the inner Rotations together."""
     points = wrap_vectors2d(points)
     positions = wrap_vectors2d(positions)
     orientations = wrap_vectors2d(orientations.as_quat(scalar_first=True))

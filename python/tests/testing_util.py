@@ -70,7 +70,9 @@ def generate_general_expected_results(magnet, test_data_class: type[TestData]) -
     np.save(data_paths[4], magnet.getB(points))
 
 
-def run_test_general(magnet, test_data_class: type[TestData], rtol=1e-6, atol=0) -> None:
+def run_test_general(
+    magnet, test_data_class: type[TestData], rtol=1e-6, atol=0
+) -> None:
     """Perform test against expected test results:
     - Starting field
     - Setting position
