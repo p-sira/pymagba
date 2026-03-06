@@ -5,5 +5,9 @@
 Magba binding for python
 """
 
+from __future__ import annotations
+
+from .__about__ import *
+
 from . import magnets
 from . import sensors

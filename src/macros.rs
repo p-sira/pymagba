@@ -49,7 +49,7 @@ macro_rules! impl_pypose {
             /// Translate the object by a displacement vector.
             ///
             /// Args:
-            ///     translation (list[float]): Displacement ``[dx, dy, dz]`` in meters.
+            ///     translation (list): Displacement ``[dx, dy, dz]`` in meters.
             fn translate(&mut self, translation: crate::util::ArrayLike3) {
                 self.inner.translate(translation.0);
             }
@@ -57,7 +57,8 @@ macro_rules! impl_pypose {
             /// Rotate the object about its own origin using a unit quaternion.
             ///
             /// Args:
-            ///     q (scipy.spatial.transform.Rotation | list[float]): Rotation representing the rotation.
+            ///     rot (Rotation or list): Rotation to apply. Can be a ``scipy.spatial.transform.Rotation``
+            ///         object or a unit quaternion as a list.
             fn rotate(&mut self, rot: crate::util::PyRotation) {
                 self.inner.rotate(rot.0);
             }
@@ -65,8 +66,8 @@ macro_rules! impl_pypose {
             /// Rotate the object about an arbitrary anchor point using a unit quaternion.
             ///
             /// Args:
-            ///     q (scipy.spatial.transform.Rotation | list[float]): Rotation representing the rotation.
-            ///     anchor (list[float]): Anchor point ``[x, y, z]`` in meters about which to rotate.
+            ///     rot (Rotation or list): Rotation to apply.
+            ///     anchor (list): Anchor point ``[x, y, z]`` in meters about which to rotate.
             fn rotate_anchor(
                 &mut self,
                 rot: crate::util::PyRotation,
@@ -99,24 +100,14 @@ macro_rules! impl_compute_B {
             fn compute_B<'py>(
                 &self,
                 py: ::pyo3::Python<'py>,
-                points: ::numpy::PyReadonlyArray2<'py, f64>,
+                points: crate::util::PointsLike,
             ) -> ::pyo3::Bound<'py, ::numpy::PyArray2<f64>> {
                 use ::magba::base::Source;
                 use ::ndarray::Array2;
                 use ::numpy::IntoPyArray;
 
-                let points_arr = points.as_array();
-                let n_points = points_arr.shape()[0];
-
-                let pts: Vec<::nalgebra::Point3<f64>> = (0..n_points)
-                    .map(|i| {
-                        ::nalgebra::Point3::new(
-                            points_arr[[i, 0]],
-                            points_arr[[i, 1]],
-                            points_arr[[i, 2]],
-                        )
-                    })
-                    .collect();
+                let pts = points.0;
+                let n_points = pts.len();
 
                 let b_field = self.inner.compute_B_batch(&pts);
 

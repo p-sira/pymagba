@@ -15,32 +15,37 @@ use crate::impl_pypose;
 /// and clamped to the range ``[0, supply_voltage]``.
 ///
 /// Args:
-///     position (list[float] | None): Sensor position ``[x, y, z]`` in meters.
+///     position (list, optional): Sensor position ``[x, y, z]`` in meters.
 ///         Defaults to ``[0.0, 0.0, 0.0]``.
-///     orientation (list[float] | None): Orientation as a unit quaternion ``[x, y, z, w]``.
+///     orientation (list, optional): Orientation as a unit quaternion ``[x, y, z, w]``.
 ///         Defaults to the identity quaternion.
-///     sensitive_axis (list[float] | None): The local axis along which the field is measured
+///     sensitive_axis (list, optional): The local axis along which the field is measured
 ///         ``[ax, ay, az]``. Normalized internally. Defaults to ``[0.0, 0.0, 1.0]`` (Z-axis).
-///     sensitivity (float): Sensor sensitivity in V/T. Defaults to ``1.0``.
-///     supply_voltage (float): Supply voltage in volts. Sets the output range to
-///         ``[0, supply_voltage]`` with quiescent point at ``supply_voltage / 2``.
+///     sensitivity (float, optional): Sensor sensitivity in V/T. Defaults to ``1.0``.
+///     supply_voltage (float, optional): Supply voltage in volts. Sets the output range
+///         to ``[0, supply_voltage]`` with quiescent point at ``supply_voltage / 2``.
 ///         Defaults to ``5.0``.
 ///
 /// Examples:
 ///
-/// ```python
-/// from pymagba.sensors import LinearHallSensor
-/// from pymagba.magnets import CylinderMagnet
-/// magnet = CylinderMagnet(position=[0.0, 0.0, 0.01], diameter=0.01, height=0.005,
-///                         polarization=[0.0, 0.0, 1.0])
-/// sensor = LinearHallSensor(
-///     position=[0.0, 0.0, 0.025],
-///     sensitive_axis=[0.0, 0.0, 1.0],
-///     sensitivity=0.05,
-///     supply_voltage=5.0,
-/// )
-/// voltage = sensor.read_voltage_cylinder(magnet)
-/// ```
+///     .. code-block:: python
+///
+///         from pymagba.sensors import LinearHallSensor
+///         from pymagba.magnets import CylinderMagnet
+///
+///         magnet = CylinderMagnet(
+///             position=[0.0, 0.0, 0.01],
+///             diameter=0.01,
+///             height=0.005,
+///             polarization=[0.0, 0.0, 1.0],
+///         )
+///         sensor = LinearHallSensor(
+///             position=[0.0, 0.0, 0.025],
+///             sensitive_axis=[0.0, 0.0, 1.0],
+///             sensitivity=0.05,
+///             supply_voltage=5.0,
+///         )
+///         voltage = sensor.read_voltage_cylinder(magnet)
 #[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct LinearHallSensor {

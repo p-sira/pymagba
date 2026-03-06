@@ -18,32 +18,37 @@ use crate::impl_pypose;
 /// - When field is between ``b_rp`` and ``b_op``: state is preserved.
 ///
 /// Args:
-///     position (list[float] | None): Sensor position ``[x, y, z]`` in meters.
+///     position (list, optional): Sensor position ``[x, y, z]`` in meters.
 ///         Defaults to ``[0.0, 0.0, 0.0]``.
-///     orientation (list[float] | None): Orientation as a unit quaternion ``[x, y, z, w]``.
+///     orientation (list, optional): Orientation as a unit quaternion ``[x, y, z, w]``.
 ///         Defaults to the identity quaternion.
-///     sensitive_axis (list[float] | None): The local axis along which the field is measured
+///     sensitive_axis (list, optional): The local axis along which the field is measured
 ///         ``[ax, ay, az]``. Normalized internally. Defaults to ``[0.0, 0.0, 1.0]`` (Z-axis).
-///     b_op (float): Magnetic operate point in Tesla. Field must exceed this to switch ON.
-///         Defaults to ``0.010`` (10 mT).
-///     b_rp (float): Magnetic release point in Tesla. Field must fall below this to switch OFF.
-///         Defaults to ``-0.010`` (-10 mT).
+///     b_op (float, optional): Magnetic operate point in Tesla. Field must exceed
+///         this to switch ON. Defaults to ``0.010`` (10 mT).
+///     b_rp (float, optional): Magnetic release point in Tesla. Field must fall
+///         below this to switch OFF. Defaults to ``-0.010`` (-10 mT).
 ///
 /// Examples:
 ///
-/// ```python
-/// from pymagba.sensors import HallLatch
-/// from pymagba.magnets import CylinderMagnet
-/// magnet = CylinderMagnet(position=[0.0, 0.0, 0.01], diameter=0.01, height=0.005,
-///                         polarization=[0.0, 0.0, 1.0])
-/// sensor = HallLatch(
-///     position=[0.0, 0.0, 0.025],
-///     sensitive_axis=[0.0, 0.0, 1.0],
-///     b_op=0.010,
-///     b_rp=-0.010,
-/// )
-/// state = sensor.read_state_cylinder(magnet)  # True if latched ON
-/// ```
+///     .. code-block:: python
+///
+///         from pymagba.sensors import HallLatch
+///         from pymagba.magnets import CylinderMagnet
+///
+///         magnet = CylinderMagnet(
+///             position=[0.0, 0.0, 0.01],
+///             diameter=0.01,
+///             height=0.005,
+///             polarization=[0.0, 0.0, 1.0],
+///         )
+///         sensor = HallLatch(
+///             position=[0.0, 0.0, 0.025],
+///             sensitive_axis=[0.0, 0.0, 1.0],
+///             b_op=0.010,
+///             b_rp=-0.010,
+///         )
+///         state = sensor.read_state_cylinder(magnet)  # True if latched ON
 #[pyclass(from_py_object)]
 #[derive(Clone)]
 pub struct HallLatch {

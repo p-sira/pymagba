@@ -13,27 +13,30 @@ use crate::{impl_compute_B, impl_pypose};
 /// All dimensions are in SI units (meters, Tesla).
 ///
 /// Args:
-///     position (list[float] | None): Center of the cuboid ``[x, y, z]`` in meters.
+///     position (list, optional): Center of the cuboid ``[x, y, z]`` in meters.
 ///         Defaults to ``[0.0, 0.0, 0.0]``.
-///     orientation (scipy.spatial.transform.Rotation | list[float] | None): Orientation as a unit quaternion ``[x, y, z, w]`` or a Rotation object.
-///         Defaults to the identity quaternion.
-///     dimensions (list[float] | None): Side lengths ``[dx, dy, dz]`` in meters.
+///     orientation (Rotation or list, optional): Orientation as a
+///         unit quaternion ``[x, y, z, w]`` or a ``scipy.spatial.transform.Rotation``
+///         object. Defaults to the identity quaternion.
+///     dimensions (list, optional): Side lengths ``[dx, dy, dz]`` in meters.
 ///         Defaults to ``[1.0, 1.0, 1.0]``.
-///     polarization (list[float] | None): Remanence polarization vector ``[Bx, By, Bz]`` in Tesla.
+///     polarization (list, optional): Remanence polarization vector ``[Bx, By, Bz]`` in Tesla.
 ///         Defaults to ``[0.0, 0.0, 0.0]``.
 ///
 /// Examples:
 ///
-/// ```python
-/// from pymagba.magnets import CuboidMagnet
-/// from scipy.spatial.transform import Rotation
-/// magnet = CuboidMagnet(
-///     position=[0.0, 0.0, 0.0],
-///     orientation=Rotation.from_euler('z', 45, degrees=True),
-///     dimensions=[0.01, 0.01, 0.02],
-///     polarization=[0.0, 0.0, 1.0],
-/// )
-/// ```
+///     .. code-block:: python
+///
+///         from pymagba.magnets import CuboidMagnet
+///         from scipy.spatial.transform import Rotation
+///
+///         magnet = CuboidMagnet(
+///             position=[0.0, 0.0, 0.0],
+///             orientation=Rotation.from_euler('z', 45, degrees=True),
+///             dimensions=[0.01, 0.01, 0.02],
+///             polarization=[0.0, 0.0, 1.0],
+///         )
+///
 /// References:
 ///     Ortner, Michael, and Lucas Gabriel Coliado Bandeira. "Magpylib: A Free Python Package
 ///     for Magnetic Field Computation." SoftwareX 11 (2020): 100466.
