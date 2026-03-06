@@ -76,9 +76,11 @@ To install from source:
    maturin build --release
    pip install target/wheels/pymagba-*.whl
 
+Submodules
+----------
+
 .. toctree::
    :maxdepth: 2
-   :caption: Submodules
 
    magnets
    sensors
