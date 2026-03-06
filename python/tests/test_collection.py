@@ -15,8 +15,8 @@ from tests.testing_util import (
     run_test_general,
 )
 
-from pymagba.sources import CylinderMagnet, SourceCollection
-from pymagba.util import FloatArray
+from pymagba.magnets import CylinderMagnet, SourceCollection
+from pymagba.utils import FloatArray
 
 
 def generate_collection_cylinder_expected():
@@ -26,7 +26,7 @@ def generate_collection_cylinder_expected():
                 position,
                 orientation,
                 (
-                    CollectionCylinderTestData.CYLINDER_RADIUS * 2,
+                    CollectionCylinderTestData.CYLINDER_DIAMETER,
                     CollectionCylinderTestData.CYLINDER_HEIGHT,
                 ),
                 CollectionCylinderTestData.CYLINDER_POL,
@@ -45,8 +45,8 @@ def test_collection_cylinder() -> None:
         [
             CylinderMagnet(
                 position,
-                orientation,
-                CollectionCylinderTestData.CYLINDER_RADIUS,
+                orientation.as_quat(),
+                CollectionCylinderTestData.CYLINDER_DIAMETER,
                 CollectionCylinderTestData.CYLINDER_HEIGHT,
                 CollectionCylinderTestData.CYLINDER_POL,
             )
@@ -111,7 +111,7 @@ class CollectionCylinderTestData(TestData):
         )
     )
 
-    CYLINDER_RADIUS = 1.5e-3
+    CYLINDER_DIAMETER = 3e-3
     CYLINDER_HEIGHT = 4e-3
     CYLINDER_POL = np.array((0, 0, 925e-3))
 

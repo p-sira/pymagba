@@ -1,6 +1,6 @@
 [package]
 name = "pymagba_binding"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2021"
 
 [lib]
@@ -9,8 +9,11 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-magba = { version = "0.1.0", default-features = false, features = ["parallel"] }
-nalgebra = "0.33.2"
+magba = { version = "0.3.0" }
+nalgebra = "0.34.1"
 ndarray = "0.16.1"
-numpy = "0.23.0"
-pyo3 = { version = "0.23.3", features = ["extension-module"] }
+numpy = "0.28.0"
+pyo3 = { version = "0.28.2", features = [
+    "extension-module",
+    "multiple-pymethods",
+] }

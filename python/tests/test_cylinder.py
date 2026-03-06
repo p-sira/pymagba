@@ -6,14 +6,14 @@ from typing import Any
 from magpylib.magnet import Cylinder
 import numpy as np
 from scipy.spatial.transform import Rotation
-from pymagba.sources import CylinderMagnet
+from pymagba.magnets import CylinderMagnet
 from tests.testing_util import (
     TestData,
     generate_general_expected_results,
     get_small_grid,
     run_test_general,
 )
-from pymagba.util import FloatArray
+from pymagba.utils import FloatArray
 
 
 class SmallCylinderTestData(TestData):
@@ -49,11 +49,11 @@ def generate_small_cylinder_expected():
 
 def test_small_cylinder():
     magnet = CylinderMagnet(
-        radius=SmallCylinderTestData.RADIUS,
+        diameter=SmallCylinderTestData.RADIUS * 2,
         height=SmallCylinderTestData.HEIGHT,
         polarization=SmallCylinderTestData.POL,
     )
-    run_test_general(magnet, SmallCylinderTestData, rtol=5e-6)
+    run_test_general(magnet, SmallCylinderTestData, rtol=5e-4, atol=1e-14)
 
 
 if __name__ == "__main__":

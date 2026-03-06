@@ -12,7 +12,7 @@ from pytest_benchmark.plugin import benchmark
 from scipy.spatial.transform import Rotation
 
 import pymagba
-from pymagba.util import FloatArray
+from pymagba.utils import FloatArray
 
 
 @pytest.fixture(scope="function")

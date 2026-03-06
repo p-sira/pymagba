@@ -1,4 +1,4 @@
-name: Pymagba Rust CI
+name: PyMagba Rust Test
 
 on:
   workflow_dispatch:
