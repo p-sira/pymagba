@@ -3,3 +3,6 @@ __pycache__
 .vscode
 /dist
 PyMagba.egg-info
+*.so
+*.pyd
+*.dylib
