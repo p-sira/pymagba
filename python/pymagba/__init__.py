@@ -4,4 +4,6 @@
 """
 Magba binding for python
 """
-from . import fields, sources
+
+from . import magnets
+from . import sensors

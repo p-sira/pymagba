@@ -9,7 +9,7 @@ from typing import Any
 import numpy as np
 from numpy.testing import assert_allclose
 
-from pymagba.util import FloatArray
+from pymagba.utils import FloatArray
 
 
 class TestData(ABC):
@@ -38,7 +38,7 @@ class TestData(ABC):
         """List of params for:
         - magnets.position
         - magnets.orientation
-        - magnets.move
+        - magnets.translate
         - magnets.rotate
         """
         pass
@@ -55,19 +55,19 @@ def generate_general_expected_results(magnet, test_data_class: type[TestData]) -
     data_paths = test_data_class.get_test_data_paths()
     test_params = test_data_class.get_test_params()
 
-    np.save(data_paths[0], magnet.getB(points))
+    np.save(data_paths[0], magnet.compute_B(points))
 
     magnet.position = test_params[0]
-    np.save(data_paths[1], magnet.getB(points))
+    np.save(data_paths[1], magnet.compute_B(points))
 
     magnet.orientation = test_params[1]
-    np.save(data_paths[2], magnet.getB(points))
+    np.save(data_paths[2], magnet.compute_B(points))
 
-    magnet.move(test_params[2])
-    np.save(data_paths[3], magnet.getB(points))
+    magnet.translate(test_params[2])
+    np.save(data_paths[3], magnet.compute_B(points))
 
     magnet.rotate(test_params[3])
-    np.save(data_paths[4], magnet.getB(points))
+    np.save(data_paths[4], magnet.compute_B(points))
 
 
 def run_test_general(
@@ -79,23 +79,27 @@ def run_test_general(
     - Setting orientation
     - Moving
     - Rotating"""
+    from scipy.spatial.transform import Rotation
+
     points = test_data_class.get_points()
     data_paths = test_data_class.get_test_data_paths()
     test_params = test_data_class.get_test_params()
 
-    assert_allclose(magnet.get_B(points), np.load(data_paths[0]), rtol, atol)
+    assert_allclose(magnet.compute_B(points), np.load(data_paths[0]), rtol, atol)
 
     magnet.position = test_params[0]
-    assert_allclose(magnet.get_B(points), np.load(data_paths[1]), rtol, atol)
+    assert_allclose(magnet.compute_B(points), np.load(data_paths[1]), rtol, atol)
 
     magnet.orientation = test_params[1]
-    assert_allclose(magnet.get_B(points), np.load(data_paths[2]), rtol, atol)
+    assert isinstance(magnet.orientation, Rotation)
+    assert_allclose(magnet.compute_B(points), np.load(data_paths[2]), rtol, atol)
 
-    magnet.move(test_params[2])
-    assert_allclose(magnet.get_B(points), np.load(data_paths[3]), rtol, atol)
+    magnet.translate(test_params[2])
+    assert_allclose(magnet.compute_B(points), np.load(data_paths[3]), rtol, atol)
 
     magnet.rotate(test_params[3])
-    assert_allclose(magnet.get_B(points), np.load(data_paths[4]), rtol, atol)
+    assert isinstance(magnet.orientation, Rotation)
+    assert_allclose(magnet.compute_B(points), np.load(data_paths[4]), rtol, atol)
 
 
 def generate_grid(bounds: FloatArray, N: Iterable) -> FloatArray:
