@@ -100,24 +100,14 @@ macro_rules! impl_compute_B {
             fn compute_B<'py>(
                 &self,
                 py: ::pyo3::Python<'py>,
-                points: ::numpy::PyReadonlyArray2<'py, f64>,
+                points: crate::util::PointsLike,
             ) -> ::pyo3::Bound<'py, ::numpy::PyArray2<f64>> {
                 use ::magba::base::Source;
                 use ::ndarray::Array2;
                 use ::numpy::IntoPyArray;
 
-                let points_arr = points.as_array();
-                let n_points = points_arr.shape()[0];
-
-                let pts: Vec<::nalgebra::Point3<f64>> = (0..n_points)
-                    .map(|i| {
-                        ::nalgebra::Point3::new(
-                            points_arr[[i, 0]],
-                            points_arr[[i, 1]],
-                            points_arr[[i, 2]],
-                        )
-                    })
-                    .collect();
+                let pts = points.0;
+                let n_points = pts.len();
 
                 let b_field = self.inner.compute_B_batch(&pts);
 

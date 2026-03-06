@@ -11,8 +11,13 @@ pub struct ArrayLike3(pub [f64; 3]);
 impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
     type Error = PyErr;
     fn extract(ob: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
-        // We use Vec extraction as it handles lists, tuples, and numpy arrays.
-        let v: Vec<f64> = ob.extract()?;
+        // We use numpy to convert to array if it's not already one.
+        // This handles lists, tuples, and other sequences naturally.
+        let py = ob.py();
+        let np = py.import("numpy")?;
+        let np_arr = np.call_method1("asarray", (ob,))?;
+        let v: Vec<f64> = np_arr.extract()?;
+
         if v.len() == 3 {
             Ok(ArrayLike3([v[0], v[1], v[2]]))
         } else {
@@ -20,6 +25,42 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
                 "Expected 3 elements, got {}",
                 v.len()
             )))
+        }
+    }
+}
+
+/// A wrapper for extracting a batch of 3D points (N, 3), supporting lists, tuples, and numpy arrays.
+/// Can also handle a single 1D point [x, y, z] by converting it to [[x, y, z]].
+pub struct PointsLike(pub Vec<nalgebra::Point3<f64>>);
+
+impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
+    type Error = PyErr;
+    fn extract(ob: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
+        let py = ob.py();
+        let np = py.import("numpy")?;
+        let np_arr = np.call_method1("asarray", (ob,))?;
+        let shape: Vec<usize> = np_arr.getattr("shape")?.extract()?;
+
+        match shape.len() {
+            1 if shape[0] == 3 => {
+                // Single point [x, y, z]
+                let v: Vec<f64> = np_arr.extract()?;
+                Ok(PointsLike(vec![nalgebra::Point3::new(v[0], v[1], v[2])]))
+            }
+            2 if shape[1] == 3 => {
+                // Batch of points [[x, y, z], ...]
+                let n = shape[0];
+                let v: Vec<f64> = np_arr.call_method0("flatten")?.extract()?;
+                let mut pts = Vec::with_capacity(n);
+                for i in 0..n {
+                    pts.push(nalgebra::Point3::new(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]));
+                }
+                Ok(PointsLike(pts))
+            }
+            _ => Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "Expected shape (3,) or (N, 3), got {:?}",
+                shape
+            ))),
         }
     }
 }
