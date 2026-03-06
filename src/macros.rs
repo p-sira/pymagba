@@ -49,7 +49,7 @@ macro_rules! impl_pypose {
             /// Translate the object by a displacement vector.
             ///
             /// Args:
-            ///     translation (list[float]): Displacement ``[dx, dy, dz]`` in meters.
+            ///     translation (list): Displacement ``[dx, dy, dz]`` in meters.
             fn translate(&mut self, translation: crate::util::ArrayLike3) {
                 self.inner.translate(translation.0);
             }
@@ -57,7 +57,8 @@ macro_rules! impl_pypose {
             /// Rotate the object about its own origin using a unit quaternion.
             ///
             /// Args:
-            ///     q (scipy.spatial.transform.Rotation | list[float]): Rotation representing the rotation.
+            ///     rot (Rotation or list): Rotation to apply. Can be a ``scipy.spatial.transform.Rotation``
+            ///         object or a unit quaternion as a list.
             fn rotate(&mut self, rot: crate::util::PyRotation) {
                 self.inner.rotate(rot.0);
             }
@@ -65,8 +66,8 @@ macro_rules! impl_pypose {
             /// Rotate the object about an arbitrary anchor point using a unit quaternion.
             ///
             /// Args:
-            ///     q (scipy.spatial.transform.Rotation | list[float]): Rotation representing the rotation.
-            ///     anchor (list[float]): Anchor point ``[x, y, z]`` in meters about which to rotate.
+            ///     rot (Rotation or list): Rotation to apply.
+            ///     anchor (list): Anchor point ``[x, y, z]`` in meters about which to rotate.
             fn rotate_anchor(
                 &mut self,
                 rot: crate::util::PyRotation,

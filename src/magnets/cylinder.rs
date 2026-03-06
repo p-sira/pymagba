@@ -13,27 +13,30 @@ use crate::{impl_compute_B, impl_pypose};
 /// All dimensions are in SI units (meters, Tesla).
 ///
 /// Args:
-///     position (list[float] | None): Center of the cylinder ``[x, y, z]`` in meters.
+///     position (list, optional): Center of the cylinder ``[x, y, z]`` in meters.
 ///         Defaults to ``[0.0, 0.0, 0.0]``.
-///     orientation (scipy.spatial.transform.Rotation | list[float] | None): Orientation as a unit quaternion ``[x, y, z, w]`` or a Rotation object.
-///         Defaults to the identity quaternion.
+///     orientation (Rotation or list, optional): Orientation as a
+///         unit quaternion ``[x, y, z, w]`` or a ``scipy.spatial.transform.Rotation``
+///         object. Defaults to the identity quaternion.
 ///     diameter (float): Cylinder diameter in meters. Must be positive. Defaults to ``1.0``.
 ///     height (float): Cylinder height in meters. Must be positive. Defaults to ``1.0``.
-///     polarization (list[float] | None): Remanence polarization vector ``[Bx, By, Bz]`` in Tesla.
+///     polarization (list, optional): Remanence polarization vector ``[Bx, By, Bz]`` in Tesla.
 ///         Defaults to ``[0.0, 0.0, 0.0]``.
 ///
 /// Examples:
-/// ```python
-/// from pymagba.magnets import CylinderMagnet
-/// from scipy.spatial.transform import Rotation
-/// magnet = CylinderMagnet(
-///     position=[0.0, 0.0, 0.0],
-///     orientation=Rotation.from_euler('x', 90, degrees=True),
-///     diameter=0.01,
-///     height=0.02,
-///     polarization=[0.0, 0.0, 1.0],
-/// )
-/// ```
+///
+///     .. code-block:: python
+///
+///         from pymagba.magnets import CylinderMagnet
+///         from scipy.spatial.transform import Rotation
+///
+///         magnet = CylinderMagnet(
+///             position=[0.0, 0.0, 0.0],
+///             orientation=Rotation.from_euler('x', 90, degrees=True),
+///             diameter=0.01,
+///             height=0.02,
+///             polarization=[0.0, 0.0, 1.0],
+///         )
 ///
 /// References:
 ///     Caciagli, Alessio, et al. "Exact Expression for the Magnetic Field of a Finite Cylinder

@@ -32,6 +32,13 @@ dev = [
     "pytest>=9.0.2",
     "pytest-benchmark>=5.2.3",
 ]
+docs = [
+    "sphinx>=8.2.3",
+    "pydata-sphinx-theme>=0.16.1",
+    "sphinx-autodoc-typehints>=3.0.1",
+    "sphinxcontrib-napoleon>=0.7",
+    "myst-parser>=4.0.1",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

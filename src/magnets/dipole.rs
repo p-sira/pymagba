@@ -14,22 +14,23 @@ use crate::{impl_compute_B, impl_pypose};
 /// at distances much greater than their physical size.
 ///
 /// Args:
-///     position (list[float] | None): Position of the dipole ``[x, y, z]`` in meters.
+///     position (list, optional): Position of the dipole ``[x, y, z]`` in meters.
 ///         Defaults to ``[0.0, 0.0, 0.0]``.
-///     orientation (list[float] | None): Orientation as a unit quaternion ``[x, y, z, w]``.
+///     orientation (list, optional): Orientation as a unit quaternion ``[x, y, z, w]``.
 ///         Defaults to the identity quaternion.
-///     moment (list[float] | None): Magnetic dipole moment vector ``[mx, my, mz]`` in A·m².
+///     moment (list, optional): Magnetic dipole moment vector ``[mx, my, mz]`` in A·m².
 ///         Defaults to ``[0.0, 0.0, 0.0]``.
 ///
 /// Examples:
 ///
-/// ```python
-/// from pymagba.magnets import Dipole
-/// dipole = Dipole(
-///     position=[0.0, 0.0, 0.0],
-///     moment=[0.0, 0.0, 1.0],
-/// )
-/// ```
+///     .. code-block:: python
+///
+///         from pymagba.magnets import Dipole
+///
+///         dipole = Dipole(
+///             position=[0.0, 0.0, 0.0],
+///             moment=[0.0, 0.0, 1.0],
+///         )
 ///
 /// References:
 ///     Ortner, Michael, and Lucas Gabriel Coliado Bandeira. "Magpylib: A Free Python Package
