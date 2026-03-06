@@ -10,7 +10,7 @@ PyMagba Documentation
 
    <h1 align="center">
       <a href="https://github.com/p-sira/pymagba/">
-         <img src="_static/pymagba-logo-fit.svg" alt="PyMagba" width="350">
+         <img src="_static/pymagba-logo-fit.svg" alt="PyMagba" width="350" style="background-color: transparent;">
       </a>
    </h1>
 
@@ -82,5 +82,3 @@ To install from source:
 
    magnets
    sensors
-
-----
