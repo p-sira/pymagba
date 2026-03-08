@@ -1,6 +1,6 @@
-use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, SourceComponent};
+use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
-use pyo3::types::PyList;
+use pyo3::types::{PyDict, PyList, PyTuple};
 use pyo3::IntoPyObject;
 use std::sync::Arc;
 
@@ -12,6 +12,8 @@ pub struct SourceCollection {
     pub(crate) inner: SourceAssembly<f64>,
     pub(crate) sources: Arc<Vec<Py<PyAny>>>,
 }
+
+use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, SourceComponent};
 
 // SourceCollection does not implement Clone manually because Py<PyAny>
 // cloning usually requires a Python token or GIL, and PyO3 handles
@@ -45,8 +47,44 @@ impl SourceCollection {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<pyo3::types::PyDict>> {
-        let dict = pyo3::types::PyDict::new(py);
+    fn __len__(&self) -> usize {
+        self.sources.len()
+    }
+
+    fn __getitem__(&self, idx: isize, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let len = self.sources.len() as isize;
+        let idx = if idx < 0 { len + idx } else { idx };
+        if idx < 0 || idx >= len {
+            return Err(PyIndexError::new_err("index out of range"));
+        }
+        Ok(self.sources[idx as usize].clone_ref(py))
+    }
+
+    fn append(&mut self, source: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
+        let bound = source.bind(py);
+        if let Ok(m) = bound.extract::<PyRef<'_, CylinderMagnet>>() {
+            self.inner.push(m.inner.clone());
+        } else if let Ok(m) = bound.extract::<PyRef<'_, CuboidMagnet>>() {
+            self.inner.push(m.inner.clone());
+        } else if let Ok(m) = bound.extract::<PyRef<'_, Dipole>>() {
+            self.inner.push(m.inner.clone());
+        } else if let Ok(m) = bound.extract::<PyRef<'_, SourceCollection>>() {
+            self.inner.push(m.inner.clone());
+        } else {
+            return Err(pyo3::exceptions::PyTypeError::new_err(
+                "source must be CylinderMagnet, CuboidMagnet, Dipole, or SourceCollection",
+            ));
+        }
+
+        let mut new_sources: Vec<Py<PyAny>> =
+            self.sources.iter().map(|s| s.clone_ref(py)).collect();
+        new_sources.push(source);
+        self.sources = Arc::new(new_sources);
+        Ok(())
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
+        let dict = PyDict::new(py);
         dict.set_item("sources", self.sources.as_ref())?;
         dict.set_item("position", <[f64; 3]>::from(self.inner.position().coords))?;
         dict.set_item(
@@ -56,11 +94,7 @@ impl SourceCollection {
         Ok(dict.unbind())
     }
 
-    fn __setstate__(
-        &mut self,
-        state: Bound<'_, pyo3::types::PyDict>,
-        py: Python<'_>,
-    ) -> PyResult<()> {
+    fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
         let sources_bound = state
             .get_item("sources")?
             .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("sources missing from state"))?;
@@ -85,6 +119,8 @@ impl SourceCollection {
                 components.push(m.inner.clone().into());
             } else if let Ok(m) = bound.extract::<PyRef<'_, Dipole>>() {
                 components.push(m.inner.clone().into());
+            } else if let Ok(m) = bound.extract::<PyRef<'_, SourceCollection>>() {
+                components.push(m.inner.clone().into());
             }
         }
 
@@ -99,19 +135,13 @@ impl SourceCollection {
         Ok(())
     }
 
-    fn __reduce__<'py>(
-        slf: Bound<'py, Self>,
-        py: Python<'py>,
-    ) -> PyResult<Bound<'py, pyo3::types::PyTuple>> {
+    fn __reduce__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyTuple>> {
         let cls = slf.get_type();
         let borrow = slf.borrow();
-        // Pass the stored source objects as the constructor argument so that
-        // __new__(sources) rebuilds the inner SourceAssembly, then
-        // __setstate__ re-applies the collection-level pose.
         let sources_list = PyList::new(py, borrow.sources.as_ref())?;
-        let args = pyo3::types::PyTuple::new(py, [sources_list.into_any()])?;
+        let args = PyTuple::new(py, [sources_list.into_any()])?;
         let state = borrow.__getstate__(py)?;
-        pyo3::types::PyTuple::new(
+        PyTuple::new(
             py,
             [
                 cls.into_any(),
@@ -176,8 +206,42 @@ impl ObserverCollection {
         })
     }
 
-    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<pyo3::types::PyDict>> {
-        let dict = pyo3::types::PyDict::new(py);
+    fn __len__(&self) -> usize {
+        self.sensors.len()
+    }
+
+    fn __getitem__(&self, idx: isize, py: Python<'_>) -> PyResult<Py<PyAny>> {
+        let len = self.sensors.len() as isize;
+        let idx = if idx < 0 { len + idx } else { idx };
+        if idx < 0 || idx >= len {
+            return Err(PyIndexError::new_err("index out of range"));
+        }
+        Ok(self.sensors[idx as usize].clone_ref(py))
+    }
+
+    fn append(&mut self, sensor: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
+        let bound = sensor.bind(py);
+        if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::LinearHallSensor>>() {
+            self.inner.push(s.inner.clone());
+        } else if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::HallSwitch>>() {
+            self.inner.push(s.inner.clone());
+        } else if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::HallLatch>>() {
+            self.inner.push(s.inner.clone());
+        } else {
+            return Err(pyo3::exceptions::PyTypeError::new_err(
+                "sensor must be LinearHallSensor, HallSwitch, or HallLatch",
+            ));
+        }
+
+        let mut new_sensors: Vec<Py<PyAny>> =
+            self.sensors.iter().map(|s| s.clone_ref(py)).collect();
+        new_sensors.push(sensor);
+        self.sensors = Arc::new(new_sensors);
+        Ok(())
+    }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
+        let dict = PyDict::new(py);
         dict.set_item("sensors", self.sensors.as_ref())?;
         dict.set_item("position", <[f64; 3]>::from(self.inner.position().coords))?;
         dict.set_item(
@@ -187,11 +251,7 @@ impl ObserverCollection {
         Ok(dict.unbind())
     }
 
-    fn __setstate__(
-        &mut self,
-        state: Bound<'_, pyo3::types::PyDict>,
-        py: Python<'_>,
-    ) -> PyResult<()> {
+    fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
         let sensors_bound = state
             .get_item("sensors")?
             .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("sensors missing from state"))?;
@@ -230,19 +290,13 @@ impl ObserverCollection {
         Ok(())
     }
 
-    fn __reduce__<'py>(
-        slf: Bound<'py, Self>,
-        py: Python<'py>,
-    ) -> PyResult<Bound<'py, pyo3::types::PyTuple>> {
+    fn __reduce__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyTuple>> {
         let cls = slf.get_type();
         let borrow = slf.borrow();
-        // Pass the stored sensor objects as the constructor argument so that
-        // __new__(sensors) rebuilds the inner ObserverAssembly, then
-        // __setstate__ re-applies the collection-level pose.
         let sensors_list = PyList::new(py, borrow.sensors.as_ref())?;
-        let args = pyo3::types::PyTuple::new(py, [sensors_list.into_any()])?;
+        let args = PyTuple::new(py, [sensors_list.into_any()])?;
         let state = borrow.__getstate__(py)?;
-        pyo3::types::PyTuple::new(
+        PyTuple::new(
             py,
             [
                 cls.into_any(),

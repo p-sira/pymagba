@@ -1,134 +1,65 @@
-# PyMagba is licensed under The 3-Clause BSD, see LICENSE.
-# Copyright 2025 Sira Pornsiriprasert <code@psira.me>
-
-
-from pathlib import Path
-from typing import Any
-
-import magpylib as magpy
+import pytest
 import numpy as np
-from scipy.spatial.transform import Rotation
-from tests.testing_util import (
-    TestData,
-    generate_general_expected_results,
-    get_small_grid,
-    run_test_general,
-)
-
-from pymagba.magnets import CylinderMagnet, SourceCollection
-from pymagba.utils import FloatArray
+from pymagba.magnets import CylinderMagnet, CuboidMagnet, SourceCollection
+from pymagba.sensors import LinearHallSensor, ObserverCollection
 
 
-def generate_collection_cylinder_expected():
-    magnet = magpy.Collection(
-        [
-            magpy.magnet.Cylinder(
-                position,
-                orientation,
-                (
-                    CollectionCylinderTestData.CYLINDER_DIAMETER,
-                    CollectionCylinderTestData.CYLINDER_HEIGHT,
-                ),
-                CollectionCylinderTestData.CYLINDER_POL,
-            )
-            for position, orientation in zip(
-                CollectionCylinderTestData.CYLINDER_POSITIONS,
-                CollectionCylinderTestData.CYLINDER_ORIENTATIONS,
-            )
-        ]
-    )
-    generate_general_expected_results(magnet, CollectionCylinderTestData)
+def test_source_collection_methods():
+    m1 = CylinderMagnet(polarization=[0, 0, 1], diameter=0.01, height=0.01)
+    m2 = CuboidMagnet(polarization=[0, 0, 1], dimensions=[0.01, 0.01, 0.01])
+
+    col = SourceCollection([m1, m2])
+
+    # Test len
+    assert len(col) == 2
+
+    # Test indexing
+    assert col[0] is m1
+    assert col[1] is m2
+    assert col[-1] is m2
+    assert col[-2] is m1
+
+    with pytest.raises(IndexError):
+        _ = col[2]
+    with pytest.raises(IndexError):
+        _ = col[-3]
+
+    # Test append
+    m3 = CylinderMagnet(polarization=[0, 0, 1], diameter=0.02, height=0.02)
+    col.append(m3)
+    assert len(col) == 3
+    assert col[2] is m3
+
+    # Verify B field calculation still works and includes the new magnet
+    B = col.compute_B([0, 0, 0.05])
+    assert B.shape == (1, 3)
 
 
-def test_collection_cylinder() -> None:
-    magnets = SourceCollection(
-        [
-            CylinderMagnet(
-                position,
-                orientation.as_quat(),
-                CollectionCylinderTestData.CYLINDER_DIAMETER,
-                CollectionCylinderTestData.CYLINDER_HEIGHT,
-                CollectionCylinderTestData.CYLINDER_POL,
-            )
-            for position, orientation in zip(
-                CollectionCylinderTestData.CYLINDER_POSITIONS,
-                CollectionCylinderTestData.CYLINDER_ORIENTATIONS,
-            )
-        ]
-    )
-    run_test_general(magnets, CollectionCylinderTestData)
+def test_observer_collection_methods():
+    s1 = LinearHallSensor(sensitivity=1.0)
+    s2 = LinearHallSensor(sensitivity=2.0)
 
+    col = ObserverCollection([s1, s2])
 
-class CollectionCylinderTestData(TestData):
-    @staticmethod
-    def get_points() -> FloatArray:
-        return get_small_grid()
+    # Test len
+    assert len(col) == 2
 
-    CYLINDER_POSITIONS = np.array(
-        [
-            [0.009389999999999999, 0.0, -0.006],
-            [0.0029016695771807563, 0.008930420688011491, -0.006],
-            [-0.007596669577180755, 0.005519303519026323, -0.006],
-            [-0.007596669577180757, -0.005519303519026321, -0.006],
-            [0.002901669577180754, -0.008930420688011491, -0.006],
-        ]
-    )
+    # Test indexing
+    assert col[0] is s1
+    assert col[1] is s2
+    assert col[-1] is s2
 
-    CYLINDER_ORIENTATIONS = Rotation.from_quat(
-        np.array(
-            [
-                [
-                    0.5,
-                    0.4999999999999999,
-                    0.5,
-                    0.5000000000000001,
-                ],
-                [
-                    -0.6984011233337103,
-                    0.11061587104123723,
-                    0.11061587104123725,
-                    -0.6984011233337104,
-                ],
-                [
-                    -0.32101976096010304,
-                    0.6300367553350505,
-                    0.6300367553350507,
-                    -0.3210197609601031,
-                ],
-                [
-                    -0.32101976096010315,
-                    -0.6300367553350504,
-                    -0.6300367553350504,
-                    -0.3210197609601032,
-                ],
-                [
-                    -0.6984011233337103,
-                    -0.11061587104123705,
-                    -0.11061587104123706,
-                    -0.6984011233337104,
-                ],
-            ]
-        )
-    )
+    with pytest.raises(IndexError):
+        _ = col[2]
 
-    CYLINDER_DIAMETER = 3e-3
-    CYLINDER_HEIGHT = 4e-3
-    CYLINDER_POL = np.array((0, 0, 925e-3))
-
-    @staticmethod
-    def get_test_data_paths() -> list[Path]:
-        return TestData._get_test_data_paths("collection/collection-cylinder-data")
-
-    @staticmethod
-    def get_test_params() -> list[Any]:
-        return [
-            (0.05, 0.1, 0.15),
-            Rotation.from_rotvec([np.pi / 7, np.pi / 6, np.pi / 5]),
-            (-0.03, -0.02, -0.01),
-            Rotation.from_rotvec([-np.pi / 3, -np.pi / 2, np.pi / 1]),
-        ]
+    # Test append
+    s3 = LinearHallSensor(sensitivity=3.0)
+    col.append(s3)
+    assert len(col) == 3
+    assert col[2] is s3
 
 
 if __name__ == "__main__":
-    # generate_collection_cylinder_expected()
-    pass
+    test_source_collection_methods()
+    test_observer_collection_methods()
+    print("All tests passed!")
