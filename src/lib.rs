@@ -13,7 +13,7 @@ mod util;
 #[macro_use]
 mod macros;
 
-use collection::SourceCollection;
+use collection::{ObserverCollection, SourceCollection};
 use magnets::*;
 use sensors::*;
 
@@ -24,6 +24,7 @@ fn pymagba_binding(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<CylinderMagnet>()?;
     m.add_class::<CuboidMagnet>()?;
     m.add_class::<Dipole>()?;
+    m.add_class::<ObserverCollection>()?;
     m.add_class::<LinearHallSensor>()?;
     m.add_class::<HallSwitch>()?;
     m.add_class::<HallLatch>()?;
@@ -32,12 +33,14 @@ fn pymagba_binding(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     magnets.add_class::<CylinderMagnet>()?;
     magnets.add_class::<CuboidMagnet>()?;
     magnets.add_class::<Dipole>()?;
+    magnets.add_class::<SourceCollection>()?;
     m.add_submodule(&magnets)?;
 
     let sensors = PyModule::new(py, "sensors")?;
     sensors.add_class::<LinearHallSensor>()?;
     sensors.add_class::<HallSwitch>()?;
     sensors.add_class::<HallLatch>()?;
+    sensors.add_class::<ObserverCollection>()?;
     m.add_submodule(&sensors)?;
 
     Ok(())

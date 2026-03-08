@@ -19,6 +19,26 @@ macro_rules! impl_read_voltage {
             fn read_voltage_collection(&self, source: &crate::collection::SourceCollection) -> f64 {
                 self.inner.read_voltage(&source.inner)
             }
+
+            fn read(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
+                if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::CylinderMagnet>>() {
+                    Ok(self.read_voltage_cylinder(&m))
+                } else if let Ok(m) =
+                    source.extract::<pyo3::PyRef<'_, crate::magnets::CuboidMagnet>>()
+                {
+                    Ok(self.read_voltage_cuboid(&m))
+                } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::Dipole>>() {
+                    Ok(self.read_voltage_dipole(&m))
+                } else if let Ok(m) =
+                    source.extract::<pyo3::PyRef<'_, crate::collection::SourceCollection>>()
+                {
+                    Ok(self.read_voltage_collection(&m))
+                } else {
+                    Err(pyo3::exceptions::PyTypeError::new_err(
+                        "source must be CylinderMagnet, CuboidMagnet, Dipole, or SourceCollection",
+                    ))
+                }
+            }
         }
     };
 }
@@ -38,6 +58,26 @@ macro_rules! impl_read_state {
             }
             fn read_state_collection(&self, source: &crate::collection::SourceCollection) -> bool {
                 self.inner.read_state(&source.inner)
+            }
+
+            fn read(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<bool> {
+                if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::CylinderMagnet>>() {
+                    Ok(self.read_state_cylinder(&m))
+                } else if let Ok(m) =
+                    source.extract::<pyo3::PyRef<'_, crate::magnets::CuboidMagnet>>()
+                {
+                    Ok(self.read_state_cuboid(&m))
+                } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::Dipole>>() {
+                    Ok(self.read_state_dipole(&m))
+                } else if let Ok(m) =
+                    source.extract::<pyo3::PyRef<'_, crate::collection::SourceCollection>>()
+                {
+                    Ok(self.read_state_collection(&m))
+                } else {
+                    Err(pyo3::exceptions::PyTypeError::new_err(
+                        "source must be CylinderMagnet, CuboidMagnet, Dipole, or SourceCollection",
+                    ))
+                }
             }
         }
     };
