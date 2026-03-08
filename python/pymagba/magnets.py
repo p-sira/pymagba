@@ -1,6 +1,8 @@
 # PyMagba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
+"""Magnet class module."""
+
 from .pymagba_binding import (
     CylinderMagnet as _CylinderMagnet,
     SourceCollection as _SourceCollection,
@@ -134,7 +136,7 @@ class SourceCollection(_SourceCollection):
     all child sources relative to the collection's reference frame.
 
     Args:
-    
+
         sources (list[Source], optional): Iterable of magnetic sources to include.
             Each element must be a CylinderMagnet, CuboidMagnet, or Dipole.
             Defaults to None.

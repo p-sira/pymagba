@@ -1,6 +1,8 @@
 # PyMagba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
+"""Sensor class module."""
+
 from .pymagba_binding import (
     LinearHallSensor as _LinearHallSensor,
     HallSwitch as _HallSwitch,
@@ -136,7 +138,7 @@ class HallLatch(_HallLatch):
     - When field is between b_rp and b_op: state is preserved.
 
     Args:
-    
+
         position (ArrayLike3, optional): Sensor position [x, y, z] in meters.
             Defaults to [0.0, 0.0, 0.0].
         orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
