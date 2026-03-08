@@ -11,6 +11,5 @@ from __future__ import annotations
 
 from .__about__ import *
 
-from . import base
 from . import magnets
 from . import sensors

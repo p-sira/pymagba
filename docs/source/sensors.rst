@@ -1,6 +1,12 @@
 Sensors
 =======
 
+Common Interface
+----------------
+All sensors in PyMagba share a common interface for geometric properties.
+
+.. include:: _common_pose.rst
+
 Available Sensors
 -----------------
 
@@ -8,16 +14,13 @@ LinearHallSensor
 ~~~~~~~~~~~~~~~~
 .. autoclass:: pymagba.sensors.LinearHallSensor
    :members:
-   :show-inheritance:
 
 HallSwitch
 ~~~~~~~~~~
 .. autoclass:: pymagba.sensors.HallSwitch
    :members:
-   :show-inheritance:
 
 HallLatch
 ~~~~~~~~~
 .. autoclass:: pymagba.sensors.HallLatch
    :members:
-   :show-inheritance:
