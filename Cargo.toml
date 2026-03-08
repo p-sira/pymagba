@@ -1,12 +1,20 @@
 [package]
 name = "pymagba_binding"
-version = "0.3.1-dev.1"
+version = "0.3.1-dev.2"
 edition = "2021"
+authors = ["Sira Pornsiriprasert <code@psira.me>"]
+description = "Rust-to-Python binding for PyMagba"
+
+homepage = "https://github.com/p-sira/pymagba"
+repository = "https://github.com/p-sira/pymagba"
+readme = "README.md"
+license = "BSD-3-Clause"
+
+include = ["/src", "/LICENSE"]
 
 [lib]
 name = "pymagba_binding"
 crate-type = ["cdylib"]
-
 
 [dependencies]
 magba = { version = "0.3.0" }

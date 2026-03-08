@@ -7,9 +7,10 @@ from .pymagba_binding import (
     LinearHallSensor as _LinearHallSensor,
     HallSwitch as _HallSwitch,
     HallLatch as _HallLatch,
+    ObserverCollection as _ObserverCollection,
 )
 
-__all__ = ["LinearHallSensor", "HallSwitch", "HallLatch"]
+__all__ = ["LinearHallSensor", "HallSwitch", "HallLatch", "ObserverCollection"]
 
 
 class LinearHallSensor(_LinearHallSensor):
@@ -70,6 +71,15 @@ class LinearHallSensor(_LinearHallSensor):
         """Compute the analog output voltage (V) in the presence of a SourceCollection."""
         return _LinearHallSensor.read_voltage_collection(self, source)
 
+    def read(self, source):
+        """Compute the analog output voltage (V) in the presence of a magnetic source.
+
+        Args:
+            source (CylinderMagnet | CuboidMagnet | Dipole | SourceCollection):
+                The magnetic source to measure.
+        """
+        return _LinearHallSensor.read(self, source)
+
 
 class HallSwitch(_HallSwitch):
     """A physical representation of a unipolar Hall effect switch sensor.
@@ -125,6 +135,15 @@ class HallSwitch(_HallSwitch):
     def read_state_collection(self, source):
         """Read the digital state of the sensor in the presence of a SourceCollection."""
         return _HallSwitch.read_state_collection(self, source)
+
+    def read(self, source):
+        """Read the digital state (True/False) in the presence of a magnetic source.
+
+        Args:
+            source (CylinderMagnet | CuboidMagnet | Dipole | SourceCollection):
+                The magnetic source to measure.
+        """
+        return _HallSwitch.read(self, source)
 
 
 class HallLatch(_HallLatch):
@@ -187,3 +206,69 @@ class HallLatch(_HallLatch):
     def read_state_collection(self, source):
         """Read the digital state of the sensor in the presence of a SourceCollection."""
         return _HallLatch.read_state_collection(self, source)
+
+    def read(self, source):
+        """Read the digital state (True/False) in the presence of a magnetic source.
+
+        Args:
+            source (CylinderMagnet | CuboidMagnet | Dipole | SourceCollection):
+                The magnetic source to measure.
+        """
+        return _HallLatch.read(self, source)
+
+
+class ObserverCollection(_ObserverCollection):
+    """A collection of magnetic sensors.
+
+    Allows grouping multiple sensors (LinearHallSensor, HallSwitch, HallLatch)
+    and performing collective readings in a single call.
+
+    Args:
+
+        sensors (list[Sensor], optional): A list of sensor objects to include in the collection.
+            Defaults to None.
+        position (ArrayLike3, optional): Collection position [x, y, z] in meters.
+            This pose is applied to all sensors in addition to their own poses.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Collection orientation.
+            Defaults to identity.
+
+    Examples:
+
+        .. code-block:: python
+
+            from pymagba.sensors import ObserverCollection, LinearHallSensor
+            from pymagba.magnets import CylinderMagnet
+
+            s1 = LinearHallSensor(position=[0, 0, 0], sensitive_axis=[0, 0, 1])
+            s2 = LinearHallSensor(position=[0, 0, 0.01], sensitive_axis=[0, 0, 1])
+            coll = ObserverCollection(sensors=[s1, s2])
+
+            magnet = CylinderMagnet(diameter=0.01, height=0.01, polarization=[0, 0, 1])
+            outputs = coll.read_all_cylinder(magnet) # returns [val1, val2]
+    """
+
+    def read_all_cylinder(self, source):
+        """Perform a collective reading from all sensors in the presence of a CylinderMagnet."""
+        return _ObserverCollection.read_all_cylinder(self, source)
+
+    def read_all_cuboid(self, source):
+        """Perform a collective reading from all sensors in the presence of a CuboidMagnet."""
+        return _ObserverCollection.read_all_cuboid(self, source)
+
+    def read_all_dipole(self, source):
+        """Perform a collective reading from all sensors in the presence of a Dipole source."""
+        return _ObserverCollection.read_all_dipole(self, source)
+
+    def read_all_collection(self, source):
+        """Perform a collective reading from all sensors in the presence of a SourceCollection."""
+        return _ObserverCollection.read_all_collection(self, source)
+
+    def read_all(self, source):
+        """Perform a collective reading from all sensors in the presence of a magnetic source.
+
+        Args:
+            source (CylinderMagnet | CuboidMagnet | Dipole | SourceCollection):
+                The magnetic source to measure.
+        """
+        return _ObserverCollection.read_all(self, source)
