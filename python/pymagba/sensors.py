@@ -6,12 +6,11 @@ from .pymagba_binding import (
     HallSwitch as _HallSwitch,
     HallLatch as _HallLatch,
 )
-from .base import SensorMixin
 
 __all__ = ["LinearHallSensor", "HallSwitch", "HallLatch"]
 
 
-class LinearHallSensor(SensorMixin, _LinearHallSensor):
+class LinearHallSensor(_LinearHallSensor):
     """A physical representation of a linear Hall effect sensor.
 
     Outputs an analog voltage proportional to the magnetic field component along its
@@ -19,6 +18,7 @@ class LinearHallSensor(SensorMixin, _LinearHallSensor):
     and clamped to the range [0, supply_voltage].
 
     Args:
+
         position (ArrayLike3, optional): Sensor position [x, y, z] in meters.
             Defaults to [0.0, 0.0, 0.0].
         orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
@@ -69,7 +69,7 @@ class LinearHallSensor(SensorMixin, _LinearHallSensor):
         return _LinearHallSensor.read_voltage_collection(self, source)
 
 
-class HallSwitch(SensorMixin, _HallSwitch):
+class HallSwitch(_HallSwitch):
     """A physical representation of a unipolar Hall effect switch sensor.
 
     Outputs a digital True/False reading based solely on whether the
@@ -77,6 +77,7 @@ class HallSwitch(SensorMixin, _HallSwitch):
     point b_op. This sensor is stateless — it does not model hysteresis.
 
     Args:
+
         position (ArrayLike3, optional): Sensor position [x, y, z] in meters.
             Defaults to [0.0, 0.0, 0.0].
         orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
@@ -124,7 +125,7 @@ class HallSwitch(SensorMixin, _HallSwitch):
         return _HallSwitch.read_state_collection(self, source)
 
 
-class HallLatch(SensorMixin, _HallLatch):
+class HallLatch(_HallLatch):
     """A physical representation of a Hall effect latch sensor.
 
     Outputs a digital True/False reading based on the magnetic operate point (b_op)
@@ -135,6 +136,7 @@ class HallLatch(SensorMixin, _HallLatch):
     - When field is between b_rp and b_op: state is preserved.
 
     Args:
+    
         position (ArrayLike3, optional): Sensor position [x, y, z] in meters.
             Defaults to [0.0, 0.0, 0.0].
         orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]

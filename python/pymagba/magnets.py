@@ -7,17 +7,17 @@ from .pymagba_binding import (
     CuboidMagnet as _CuboidMagnet,
     Dipole as _Dipole,
 )
-from .base import SourceMixin
 
 __all__ = ["CylinderMagnet", "SourceCollection", "CuboidMagnet", "Dipole"]
 
 
-class CylinderMagnet(SourceMixin, _CylinderMagnet):
+class CylinderMagnet(_CylinderMagnet):
     """Uniformly magnetized cylindrical magnet.
 
     All dimensions are in SI units (meters, Tesla).
 
     Args:
+
         position (ArrayLike3, optional): Center of the cylinder [x, y, z] in meters.
             Defaults to [0.0, 0.0, 0.0].
         orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
@@ -55,12 +55,13 @@ class CylinderMagnet(SourceMixin, _CylinderMagnet):
     """
 
 
-class CuboidMagnet(SourceMixin, _CuboidMagnet):
+class CuboidMagnet(_CuboidMagnet):
     """Uniformly magnetized cuboid magnet.
 
     All dimensions are in SI units (meters, Tesla).
 
     Args:
+
         position (ArrayLike3, optional): Center of the cuboid [x, y, z] in meters.
             Defaults to [0.0, 0.0, 0.0].
         orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
@@ -91,13 +92,14 @@ class CuboidMagnet(SourceMixin, _CuboidMagnet):
     """
 
 
-class Dipole(SourceMixin, _Dipole):
+class Dipole(_Dipole):
     """Magnetic dipole source.
 
     Models a point magnetic dipole - a useful approximation for small magnets
     at distances much greater than their physical size.
 
     Args:
+
         position (ArrayLike3, optional): Position of the dipole [x, y, z] in meters.
             Defaults to [0.0, 0.0, 0.0].
         orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
@@ -123,7 +125,7 @@ class Dipole(SourceMixin, _Dipole):
     """
 
 
-class SourceCollection(SourceMixin, _SourceCollection):
+class SourceCollection(_SourceCollection):
     """A group of magnetic sources that can be transformed and queried as a unit.
 
     SourceCollection wraps a SourceAssembly from Magba, combining multiple
@@ -132,6 +134,7 @@ class SourceCollection(SourceMixin, _SourceCollection):
     all child sources relative to the collection's reference frame.
 
     Args:
+    
         sources (list[Source], optional): Iterable of magnetic sources to include.
             Each element must be a CylinderMagnet, CuboidMagnet, or Dipole.
             Defaults to None.
