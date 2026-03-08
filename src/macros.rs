@@ -26,7 +26,6 @@ macro_rules! impl_pypose {
                 self.inner.position().into()
             }
 
-            #[setter]
             fn set_position(&mut self, pos: crate::util::ArrayLike3) {
                 self.inner.set_position(pos.0);
             }
@@ -39,7 +38,6 @@ macro_rules! impl_pypose {
                 crate::util::PyRotation(self.inner.orientation()).into_scipy_rotation(py)
             }
 
-            #[setter]
             fn set_orientation(&mut self, rot: crate::util::PyRotation) {
                 self.inner.set_orientation(rot.0);
             }
