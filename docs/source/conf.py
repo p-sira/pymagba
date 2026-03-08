@@ -32,6 +32,7 @@ extensions = [
 
 autosummary_generate = True
 autodoc_typehints = "none"
+autodoc_member_order = "bysource"
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False

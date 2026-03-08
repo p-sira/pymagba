@@ -21,7 +21,6 @@ macro_rules! impl_pypose {
     ($struct:ty) => {
         #[pyo3::pymethods]
         impl $struct {
-            /// Position of the object ``[x, y, z]`` in meters.
             #[getter]
             fn position(&self) -> [f64; 3] {
                 self.inner.position().into()
@@ -32,7 +31,6 @@ macro_rules! impl_pypose {
                 self.inner.set_position(pos.0);
             }
 
-            /// Orientation as a unit quaternion ``[x, y, z, w]``.
             #[getter]
             fn orientation<'py>(
                 &self,
@@ -46,28 +44,14 @@ macro_rules! impl_pypose {
                 self.inner.set_orientation(rot.0);
             }
 
-            /// Translate the object by a displacement vector.
-            ///
-            /// Args:
-            ///     translation (list): Displacement ``[dx, dy, dz]`` in meters.
             fn translate(&mut self, translation: crate::util::ArrayLike3) {
                 self.inner.translate(translation.0);
             }
 
-            /// Rotate the object about its own origin using a unit quaternion.
-            ///
-            /// Args:
-            ///     rot (Rotation or list): Rotation to apply. Can be a ``scipy.spatial.transform.Rotation``
-            ///         object or a unit quaternion as a list.
             fn rotate(&mut self, rot: crate::util::PyRotation) {
                 self.inner.rotate(rot.0);
             }
 
-            /// Rotate the object about an arbitrary anchor point using a unit quaternion.
-            ///
-            /// Args:
-            ///     rot (Rotation or list): Rotation to apply.
-            ///     anchor (list): Anchor point ``[x, y, z]`` in meters about which to rotate.
             fn rotate_anchor(
                 &mut self,
                 rot: crate::util::PyRotation,
@@ -86,15 +70,6 @@ macro_rules! impl_compute_B {
     ($struct:ty) => {
         #[pyo3::pymethods]
         impl $struct {
-            /// Compute the magnetic flux density **B** at a batch of observer points.
-            ///
-            /// Args:
-            ///     points (numpy.ndarray): Array of shape ``(N, 3)`` containing the observer
-            ///         positions ``[x, y, z]`` in meters.
-            ///
-            /// Returns:
-            ///     numpy.ndarray: Array of shape ``(N, 3)`` with the ``[Bx, By, Bz]`` field
-            ///     vectors in Tesla at each observer point.
             #[pyo3(name = "compute_B")]
             #[allow(non_snake_case)]
             fn compute_B<'py>(
