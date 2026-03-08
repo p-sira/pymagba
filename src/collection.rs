@@ -252,60 +252,26 @@ impl ObserverCollection {
         )
     }
 
-    fn read_all_cylinder(&self, source: &CylinderMagnet, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let results = self.inner.read_all(&source.inner);
-        let list = PyList::empty(py);
-        for o in results {
-            list.append(sensor_output_to_py(py, o))?;
-        }
-        Ok(list.into_any().unbind())
-    }
-
-    fn read_all_cuboid(&self, source: &CuboidMagnet, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let results = self.inner.read_all(&source.inner);
-        let list = PyList::empty(py);
-        for o in results {
-            list.append(sensor_output_to_py(py, o))?;
-        }
-        Ok(list.into_any().unbind())
-    }
-
-    fn read_all_dipole(&self, source: &Dipole, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let results = self.inner.read_all(&source.inner);
-        let list = PyList::empty(py);
-        for o in results {
-            list.append(sensor_output_to_py(py, o))?;
-        }
-        Ok(list.into_any().unbind())
-    }
-
-    fn read_all_collection(
-        &self,
-        source: &SourceCollection,
-        py: Python<'_>,
-    ) -> PyResult<Py<PyAny>> {
-        let results = self.inner.read_all(&source.inner);
-        let list = PyList::empty(py);
-        for o in results {
-            list.append(sensor_output_to_py(py, o))?;
-        }
-        Ok(list.into_any().unbind())
-    }
-
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        if let Ok(m) = source.extract::<PyRef<'_, CylinderMagnet>>() {
-            self.read_all_cylinder(&m, py)
+        let results = if let Ok(m) = source.extract::<PyRef<'_, CylinderMagnet>>() {
+            self.inner.read_all(&m.inner)
         } else if let Ok(m) = source.extract::<PyRef<'_, CuboidMagnet>>() {
-            self.read_all_cuboid(&m, py)
+            self.inner.read_all(&m.inner)
         } else if let Ok(m) = source.extract::<PyRef<'_, Dipole>>() {
-            self.read_all_dipole(&m, py)
+            self.inner.read_all(&m.inner)
         } else if let Ok(m) = source.extract::<PyRef<'_, SourceCollection>>() {
-            self.read_all_collection(&m, py)
+            self.inner.read_all(&m.inner)
         } else {
-            Err(pyo3::exceptions::PyTypeError::new_err(
+            return Err(pyo3::exceptions::PyTypeError::new_err(
                 "source must be CylinderMagnet, CuboidMagnet, Dipole, or SourceCollection",
-            ))
+            ));
+        };
+
+        let list = PyList::empty(py);
+        for o in results {
+            list.append(sensor_output_to_py(py, o))?;
         }
+        Ok(list.into_any().unbind())
     }
 }
 
