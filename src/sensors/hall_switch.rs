@@ -55,6 +55,52 @@ impl HallSwitch {
     fn set_b_op(&mut self, b_op: f64) {
         self.inner.set_b_op(b_op);
     }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<pyo3::types::PyDict>> {
+        let dict = pyo3::types::PyDict::new(py);
+        dict.set_item("position", <[f64; 3]>::from(self.inner.position().coords))?;
+        dict.set_item(
+            "orientation",
+            <[f64; 4]>::from(self.inner.orientation().into_inner().coords),
+        )?;
+        let a = self.inner.sensitive_axis();
+        dict.set_item("sensitive_axis", [a.x, a.y, a.z])?;
+        dict.set_item("b_op", *self.inner.b_op())?;
+        Ok(dict.unbind())
+    }
+
+    fn __setstate__(&mut self, state: pyo3::Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
+        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
+        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
+        let sensitive_axis: [f64; 3] = state.get_item("sensitive_axis")?.unwrap().extract()?;
+        let b_op: f64 = state.get_item("b_op")?.unwrap().extract()?;
+        self.inner = MagbaHallSwitch::new(
+            position,
+            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
+                orientation.into(),
+            )),
+            sensitive_axis,
+            b_op,
+        );
+        Ok(())
+    }
+
+    fn __reduce__<'py>(
+        slf: pyo3::Bound<'py, Self>,
+        py: Python<'py>,
+    ) -> PyResult<pyo3::Bound<'py, pyo3::types::PyTuple>> {
+        let cls = slf.get_type();
+        let state = slf.borrow().__getstate__(py)?;
+        let args = pyo3::types::PyTuple::empty(py);
+        pyo3::types::PyTuple::new(
+            py,
+            [
+                cls.into_any(),
+                args.into_any(),
+                state.into_bound(py).into_any(),
+            ],
+        )
+    }
 }
 
 impl_pypose!(HallSwitch);

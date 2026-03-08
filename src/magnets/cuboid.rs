@@ -55,6 +55,35 @@ impl CuboidMagnet {
     fn set_dimensions(&mut self, dim: crate::util::ArrayLike3) {
         self.inner.set_dimensions(dim.0);
     }
+
+    fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<pyo3::types::PyDict>> {
+        let dict = pyo3::types::PyDict::new(py);
+        dict.set_item("position", <[f64; 3]>::from(self.inner.position().coords))?;
+        dict.set_item(
+            "orientation",
+            <[f64; 4]>::from(self.inner.orientation().into_inner().coords),
+        )?;
+        dict.set_item("dimensions", <[f64; 3]>::from(self.inner.dimensions()))?;
+        dict.set_item("polarization", <[f64; 3]>::from(self.inner.polarization()))?;
+        Ok(dict.unbind())
+    }
+
+    fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
+        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
+        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
+        let dimensions: [f64; 3] = state.get_item("dimensions")?.unwrap().extract()?;
+        let polarization: [f64; 3] = state.get_item("polarization")?.unwrap().extract()?;
+
+        self.inner = MagbaCuboidMagnet::new(
+            position,
+            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
+                orientation.into(),
+            )),
+            polarization,
+            dimensions,
+        );
+        Ok(())
+    }
 }
 
 impl_pypose!(CuboidMagnet);

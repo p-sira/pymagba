@@ -18,8 +18,7 @@ use magnets::*;
 use sensors::*;
 
 #[pymodule(gil_used = false)]
-#[pyo3(name = "pymagba_binding")]
-fn pymagba_binding(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SourceCollection>()?;
     m.add_class::<CylinderMagnet>()?;
     m.add_class::<CuboidMagnet>()?;
@@ -28,6 +27,8 @@ fn pymagba_binding(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<LinearHallSensor>()?;
     m.add_class::<HallSwitch>()?;
     m.add_class::<HallLatch>()?;
+
+    let py = m.py();
 
     let magnets = PyModule::new(py, "magnets")?;
     magnets.add_class::<CylinderMagnet>()?;
