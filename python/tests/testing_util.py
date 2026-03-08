@@ -20,8 +20,14 @@ class TestData(ABC):
 
     @staticmethod
     def _get_test_data_paths(data_path_str: str) -> list[Path]:
-        """This function helps with numbering.
-        Path is relative to python/tests/data"""
+        """Helper to generate paths for numbered test data files.
+
+        Args:
+            data_path_str: Base name for the data files.
+
+        Returns:
+            Paths relative to python/tests/data.
+        """
         return [
             Path(f"python/tests/data/") / (data_path_str + f"{i}.npy") for i in range(5)
         ]
@@ -29,28 +35,27 @@ class TestData(ABC):
     @staticmethod
     @abstractmethod
     def get_test_data_paths() -> list[Path]:
-        """Get actual data paths."""
+        """Get the paths to the actual test data files."""
         pass
 
     @staticmethod
     @abstractmethod
     def get_test_params() -> list[Any]:
-        """List of params for:
-        - magnets.position
-        - magnets.orientation
-        - magnets.translate
-        - magnets.rotate
+        """List parameters used for pose transformation tests.
+
+        Returns:
+            Parameters for position, orientation, translation, and rotation.
         """
         pass
 
 
 def generate_general_expected_results(magnet, test_data_class: type[TestData]) -> None:
-    """Generate expected test results:
-    - Starting field
-    - Setting position
-    - Setting orientation
-    - Moving
-    - Rotating"""
+    """Generate and save expected results for a general test suite.
+
+    Args:
+        magnet: The magnetic source object to test.
+        test_data_class: Class providing test points and parameters.
+    """
     points = test_data_class.get_points()
     data_paths = test_data_class.get_test_data_paths()
     test_params = test_data_class.get_test_params()
@@ -73,12 +78,14 @@ def generate_general_expected_results(magnet, test_data_class: type[TestData]) -
 def run_test_general(
     magnet, test_data_class: type[TestData], rtol=1e-6, atol=0
 ) -> None:
-    """Perform test against expected test results:
-    - Starting field
-    - Setting position
-    - Setting orientation
-    - Moving
-    - Rotating"""
+    """Validate a source object against pre-generated expected results.
+
+    Args:
+        magnet: The magnetic source object to test.
+        test_data_class: Class providing test points and parameters.
+        rtol: Relative tolerance for comparisons.
+        atol: Absolute tolerance for comparisons.
+    """
     from scipy.spatial.transform import Rotation
 
     points = test_data_class.get_points()

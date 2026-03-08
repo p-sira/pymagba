@@ -5,7 +5,10 @@
 
 use pyo3::prelude::*;
 
-/// A wrapper for extracting 3-element arrays from Python objects (lists, tuples, numpy arrays).
+/// A wrapper for extracting 3-element arrays from Python objects.
+///
+/// Supports lists, tuples, and numpy arrays by converting them to a fixed-size
+/// array [f64; 3] if they contain exactly 3 elements.
 pub struct ArrayLike3(pub [f64; 3]);
 
 impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
@@ -29,8 +32,10 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
     }
 }
 
-/// A wrapper for extracting a batch of 3D points (N, 3), supporting lists, tuples, and numpy arrays.
-/// Can also handle a single 1D point [x, y, z] by converting it to [[x, y, z]].
+/// A wrapper for extracting a batch of 3D points (N, 3).
+///
+/// Supports lists, tuples, and numpy arrays. Also handles a single 1D point
+/// [x, y, z] by converting it to a single-element batch [[x, y, z]].
 pub struct PointsLike(pub Vec<nalgebra::Point3<f64>>);
 
 impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
@@ -65,7 +70,10 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
     }
 }
 
-/// A wrapper for orientation, supporting scipy Rotation and 4-element arrays [x, y, z, w].
+/// A wrapper for orientation transformations.
+///
+/// Supports scipy.spatial.transform.Rotation objects and 4-element arrays
+/// representing quaternions as [x, y, z, w].
 pub struct PyRotation(pub nalgebra::UnitQuaternion<f64>);
 
 impl<'a, 'py> FromPyObject<'a, 'py> for PyRotation {

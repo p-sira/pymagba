@@ -36,7 +36,7 @@ def magba_magnet() -> CylinderMagnet:
     return CylinderMagnet(
         position=(0, 0, 0),
         orientation=Rotation.identity(),
-        radius=0.1,
+        diameter=0.2,
         height=0.2,
         polarization=(1, 2, 3),
     )
@@ -53,7 +53,7 @@ def magpy_magnet() -> Cylinder:
 
 
 def compute_magba(magnet: CylinderMagnet, observers: FloatArray):
-    magnet.get_B(observers)
+    magnet.compute_B(observers)
 
 
 def compute_magpy(magnet: Cylinder, observers: FloatArray):

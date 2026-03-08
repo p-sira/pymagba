@@ -8,48 +8,7 @@ use pyo3::prelude::*;
 
 use crate::impl_pypose;
 
-/// A physical representation of a Hall effect latch sensor.
-///
-/// Outputs a digital ``True``/``False`` reading based on the magnetic operate point (``b_op``)
-/// and release point (``b_rp``) thresholds. Provides **hysteresis** by maintaining internal state:
-///
-/// - When projected field ≥ ``b_op``: state becomes ``True`` (Active).
-/// - When projected field ≤ ``b_rp``: state becomes ``False`` (Inactive).
-/// - When field is between ``b_rp`` and ``b_op``: state is preserved.
-///
-/// Args:
-///     position (list, optional): Sensor position ``[x, y, z]`` in meters.
-///         Defaults to ``[0.0, 0.0, 0.0]``.
-///     orientation (list, optional): Orientation as a unit quaternion ``[x, y, z, w]``.
-///         Defaults to the identity quaternion.
-///     sensitive_axis (list, optional): The local axis along which the field is measured
-///         ``[ax, ay, az]``. Normalized internally. Defaults to ``[0.0, 0.0, 1.0]`` (Z-axis).
-///     b_op (float, optional): Magnetic operate point in Tesla. Field must exceed
-///         this to switch ON. Defaults to ``0.010`` (10 mT).
-///     b_rp (float, optional): Magnetic release point in Tesla. Field must fall
-///         below this to switch OFF. Defaults to ``-0.010`` (-10 mT).
-///
-/// Examples:
-///
-///     .. code-block:: python
-///
-///         from pymagba.sensors import HallLatch
-///         from pymagba.magnets import CylinderMagnet
-///
-///         magnet = CylinderMagnet(
-///             position=[0.0, 0.0, 0.01],
-///             diameter=0.01,
-///             height=0.005,
-///             polarization=[0.0, 0.0, 1.0],
-///         )
-///         sensor = HallLatch(
-///             position=[0.0, 0.0, 0.025],
-///             sensitive_axis=[0.0, 0.0, 1.0],
-///             b_op=0.010,
-///             b_rp=-0.010,
-///         )
-///         state = sensor.read_state_cylinder(magnet)  # True if latched ON
-#[pyclass(from_py_object)]
+#[pyclass(subclass, from_py_object)]
 #[derive(Clone)]
 pub struct HallLatch {
     pub(crate) inner: MagbaHallLatch<f64>,
@@ -77,7 +36,6 @@ impl HallLatch {
         }
     }
 
-    /// The local sensitive axis ``[ax, ay, az]`` (unit vector). Normalized internally.
     #[getter]
     fn sensitive_axis(&self) -> [f64; 3] {
         let a = self.inner.sensitive_axis();
@@ -89,7 +47,6 @@ impl HallLatch {
         self.inner.set_sensitive_axis(axis.0);
     }
 
-    /// Magnetic operate point in Tesla. The sensor switches ON when the projected field exceeds this value.
     #[getter]
     fn b_op(&self) -> f64 {
         *self.inner.b_op()
@@ -100,7 +57,6 @@ impl HallLatch {
         self.inner.set_b_op(b_op);
     }
 
-    /// Magnetic release point in Tesla. The sensor switches OFF when the projected field falls below this value.
     #[getter]
     fn b_rp(&self) -> f64 {
         *self.inner.b_rp()
