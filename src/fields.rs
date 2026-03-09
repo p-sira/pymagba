@@ -3,14 +3,11 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-use magba::base::Source;
-use magba::magnets::{
-    CuboidMagnet as MagbaCuboidMagnet, CylinderMagnet as MagbaCylinderMagnet, Dipole as MagbaDipole,
-};
+use nalgebra::Vector3;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
-use crate::util::{ArrayLike3, PointsLike, PyRotation};
+use crate::util::{vec3_to_pyarray2, ArrayLike3, PointsLike, PyRotation};
 
 #[pymodule]
 pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -50,14 +47,33 @@ pub fn cylinder_B<'py>(
     height: f64,
     polarization: Option<ArrayLike3>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
+    let points = points.0;
+    let n = points.len();
+
+    // Map options to defaults
     let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
     let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
 
-    let magnet = MagbaCylinderMagnet::new(pos, rot, pol, diameter, height);
-    compute_B_batch_to_numpy(py, points, &magnet)
+    // Pre-allocate the result buffer
+    let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
+
+    // Multithreaded computation
+    py.detach(|| {
+        magba::fields::cylinder_B_batch(
+            &points,
+            pos.into(),
+            rot,
+            pol.into(),
+            diameter,
+            height,
+            results.as_mut_slice(),
+        );
+    });
+
+    vec3_to_pyarray2(py, results)
 }
 
 #[gen_stub_pyfunction]
@@ -84,14 +100,22 @@ pub fn dipole_B<'py>(
     orientation: Option<PyRotation>,
     moment: Option<ArrayLike3>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
+    let points = points.0;
+    let n = points.len();
+
     let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
     let m = moment.map(|m| m.0).unwrap_or([0.0, 0.0, 0.0]);
 
-    let dipole = MagbaDipole::new(pos, rot, m);
-    compute_B_batch_to_numpy(py, points, &dipole)
+    let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
+
+    py.detach(|| {
+        magba::fields::dipole_B_batch(&points, pos.into(), rot, m.into(), results.as_mut_slice());
+    });
+
+    vec3_to_pyarray2(py, results)
 }
 
 #[gen_stub_pyfunction]
@@ -121,37 +145,28 @@ pub fn cuboid_B<'py>(
     dimensions: Option<ArrayLike3>,
     polarization: Option<ArrayLike3>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
+    let points = points.0;
+    let n = points.len();
+
     let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-    let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
     let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
+    let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
 
-    let magnet = MagbaCuboidMagnet::new(pos, rot, pol, dim);
-    compute_B_batch_to_numpy(py, points, &magnet)
-}
+    let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-#[inline]
-fn compute_B_batch_to_numpy<'py>(
-    py: Python<'py>,
-    points: PointsLike,
-    source: &impl Source<f64>,
-) -> Bound<'py, numpy::PyArray2<f64>> {
-    use ndarray::Array2;
-    use numpy::IntoPyArray;
+    py.detach(|| {
+        magba::fields::cuboid_B_batch(
+            &points,
+            pos.into(),
+            rot,
+            pol.into(),
+            dim.into(),
+            results.as_mut_slice(),
+        );
+    });
 
-    let pts = points.0;
-    let n_points = pts.len();
-
-    let b_field = source.compute_B_batch(&pts);
-
-    let mut out = Array2::<f64>::zeros((n_points, 3));
-    for i in 0..n_points {
-        out[[i, 0]] = b_field[i].x;
-        out[[i, 1]] = b_field[i].y;
-        out[[i, 2]] = b_field[i].z;
-    }
-
-    out.into_pyarray(py)
+    vec3_to_pyarray2(py, results)
 }

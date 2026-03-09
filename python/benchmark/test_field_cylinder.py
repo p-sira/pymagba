@@ -1,13 +1,13 @@
 # PyMagba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
-import magpylib
+import magpylib._src.fields.field_BH_cylinder
 import numpy as np
 import pytest
 from pytest_benchmark.plugin import benchmark
 from scipy.spatial.transform import Rotation
 
-import pymagba
+import pymagba.fields
 
 
 @pytest.fixture(scope="function")
@@ -21,7 +21,7 @@ def magpy_args():
 
 
 @pytest.fixture(scope="session")
-def observers() -> FloatArray:
+def observers():
     N = 1000
     return np.array(
         [
@@ -40,11 +40,11 @@ def observers() -> FloatArray:
     )
 
 
-def compute_magba(observers: FloatArray, args):
+def compute_magba(observers, args):
     pymagba.fields.cylinder_B(observers, *args)
 
 
-def compute_magpy(observers: FloatArray, args):
+def compute_magpy(observers, args):
     magpylib._src.fields.field_BH_cylinder._BHJM_magnet_cylinder("B", observers, *args)
 
 
