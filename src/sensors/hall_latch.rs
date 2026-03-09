@@ -22,9 +22,9 @@ impl HallLatch {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, sensitive_axis=None, b_op=0.010, b_rp=-0.010))]
     fn new(
-        position: Option<crate::util::ArrayLike3>,
-        orientation: Option<crate::util::PyRotation>,
-        sensitive_axis: Option<crate::util::ArrayLike3>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
+        sensitive_axis: Option<crate::base::ArrayLike3>,
         b_op: f64,
         b_rp: f64,
     ) -> Self {
@@ -46,7 +46,7 @@ impl HallLatch {
     }
 
     #[setter]
-    fn set_sensitive_axis(&mut self, axis: crate::util::ArrayLike3) {
+    fn set_sensitive_axis(&mut self, axis: crate::base::ArrayLike3) {
         self.inner.set_sensitive_axis(axis.0);
     }
 

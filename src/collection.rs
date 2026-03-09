@@ -173,8 +173,8 @@ impl ObserverCollection {
     #[pyo3(signature = (sensors=None, position=None, orientation=None))]
     fn new(
         sensors: Option<Vec<Py<PyAny>>>,
-        position: Option<crate::util::ArrayLike3>,
-        orientation: Option<crate::util::PyRotation>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
         py: Python<'_>,
     ) -> PyResult<Self> {
         let mut components: Vec<ObserverComponent<f64>> = Vec::new();

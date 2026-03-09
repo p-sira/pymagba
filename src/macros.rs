@@ -28,7 +28,7 @@ macro_rules! impl_pypose {
             }
 
             #[setter]
-            fn set_position(&mut self, pos: crate::util::ArrayLike3) {
+            fn set_position(&mut self, pos: crate::base::ArrayLike3) {
                 self.inner.set_position(pos.0);
             }
 
@@ -37,26 +37,26 @@ macro_rules! impl_pypose {
                 &self,
                 py: ::pyo3::Python<'py>,
             ) -> ::pyo3::PyResult<::pyo3::Bound<'py, ::pyo3::PyAny>> {
-                crate::util::PyRotation(self.inner.orientation()).into_scipy_rotation(py)
+                crate::base::PyRotation(self.inner.orientation()).into_scipy_rotation(py)
             }
 
             #[setter]
-            fn set_orientation(&mut self, rot: crate::util::PyRotation) {
+            fn set_orientation(&mut self, rot: crate::base::PyRotation) {
                 self.inner.set_orientation(rot.0);
             }
 
-            fn translate(&mut self, translation: crate::util::ArrayLike3) {
+            fn translate(&mut self, translation: crate::base::ArrayLike3) {
                 self.inner.translate(translation.0);
             }
 
-            fn rotate(&mut self, rot: crate::util::PyRotation) {
+            fn rotate(&mut self, rot: crate::base::PyRotation) {
                 self.inner.rotate(rot.0);
             }
 
             fn rotate_anchor(
                 &mut self,
-                rot: crate::util::PyRotation,
-                anchor: crate::util::ArrayLike3,
+                rot: crate::base::PyRotation,
+                anchor: crate::base::ArrayLike3,
             ) {
                 self.inner.rotate_anchor(rot.0, anchor.0);
             }
@@ -76,7 +76,7 @@ macro_rules! impl_compute_B {
             fn compute_B<'py>(
                 &self,
                 py: pyo3::Python<'py>,
-                points: crate::util::PointsLike,
+                points: crate::base::PointsLike,
             ) -> pyo3::Bound<'py, numpy::PyArray2<f64>> {
                 use magba::base::Source;
 

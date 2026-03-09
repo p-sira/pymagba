@@ -7,7 +7,10 @@ use nalgebra::Vector3;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
-use crate::util::{vec3_to_pyarray2, ArrayLike3, PointsLike, PyRotation};
+use crate::{
+    base::{ArrayLike3, PointsLike, PyRotation},
+    util::vec3_to_pyarray2,
+};
 
 #[pymodule]
 pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {

@@ -22,9 +22,9 @@ impl LinearHallSensor {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, sensitive_axis=None, sensitivity=1.0, supply_voltage=5.0))]
     fn new(
-        position: Option<crate::util::ArrayLike3>,
-        orientation: Option<crate::util::PyRotation>,
-        sensitive_axis: Option<crate::util::ArrayLike3>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
+        sensitive_axis: Option<crate::base::ArrayLike3>,
         sensitivity: f64,
         supply_voltage: f64,
     ) -> Self {
@@ -46,7 +46,7 @@ impl LinearHallSensor {
     }
 
     #[setter]
-    fn set_sensitive_axis(&mut self, axis: crate::util::ArrayLike3) {
+    fn set_sensitive_axis(&mut self, axis: crate::base::ArrayLike3) {
         let sensitivity = self.inner.sensitivity();
         let new_inner = MagbaLinearHallSensor::new(
             self.inner.position(),

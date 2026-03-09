@@ -225,7 +225,6 @@ def cuboid_B(points: typing.Sequence[typing.Sequence[float]], position: typing.O
     Calculates the magnetic field of a cuboid magnet.
     
     Args:
-    
         points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
             Can be a single point or an (N, 3) array of points.
         position (ArrayLike3, optional): Center of the cuboid [x, y, z] in meters.
@@ -268,7 +267,6 @@ def dipole_B(points: typing.Sequence[typing.Sequence[float]], position: typing.O
     Calculates the magnetic field of a magnetic dipole source.
     
     Args:
-    
         points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
             Can be a single point or an (N, 3) array of points.
         position (ArrayLike3, optional): Position of the dipole [x, y, z] in meters.

@@ -22,9 +22,9 @@ impl HallSwitch {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, sensitive_axis=None, b_op=0.010))]
     fn new(
-        position: Option<crate::util::ArrayLike3>,
-        orientation: Option<crate::util::PyRotation>,
-        sensitive_axis: Option<crate::util::ArrayLike3>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
+        sensitive_axis: Option<crate::base::ArrayLike3>,
         b_op: f64,
     ) -> Self {
         let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
@@ -45,7 +45,7 @@ impl HallSwitch {
     }
 
     #[setter]
-    fn set_sensitive_axis(&mut self, axis: crate::util::ArrayLike3) {
+    fn set_sensitive_axis(&mut self, axis: crate::base::ArrayLike3) {
         self.inner.set_sensitive_axis(axis.0);
     }
 

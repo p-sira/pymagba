@@ -22,10 +22,10 @@ impl CuboidMagnet {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, dimensions=None, polarization=None))]
     fn new(
-        position: Option<crate::util::ArrayLike3>,
-        orientation: Option<crate::util::PyRotation>,
-        dimensions: Option<crate::util::ArrayLike3>,
-        polarization: Option<crate::util::ArrayLike3>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
+        dimensions: Option<crate::base::ArrayLike3>,
+        polarization: Option<crate::base::ArrayLike3>,
     ) -> Self {
         let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
         let rot = orientation
@@ -45,7 +45,7 @@ impl CuboidMagnet {
     }
 
     #[setter]
-    fn set_polarization(&mut self, pol: crate::util::ArrayLike3) {
+    fn set_polarization(&mut self, pol: crate::base::ArrayLike3) {
         self.inner.set_polarization(pol.0);
     }
 
@@ -55,7 +55,7 @@ impl CuboidMagnet {
     }
 
     #[setter]
-    fn set_dimensions(&mut self, dim: crate::util::ArrayLike3) {
+    fn set_dimensions(&mut self, dim: crate::base::ArrayLike3) {
         self.inner.set_dimensions(dim.0);
     }
 

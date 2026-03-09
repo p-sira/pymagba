@@ -7,11 +7,13 @@
 
 use pyo3::prelude::*;
 
+mod base;
+mod util;
+
 mod collection;
 mod fields;
 mod magnets;
 mod sensors;
-mod util;
 
 #[macro_use]
 mod macros;

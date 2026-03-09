@@ -22,11 +22,11 @@ impl CylinderMagnet {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, diameter=1.0, height=1.0, polarization=None))]
     fn new(
-        position: Option<crate::util::ArrayLike3>,
-        orientation: Option<crate::util::PyRotation>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
         diameter: f64,
         height: f64,
-        polarization: Option<crate::util::ArrayLike3>,
+        polarization: Option<crate::base::ArrayLike3>,
     ) -> Self {
         let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
         let rot = orientation
@@ -65,7 +65,7 @@ impl CylinderMagnet {
     }
 
     #[setter]
-    fn set_polarization(&mut self, pol: crate::util::ArrayLike3) {
+    fn set_polarization(&mut self, pol: crate::base::ArrayLike3) {
         self.inner.set_polarization(pol.0);
     }
 

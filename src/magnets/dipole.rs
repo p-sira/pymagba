@@ -22,9 +22,9 @@ impl Dipole {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, moment=None))]
     fn new(
-        position: Option<crate::util::ArrayLike3>,
-        orientation: Option<crate::util::PyRotation>,
-        moment: Option<crate::util::ArrayLike3>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
+        moment: Option<crate::base::ArrayLike3>,
     ) -> Self {
         let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
         let rot = orientation
@@ -43,7 +43,7 @@ impl Dipole {
     }
 
     #[setter]
-    fn set_moment(&mut self, moment: crate::util::ArrayLike3) {
+    fn set_moment(&mut self, moment: crate::base::ArrayLike3) {
         self.inner.set_moment(moment.0);
     }
 
