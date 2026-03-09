@@ -3,7 +3,9 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-use numpy::{PyReadonlyArray1, PyReadonlyArray2};
+use nalgebra::Vector3;
+use numpy::prelude::*;
+use numpy::{PyArray1, PyArray2, PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 use pyo3_stub_gen::{PyStubType, TypeInfo};
 
@@ -84,20 +86,25 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
         if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, f64>>() {
             let view = arr2.as_array();
             let shape = view.shape();
-            
+
             if shape[1] == 3 {
                 let n = shape[0];
                 let mut pts = Vec::with_capacity(n);
                 for i in 0..n {
-                    pts.push(nalgebra::Point3::new(view[[i, 0]], view[[i, 1]], view[[i, 2]]));
+                    pts.push(nalgebra::Point3::new(
+                        view[[i, 0]],
+                        view[[i, 1]],
+                        view[[i, 2]],
+                    ));
                 }
                 return Ok(PointsLike(pts));
             }
         }
 
-        // 2. Native Python lists of lists: [[x, y, z], ...] 
+        // 2. Native Python lists of lists: [[x, y, z], ...]
         if let Ok(list_2d) = ob.extract::<Vec<[f64; 3]>>() {
-            let pts = list_2d.into_iter()
+            let pts = list_2d
+                .into_iter()
                 .map(|p| nalgebra::Point3::new(p[0], p[1], p[2]))
                 .collect();
             return Ok(PointsLike(pts));
@@ -107,13 +114,13 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
         // This handles both PyReadonlyArray1 and flat python lists [x, y, z]
         if let Ok(single_point) = ob.extract::<ArrayLike3>() {
             let arr = single_point.0;
-            return Ok(PointsLike(vec![
-                nalgebra::Point3::new(arr[0], arr[1], arr[2])
-            ]));
+            return Ok(PointsLike(vec![nalgebra::Point3::new(
+                arr[0], arr[1], arr[2],
+            )]));
         }
 
         Err(pyo3::exceptions::PyTypeError::new_err(
-            "Expected a NumPy array of shape (3,) or (N, 3), or a compatible Python list."
+            "Expected a NumPy array of shape (3,) or (N, 3), or a compatible Python list.",
         ))
     }
 }
@@ -186,4 +193,21 @@ impl PyRotation {
         let quat = [q.i, q.j, q.k, q.w];
         rot_cls.call_method1("from_quat", (quat,))
     }
+}
+
+/// Efficiently converts a Vec<Vector3<f64>> into a (N, 3) PyArray2.
+#[inline]
+pub fn vec3_to_pyarray2<'py>(
+    py: Python<'py>,
+    vec3: Vec<Vector3<f64>>,
+) -> Bound<'py, PyArray2<f64>> {
+    let n = vec3.len();
+
+    // Flatten to 1D
+    let flat_results: Vec<f64> = vec3.into_iter().flat_map(|v| [v.x, v.y, v.z]).collect();
+
+    // Move to NumPy and reshape to 2D
+    PyArray1::from_vec(py, flat_results)
+        .reshape([n, 3])
+        .unwrap()
 }
