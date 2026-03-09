@@ -3,10 +3,10 @@
 
 from pathlib import Path
 from typing import Any
-from magpylib.magnet import Cylinder
+import magpylib as magpy
 import numpy as np
 from scipy.spatial.transform import Rotation
-from pymagba.magnets import CylinderMagnet
+from pymagba.magnets import Dipole
 from tests.testing_util import (
     TestData,
     generate_general_expected_results,
@@ -16,18 +16,17 @@ from tests.testing_util import (
 from pymagba.utils import FloatArray
 
 
-class SmallCylinderTestData(TestData):
-    RADIUS = 3e-3
-    HEIGHT = 5e-3
-    POL = np.array((1, 2, 3))
+class DipoleTestData(TestData):
+    MOMENT = np.array((0.123, 0.456, 0.789))
 
     @staticmethod
     def get_points() -> FloatArray:
+        # Dipole has singularity at origin, but get_small_grid is likely fine
         return get_small_grid()
 
     @staticmethod
     def get_test_data_paths() -> list[Path]:
-        return TestData._get_test_data_paths("cylinder/small-cylinder-data")
+        return TestData._get_test_data_paths("dipole/small-dipole-data")
 
     @staticmethod
     def get_test_params() -> list[Any]:
@@ -39,22 +38,19 @@ class SmallCylinderTestData(TestData):
         ]
 
 
-def generate_small_cylinder_expected():
-    magnet = Cylinder(
-        dimension=(SmallCylinderTestData.RADIUS * 2, SmallCylinderTestData.HEIGHT),
-        polarization=SmallCylinderTestData.POL,
+def generate_dipole_expected():
+    magnet = magpy.misc.Dipole(
+        moment=DipoleTestData.MOMENT,
     )
-    generate_general_expected_results(magnet, SmallCylinderTestData)
+    generate_general_expected_results(magnet, DipoleTestData)
 
 
-def test_small_cylinder():
-    magnet = CylinderMagnet(
-        diameter=SmallCylinderTestData.RADIUS * 2,
-        height=SmallCylinderTestData.HEIGHT,
-        polarization=SmallCylinderTestData.POL,
+def test_dipole():
+    magnet = Dipole(
+        moment=DipoleTestData.MOMENT,
     )
-    run_test_general(magnet, SmallCylinderTestData, rtol=5e-4, atol=1e-14)
+    run_test_general(magnet, DipoleTestData, rtol=1e-6, atol=1e-14)
 
 
 if __name__ == "__main__":
-    generate_small_cylinder_expected()
+    generate_dipole_expected()

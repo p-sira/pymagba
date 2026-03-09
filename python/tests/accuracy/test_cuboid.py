@@ -3,10 +3,10 @@
 
 from pathlib import Path
 from typing import Any
-from magpylib.magnet import Cylinder
+from magpylib.magnet import Cuboid
 import numpy as np
 from scipy.spatial.transform import Rotation
-from pymagba.magnets import CylinderMagnet
+from pymagba.magnets import CuboidMagnet
 from tests.testing_util import (
     TestData,
     generate_general_expected_results,
@@ -16,10 +16,9 @@ from tests.testing_util import (
 from pymagba.utils import FloatArray
 
 
-class SmallCylinderTestData(TestData):
-    RADIUS = 3e-3
-    HEIGHT = 5e-3
-    POL = np.array((1, 2, 3))
+class CuboidTestData(TestData):
+    DIMENSIONS = np.array((0.01, 0.02, 0.03))
+    POL = np.array((1.0, 2.0, 3.0))
 
     @staticmethod
     def get_points() -> FloatArray:
@@ -27,7 +26,7 @@ class SmallCylinderTestData(TestData):
 
     @staticmethod
     def get_test_data_paths() -> list[Path]:
-        return TestData._get_test_data_paths("cylinder/small-cylinder-data")
+        return TestData._get_test_data_paths("cuboid/small-cuboid-data")
 
     @staticmethod
     def get_test_params() -> list[Any]:
@@ -39,22 +38,21 @@ class SmallCylinderTestData(TestData):
         ]
 
 
-def generate_small_cylinder_expected():
-    magnet = Cylinder(
-        dimension=(SmallCylinderTestData.RADIUS * 2, SmallCylinderTestData.HEIGHT),
-        polarization=SmallCylinderTestData.POL,
+def generate_cuboid_expected():
+    magnet = Cuboid(
+        dimension=CuboidTestData.DIMENSIONS,
+        polarization=CuboidTestData.POL,
     )
-    generate_general_expected_results(magnet, SmallCylinderTestData)
+    generate_general_expected_results(magnet, CuboidTestData)
 
 
-def test_small_cylinder():
-    magnet = CylinderMagnet(
-        diameter=SmallCylinderTestData.RADIUS * 2,
-        height=SmallCylinderTestData.HEIGHT,
-        polarization=SmallCylinderTestData.POL,
+def test_cuboid():
+    magnet = CuboidMagnet(
+        dimensions=CuboidTestData.DIMENSIONS,
+        polarization=CuboidTestData.POL,
     )
-    run_test_general(magnet, SmallCylinderTestData, rtol=5e-4, atol=1e-14)
+    run_test_general(magnet, CuboidTestData, rtol=1e-6, atol=1e-14)
 
 
 if __name__ == "__main__":
-    generate_small_cylinder_expected()
+    generate_cuboid_expected()
