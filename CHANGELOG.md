@@ -18,6 +18,10 @@ This version corresponds to Magba v0.4.1.
 - **Improve Performance:** Reduce Python object parsing overhead.
 - **Improve Documentation:** Add common sections for transformation and source methods for easy comprehension.
 
+### Internal Structure Improvements
+
+- Implement `SourceRef` and `ObserverRef` enums to facilitate polymorphic Python class extraction.
+
 ## 0.3.0
 
 - Use PyO3's PyClass to bind directly to Magba structs.
