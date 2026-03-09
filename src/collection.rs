@@ -1,3 +1,9 @@
+/*
+ * PyMagba is licensed under The 3-Clause BSD, see LICENSE.
+ * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
+ */
+
+use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, SourceComponent};
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
@@ -5,7 +11,10 @@ use pyo3::IntoPyObject;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 use std::sync::Arc;
 
-use crate::{impl_compute_B, impl_pypose, magnets::*};
+use crate::{
+    base::{ObserverRef, SourceRef},
+    impl_compute_B, impl_pypose,
+};
 
 #[gen_stub_pyclass]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
@@ -15,37 +24,22 @@ pub struct SourceCollection {
     pub(crate) sources: Arc<Vec<Py<PyAny>>>,
 }
 
-use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, SourceComponent};
-
-// SourceCollection does not implement Clone manually because Py<PyAny>
-// cloning usually requires a Python token or GIL, and PyO3 handles
-// class instance references.
-
 #[gen_stub_pymethods]
 #[pymethods]
 impl SourceCollection {
     #[new]
     #[pyo3(signature = (sources=None))]
     fn new(sources: Option<Vec<Py<PyAny>>>, py: Python<'_>) -> PyResult<Self> {
-        let mut components: Vec<SourceComponent<f64>> = Vec::new();
         let srcs = sources.unwrap_or_default();
+        let mut components = Vec::with_capacity(srcs.len());
 
         for src in &srcs {
-            if let Ok(m) = src.extract::<PyRef<'_, crate::magnets::CylinderMagnet>>(py) {
-                components.push(m.inner.clone().into());
-            } else if let Ok(m) = src.extract::<PyRef<'_, crate::magnets::CuboidMagnet>>(py) {
-                components.push(m.inner.clone().into());
-            } else if let Ok(m) = src.extract::<PyRef<'_, crate::magnets::Dipole>>(py) {
-                components.push(m.inner.clone().into());
-            } else if let Ok(m) = src.extract::<PyRef<'_, crate::magnets::SphereMagnet>>(py) {
-                components.push(m.inner.clone().into());
-            } else if let Ok(m) = src.extract::<PyRef<'_, crate::currents::CircularCurrent>>(py) {
-                components.push(m.inner.clone().into());
-            } else {
-                return Err(pyo3::exceptions::PyTypeError::new_err(
-                    "sources must be CylinderMagnet, CuboidMagnet, SphereMagnet, Dipole, or CircularCurrent",
-                ));
-            }
+            let s_ref = src.extract::<SourceRef>(py).map_err(|_| {
+                pyo3::exceptions::PyTypeError::new_err(
+                    "sources must be CylinderMagnet, CuboidMagnet, SphereMagnet, Dipole, CircularCurrent, or SourceCollection",
+                )
+            })?;
+            components.push(s_ref.into_component());
         }
 
         Ok(Self {
@@ -68,24 +62,13 @@ impl SourceCollection {
     }
 
     fn append(&mut self, source: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
-        let bound = source.bind(py);
-        if let Ok(m) = bound.extract::<PyRef<'_, crate::magnets::CylinderMagnet>>() {
-            self.inner.push(m.inner.clone());
-        } else if let Ok(m) = bound.extract::<PyRef<'_, crate::magnets::CuboidMagnet>>() {
-            self.inner.push(m.inner.clone());
-        } else if let Ok(m) = bound.extract::<PyRef<'_, crate::magnets::Dipole>>() {
-            self.inner.push(m.inner.clone());
-        } else if let Ok(m) = bound.extract::<PyRef<'_, crate::magnets::SphereMagnet>>() {
-            self.inner.push(m.inner.clone());
-        } else if let Ok(m) = bound.extract::<PyRef<'_, crate::currents::CircularCurrent>>() {
-            self.inner.push(m.inner.clone());
-        } else if let Ok(m) = bound.extract::<PyRef<'_, SourceCollection>>() {
-            self.inner.push(m.inner.clone());
-        } else {
-            return Err(pyo3::exceptions::PyTypeError::new_err(
+        let s_ref = source.extract::<SourceRef>(py).map_err(|_| {
+            pyo3::exceptions::PyTypeError::new_err(
                 "source must be Magnet, CircularCurrent, or SourceCollection",
-            ));
-        }
+            )
+        })?;
+
+        self.inner.push(s_ref.into_component());
 
         let mut new_sources: Vec<Py<PyAny>> =
             self.sources.iter().map(|s| s.clone_ref(py)).collect();
@@ -121,17 +104,10 @@ impl SourceCollection {
         })?;
         let orientation: [f64; 4] = rot_bound.extract()?;
 
-        let mut components: Vec<SourceComponent<f64>> = Vec::new();
+        let mut components: Vec<SourceComponent<f64>> = Vec::with_capacity(sources.len());
         for src in sources.iter() {
-            let bound = src.bind(py);
-            if let Ok(m) = bound.extract::<PyRef<'_, CylinderMagnet>>() {
-                components.push(m.inner.clone().into());
-            } else if let Ok(m) = bound.extract::<PyRef<'_, CuboidMagnet>>() {
-                components.push(m.inner.clone().into());
-            } else if let Ok(m) = bound.extract::<PyRef<'_, Dipole>>() {
-                components.push(m.inner.clone().into());
-            } else if let Ok(m) = bound.extract::<PyRef<'_, SourceCollection>>() {
-                components.push(m.inner.clone().into());
+            if let Ok(s_ref) = src.extract::<SourceRef>(py) {
+                components.push(s_ref.into_component());
             }
         }
 
@@ -185,21 +161,16 @@ impl ObserverCollection {
         orientation: Option<crate::base::PyRotation>,
         py: Python<'_>,
     ) -> PyResult<Self> {
-        let mut components: Vec<ObserverComponent<f64>> = Vec::new();
         let sens = sensors.unwrap_or_default();
+        let mut components = Vec::with_capacity(sens.len());
 
         for s in &sens {
-            if let Ok(s) = s.extract::<PyRef<'_, crate::sensors::LinearHallSensor>>(py) {
-                components.push(s.inner.clone().into());
-            } else if let Ok(s) = s.extract::<PyRef<'_, crate::sensors::HallSwitch>>(py) {
-                components.push(s.inner.clone().into());
-            } else if let Ok(s) = s.extract::<PyRef<'_, crate::sensors::HallLatch>>(py) {
-                components.push(s.inner.clone().into());
-            } else {
-                return Err(pyo3::exceptions::PyTypeError::new_err(
+            let o_ref = s.extract::<ObserverRef>(py).map_err(|_| {
+                pyo3::exceptions::PyTypeError::new_err(
                     "sensors must be LinearHallSensor, HallSwitch, or HallLatch",
-                ));
-            }
+                )
+            })?;
+            components.push(o_ref.into_component());
         }
 
         let pos: nalgebra::Point3<f64> = position
@@ -233,18 +204,13 @@ impl ObserverCollection {
     }
 
     fn append(&mut self, sensor: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
-        let bound = sensor.bind(py);
-        if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::LinearHallSensor>>() {
-            self.inner.push(s.inner.clone());
-        } else if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::HallSwitch>>() {
-            self.inner.push(s.inner.clone());
-        } else if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::HallLatch>>() {
-            self.inner.push(s.inner.clone());
-        } else {
-            return Err(pyo3::exceptions::PyTypeError::new_err(
+        let o_ref = sensor.extract::<ObserverRef>(py).map_err(|_| {
+            pyo3::exceptions::PyTypeError::new_err(
                 "sensor must be LinearHallSensor, HallSwitch, or HallLatch",
-            ));
-        }
+            )
+        })?;
+
+        self.inner.push(o_ref.into_component());
 
         let mut new_sensors: Vec<Py<PyAny>> =
             self.sensors.iter().map(|s| s.clone_ref(py)).collect();
@@ -280,15 +246,10 @@ impl ObserverCollection {
         })?;
         let orientation: [f64; 4] = rot_bound.extract()?;
 
-        let mut components: Vec<ObserverComponent<f64>> = Vec::new();
+        let mut components: Vec<ObserverComponent<f64>> = Vec::with_capacity(sensors.len());
         for s in &sensors {
-            let bound = s.bind(py);
-            if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::LinearHallSensor>>() {
-                components.push(s.inner.clone().into());
-            } else if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::HallSwitch>>() {
-                components.push(s.inner.clone().into());
-            } else if let Ok(s) = bound.extract::<PyRef<'_, crate::sensors::HallLatch>>() {
-                components.push(s.inner.clone().into());
+            if let Ok(o_ref) = s.extract::<ObserverRef>(py) {
+                components.push(o_ref.into_component());
             }
         }
 
@@ -320,23 +281,13 @@ impl ObserverCollection {
     }
 
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let results = if let Ok(m) = source.extract::<PyRef<'_, crate::magnets::CylinderMagnet>>() {
-            self.inner.read_all(&m.inner)
-        } else if let Ok(m) = source.extract::<PyRef<'_, crate::magnets::CuboidMagnet>>() {
-            self.inner.read_all(&m.inner)
-        } else if let Ok(m) = source.extract::<PyRef<'_, crate::magnets::Dipole>>() {
-            self.inner.read_all(&m.inner)
-        } else if let Ok(m) = source.extract::<PyRef<'_, crate::magnets::SphereMagnet>>() {
-            self.inner.read_all(&m.inner)
-        } else if let Ok(m) = source.extract::<PyRef<'_, crate::currents::CircularCurrent>>() {
-            self.inner.read_all(&m.inner)
-        } else if let Ok(m) = source.extract::<PyRef<'_, SourceCollection>>() {
-            self.inner.read_all(&m.inner)
-        } else {
-            return Err(pyo3::exceptions::PyTypeError::new_err(
+        let s_ref = source.extract::<SourceRef>().map_err(|_| {
+            pyo3::exceptions::PyTypeError::new_err(
                 "source must be a valid Magnet, Current, or SourceCollection",
-            ));
-        };
+            )
+        })?;
+
+        let results = self.inner.read_all(s_ref.as_source());
 
         let list = PyList::empty(py);
         for o in results {
