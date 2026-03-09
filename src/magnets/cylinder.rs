@@ -5,15 +5,18 @@
 
 use magba::magnets::CylinderMagnet as MagbaCylinderMagnet;
 use pyo3::prelude::*;
+use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{impl_compute_B, impl_pypose};
 
-#[pyclass(subclass, from_py_object)]
+#[gen_stub_pyclass]
+#[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
 #[derive(Clone)]
 pub struct CylinderMagnet {
     pub(crate) inner: MagbaCylinderMagnet<f64>,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl CylinderMagnet {
     #[new]

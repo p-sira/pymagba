@@ -59,11 +59,45 @@ pip install pymagba
 uv add pymagba
 ```
 
-To install from source:
+To install from source see the[Reproducibility](#reproducibility) section.
+
+
+
+## Reproducibility
+
+Clone into the repository:
 
 ```shell
 git clone https://github.com/p-sira/pymagba.git
 cd pymagba
+```
+
+To reproduce the build:
+
+```shell
+uv sync --group dev
+cargo run --bin stub_gen --no-default-features
 maturin build --release
+```
+
+Installing the build:
+
+```shell
 pip install target/wheels/pymagba-*.whl
+```
+
+Generating the docs:
+
+```shell
+uv sync --group dev
+mkdir docs
+cd docs
+make html
+```
+
+To verify the installation and the generated stubs:
+
+```shell
+uv run pytest python/tests
+uv run mypy python/pymagba
 ```

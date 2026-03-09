@@ -17,6 +17,8 @@ use collection::{ObserverCollection, SourceCollection};
 use magnets::*;
 use sensors::*;
 
+pyo3_stub_gen::define_stub_info_gatherer!(stub_info);
+
 #[pymodule(gil_used = false)]
 fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SourceCollection>()?;

@@ -4,12 +4,26 @@
  */
 
 use pyo3::prelude::*;
+use pyo3_stub_gen::{PyStubType, TypeInfo};
 
 /// A wrapper for extracting 3-element arrays from Python objects.
 ///
 /// Supports lists, tuples, and numpy arrays by converting them to a fixed-size
 /// array [f64; 3] if they contain exactly 3 elements.
 pub struct ArrayLike3(pub [f64; 3]);
+
+impl PyStubType for ArrayLike3 {
+    fn type_output() -> TypeInfo {
+        TypeInfo {
+            name: "typing.Sequence[float]".to_string(),
+            import: [pyo3_stub_gen::ImportRef::Module("typing".into())]
+                .into_iter()
+                .collect(),
+            source_module: None,
+            type_refs: std::collections::HashMap::new(),
+        }
+    }
+}
 
 impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
     type Error = PyErr;
@@ -37,6 +51,19 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
 /// Supports lists, tuples, and numpy arrays. Also handles a single 1D point
 /// [x, y, z] by converting it to a single-element batch [[x, y, z]].
 pub struct PointsLike(pub Vec<nalgebra::Point3<f64>>);
+
+impl PyStubType for PointsLike {
+    fn type_output() -> TypeInfo {
+        TypeInfo {
+            name: "typing.Sequence[typing.Sequence[float]]".to_string(),
+            import: [pyo3_stub_gen::ImportRef::Module("typing".into())]
+                .into_iter()
+                .collect(),
+            source_module: None,
+            type_refs: std::collections::HashMap::new(),
+        }
+    }
+}
 
 impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
     type Error = PyErr;
@@ -75,6 +102,23 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
 /// Supports scipy.spatial.transform.Rotation objects and 4-element arrays
 /// representing quaternions as [x, y, z, w].
 pub struct PyRotation(pub nalgebra::UnitQuaternion<f64>);
+
+impl PyStubType for PyRotation {
+    fn type_output() -> TypeInfo {
+        TypeInfo {
+            name: "typing.Union[scipy.spatial.transform.Rotation, typing.Sequence[float]]"
+                .to_string(),
+            import: [
+                pyo3_stub_gen::ImportRef::Module("scipy".into()),
+                pyo3_stub_gen::ImportRef::Module("typing".into()),
+            ]
+            .into_iter()
+            .collect(),
+            source_module: None,
+            type_refs: std::collections::HashMap::new(),
+        }
+    }
+}
 
 impl<'a, 'py> FromPyObject<'a, 'py> for PyRotation {
     type Error = PyErr;

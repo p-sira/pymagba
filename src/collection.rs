@@ -2,11 +2,13 @@ use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
 use pyo3::IntoPyObject;
+use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 use std::sync::Arc;
 
 use crate::{impl_compute_B, impl_pypose, magnets::*};
 
-#[pyclass(subclass, from_py_object)]
+#[gen_stub_pyclass]
+#[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
 #[derive(Clone)]
 pub struct SourceCollection {
     pub(crate) inner: SourceAssembly<f64>,
@@ -19,6 +21,7 @@ use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, So
 // cloning usually requires a Python token or GIL, and PyO3 handles
 // class instance references.
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl SourceCollection {
     #[new]
@@ -135,33 +138,35 @@ impl SourceCollection {
         Ok(())
     }
 
-    fn __reduce__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyTuple>> {
-        let cls = slf.get_type();
-        let borrow = slf.borrow();
-        let sources_list = PyList::new(py, borrow.sources.as_ref())?;
+    fn __reduce__(&self, py: Python<'_>) -> PyResult<Py<PyTuple>> {
+        let cls = py.get_type::<Self>();
+        let sources_list = PyList::new(py, self.sources.as_ref())?;
         let args = PyTuple::new(py, [sources_list.into_any()])?;
-        let state = borrow.__getstate__(py)?;
-        PyTuple::new(
+        let state = self.__getstate__(py)?;
+        Ok(PyTuple::new(
             py,
             [
                 cls.into_any(),
                 args.into_any(),
                 state.into_bound(py).into_any(),
             ],
-        )
+        )?
+        .unbind())
     }
 }
 
 impl_pypose!(SourceCollection);
 impl_compute_B!(SourceCollection);
 
-#[pyclass(subclass, from_py_object)]
+#[gen_stub_pyclass]
+#[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
 #[derive(Clone)]
 pub struct ObserverCollection {
     pub(crate) inner: ObserverAssembly<f64>,
     pub(crate) sensors: Arc<Vec<Py<PyAny>>>,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl ObserverCollection {
     #[new]
@@ -290,20 +295,20 @@ impl ObserverCollection {
         Ok(())
     }
 
-    fn __reduce__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyTuple>> {
-        let cls = slf.get_type();
-        let borrow = slf.borrow();
-        let sensors_list = PyList::new(py, borrow.sensors.as_ref())?;
+    fn __reduce__(&self, py: Python<'_>) -> PyResult<Py<PyTuple>> {
+        let cls = py.get_type::<Self>();
+        let sensors_list = PyList::new(py, self.sensors.as_ref())?;
         let args = PyTuple::new(py, [sensors_list.into_any()])?;
-        let state = borrow.__getstate__(py)?;
-        PyTuple::new(
+        let state = self.__getstate__(py)?;
+        Ok(PyTuple::new(
             py,
             [
                 cls.into_any(),
                 args.into_any(),
                 state.into_bound(py).into_any(),
             ],
-        )
+        )?
+        .unbind())
     }
 
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {

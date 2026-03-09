@@ -5,15 +5,18 @@
 
 use magba::sensors::hall_effect::HallLatch as MagbaHallLatch;
 use pyo3::prelude::*;
+use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::impl_pypose;
 
-#[pyclass(subclass, from_py_object)]
+#[gen_stub_pyclass]
+#[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
 #[derive(Clone)]
 pub struct HallLatch {
     pub(crate) inner: MagbaHallLatch<f64>,
 }
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl HallLatch {
     #[new]
@@ -99,21 +102,19 @@ impl HallLatch {
         Ok(())
     }
 
-    fn __reduce__<'py>(
-        slf: pyo3::Bound<'py, Self>,
-        py: Python<'py>,
-    ) -> PyResult<pyo3::Bound<'py, pyo3::types::PyTuple>> {
-        let cls = slf.get_type();
-        let state = slf.borrow().__getstate__(py)?;
+    fn __reduce__(&self, py: Python<'_>) -> PyResult<pyo3::Py<pyo3::types::PyTuple>> {
+        let cls = py.get_type::<Self>();
+        let state = self.__getstate__(py)?;
         let args = pyo3::types::PyTuple::empty(py);
-        pyo3::types::PyTuple::new(
+        Ok(pyo3::types::PyTuple::new(
             py,
             [
                 cls.into_any(),
                 args.into_any(),
                 state.into_bound(py).into_any(),
             ],
-        )
+        )?
+        .unbind())
     }
 }
 

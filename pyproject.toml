@@ -31,6 +31,7 @@ dev = [
     "pip-tools>=7.5.3",
     "pytest>=9.0.2",
     "pytest-benchmark>=5.2.3",
+    "mypy>=1.11.2",
 ]
 docs = [
     "sphinx>=8.2.3",

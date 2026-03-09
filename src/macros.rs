@@ -19,6 +19,7 @@
 #[macro_export]
 macro_rules! impl_pypose {
     ($struct:ty) => {
+        #[gen_stub_pymethods]
         #[pyo3::pymethods]
         impl $struct {
             #[getter]
@@ -68,6 +69,7 @@ macro_rules! impl_pypose {
 #[macro_export]
 macro_rules! impl_compute_B {
     ($struct:ty) => {
+        #[gen_stub_pymethods]
         #[pyo3::pymethods]
         impl $struct {
             #[pyo3(name = "compute_B")]
