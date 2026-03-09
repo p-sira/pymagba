@@ -15,6 +15,9 @@ __all__ = [
     "LinearHallSensor",
     "ObserverCollection",
     "SourceCollection",
+    "cuboid_B",
+    "cylinder_B",
+    "dipole_B",
 ]
 
 class CuboidMagnet:
@@ -216,4 +219,66 @@ class SourceCollection:
     def rotate(self, rot: typing.Union[scipy.spatial.transform.Rotation, typing.Sequence[float]]) -> None: ...
     def rotate_anchor(self, rot: typing.Union[scipy.spatial.transform.Rotation, typing.Sequence[float]], anchor: typing.Sequence[float]) -> None: ...
     def compute_B(self, points: typing.Sequence[typing.Sequence[float]]) -> numpy.typing.NDArray[numpy.float64]: ...
+
+def cuboid_B(points: typing.Sequence[typing.Sequence[float]], position: typing.Optional[typing.Sequence[float]] = None, orientation: typing.Optional[typing.Union[scipy.spatial.transform.Rotation, typing.Sequence[float]]] = None, dimensions: typing.Optional[typing.Sequence[float]] = None, polarization: typing.Optional[typing.Sequence[float]] = None) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Calculates the magnetic field of a cuboid magnet.
+    
+    Args:
+    
+        points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
+            Can be a single point or an (N, 3) array of points.
+        position (ArrayLike3, optional): Center of the cuboid [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation of the cuboid.
+            Defaults to identity.
+        dimensions (ArrayLike3, optional): Side lengths [dx, dy, dz] in meters.
+            Defaults to [1.0, 1.0, 1.0].
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 0.0].
+    
+    Returns:
+        numpy.ndarray: Magnetic field (N, 3) in Tesla.
+    """
+
+def cylinder_B(points: typing.Sequence[typing.Sequence[float]], position: typing.Optional[typing.Sequence[float]] = None, orientation: typing.Optional[typing.Union[scipy.spatial.transform.Rotation, typing.Sequence[float]]] = None, diameter: builtins.float = 1.0, height: builtins.float = 1.0, polarization: typing.Optional[typing.Sequence[float]] = None) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Calculates the magnetic field of a cylindrical magnet.
+    
+    Args:
+        points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
+            Can be a single point or an (N, 3) array of points.
+        position (ArrayLike3, optional): Center of the cylinder [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation of the cylinder.
+            Defaults to identity.
+        diameter (float, optional): Diameter of the cylinder in meters.
+            Defaults to 1.0.
+        height (float, optional): Height of the cylinder in meters.
+            Defaults to 1.0.
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 0.0].
+    
+    Returns:
+        numpy.ndarray: Magnetic field (N, 3) in Tesla.
+    """
+
+def dipole_B(points: typing.Sequence[typing.Sequence[float]], position: typing.Optional[typing.Sequence[float]] = None, orientation: typing.Optional[typing.Union[scipy.spatial.transform.Rotation, typing.Sequence[float]]] = None, moment: typing.Optional[typing.Sequence[float]] = None) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Calculates the magnetic field of a magnetic dipole source.
+    
+    Args:
+    
+        points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
+            Can be a single point or an (N, 3) array of points.
+        position (ArrayLike3, optional): Position of the dipole [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation of the dipole.
+            Defaults to identity.
+        moment (ArrayLike3, optional): Magnetic dipole moment vector [mx, my, mz] in A·m².
+            Defaults to [0.0, 0.0, 0.0].
+    
+    Returns:
+        numpy.ndarray: Magnetic field (N, 3) in Tesla.
+    """
 

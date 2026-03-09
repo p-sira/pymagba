@@ -2,17 +2,12 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 import magpylib
-import magpylib._src
-import magpylib._src.fields
-import magpylib._src.fields.field_BH_cylinder
-from magpylib.magnet import Cylinder
 import numpy as np
 import pytest
 from pytest_benchmark.plugin import benchmark
 from scipy.spatial.transform import Rotation
 
 import pymagba
-from pymagba.utils import FloatArray
 
 
 @pytest.fixture(scope="function")
@@ -46,11 +41,11 @@ def observers() -> FloatArray:
 
 
 def compute_magba(observers: FloatArray, args):
-    pymagba.fields.cyl_B(observers, *args)
+    pymagba.fields.cylinder_B(observers, *args)
 
 
 def compute_magpy(observers: FloatArray, args):
-    magpylib._src.fields.field_BH_cylinder.BHJM_magnet_cylinder("B", observers, *args)
+    magpylib._src.fields.field_BH_cylinder._BHJM_magnet_cylinder("B", observers, *args)
 
 
 def test_cyl_field_magba(benchmark, observers, magba_args):

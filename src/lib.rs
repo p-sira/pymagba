@@ -3,9 +3,12 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
+#![allow(non_snake_case)]
+
 use pyo3::prelude::*;
 
 mod collection;
+mod fields;
 mod magnets;
 mod sensors;
 mod util;
@@ -45,6 +48,14 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     sensors.add_class::<HallLatch>()?;
     sensors.add_class::<ObserverCollection>()?;
     m.add_submodule(&sensors)?;
+
+    m.add_function(wrap_pyfunction!(fields::cylinder_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::dipole_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::cuboid_B, &m)?)?;
+
+    let fields_mod = PyModule::new(m.py(), "fields")?;
+    fields::fields(&fields_mod)?;
+    m.add_submodule(&fields_mod)?;
 
     Ok(())
 }

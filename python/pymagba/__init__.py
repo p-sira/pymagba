@@ -13,3 +13,4 @@ from .__about__ import *
 
 from . import magnets
 from . import sensors
+from . import fields

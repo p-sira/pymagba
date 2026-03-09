@@ -6,6 +6,7 @@ This changelog only records significant changes.
 
 - **Index, Append, Len:** Implement for `SourceCollection` and `ObserverCollection`.
 - **Pickle Support:** Allow PyMagba objects to be packed into Python dict, pickled, and reconstruct from the dict.
+- **Field Functions:** Direct access to magnetic field functions, which support parallelization.
 - **Stubs:** Add stubs for autocomplete and typehinting.
 
 ## 0.3.0

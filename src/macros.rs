@@ -73,7 +73,6 @@ macro_rules! impl_compute_B {
         #[pyo3::pymethods]
         impl $struct {
             #[pyo3(name = "compute_B")]
-            #[allow(non_snake_case)]
             fn compute_B<'py>(
                 &self,
                 py: ::pyo3::Python<'py>,
