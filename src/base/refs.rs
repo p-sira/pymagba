@@ -14,6 +14,18 @@ pub enum ObserverRef<'py> {
 }
 
 impl<'py> ObserverRef<'py> {
+    pub fn try_extract(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
+        obj.extract::<Self>().map_err(|_| {
+            pyo3::exceptions::PyTypeError::new_err(
+                "sensors must be LinearHallSensor, HallSwitch, or HallLatch",
+            )
+        })
+    }
+
+    pub fn try_extract_with_py(obj: &Py<PyAny>, py: Python<'py>) -> PyResult<Self> {
+        Self::try_extract(obj.bind(py))
+    }
+
     pub fn into_component(self) -> ObserverComponent<f64> {
         match self {
             ObserverRef::Linear(s) => s.inner.clone().into(),
@@ -34,6 +46,18 @@ pub enum SourceRef<'py> {
 }
 
 impl<'py> SourceRef<'py> {
+    pub fn try_extract(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
+        obj.extract::<Self>().map_err(|_| {
+            pyo3::exceptions::PyTypeError::new_err(
+                "source must be a valid Magnet, Current, or SourceCollection",
+            )
+        })
+    }
+
+    pub fn try_extract_with_py(obj: &Py<PyAny>, py: Python<'py>) -> PyResult<Self> {
+        Self::try_extract(obj.bind(py))
+    }
+
     pub fn into_component(self) -> SourceComponent<f64> {
         match self {
             SourceRef::Cylinder(m) => m.inner.clone().into(),

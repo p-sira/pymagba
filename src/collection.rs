@@ -34,11 +34,7 @@ impl SourceCollection {
         let mut components = Vec::with_capacity(srcs.len());
 
         for src in &srcs {
-            let s_ref = src.extract::<SourceRef>(py).map_err(|_| {
-                pyo3::exceptions::PyTypeError::new_err(
-                    "sources must be CylinderMagnet, CuboidMagnet, SphereMagnet, Dipole, CircularCurrent, or SourceCollection",
-                )
-            })?;
+            let s_ref = SourceRef::try_extract_with_py(src, py)?;
             components.push(s_ref.into_component());
         }
 
@@ -62,12 +58,7 @@ impl SourceCollection {
     }
 
     fn append(&mut self, source: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
-        let s_ref = source.extract::<SourceRef>(py).map_err(|_| {
-            pyo3::exceptions::PyTypeError::new_err(
-                "source must be Magnet, CircularCurrent, or SourceCollection",
-            )
-        })?;
-
+        let s_ref = SourceRef::try_extract_with_py(&source, py)?;
         self.inner.push(s_ref.into_component());
 
         let mut new_sources: Vec<Py<PyAny>> =
@@ -165,11 +156,7 @@ impl ObserverCollection {
         let mut components = Vec::with_capacity(sens.len());
 
         for s in &sens {
-            let o_ref = s.extract::<ObserverRef>(py).map_err(|_| {
-                pyo3::exceptions::PyTypeError::new_err(
-                    "sensors must be LinearHallSensor, HallSwitch, or HallLatch",
-                )
-            })?;
+            let o_ref = ObserverRef::try_extract_with_py(s, py)?;
             components.push(o_ref.into_component());
         }
 
@@ -204,12 +191,7 @@ impl ObserverCollection {
     }
 
     fn append(&mut self, sensor: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
-        let o_ref = sensor.extract::<ObserverRef>(py).map_err(|_| {
-            pyo3::exceptions::PyTypeError::new_err(
-                "sensor must be LinearHallSensor, HallSwitch, or HallLatch",
-            )
-        })?;
-
+        let o_ref = ObserverRef::try_extract_with_py(&sensor, py)?;
         self.inner.push(o_ref.into_component());
 
         let mut new_sensors: Vec<Py<PyAny>> =
@@ -281,12 +263,7 @@ impl ObserverCollection {
     }
 
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let s_ref = source.extract::<SourceRef>().map_err(|_| {
-            pyo3::exceptions::PyTypeError::new_err(
-                "source must be a valid Magnet, Current, or SourceCollection",
-            )
-        })?;
-
+        let s_ref = SourceRef::try_extract(&source)?;
         let results = self.inner.read_all(s_ref.as_source());
 
         let list = PyList::empty(py);
