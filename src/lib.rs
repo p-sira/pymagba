@@ -11,6 +11,7 @@ mod base;
 mod util;
 
 mod collection;
+mod currents;
 mod fields;
 mod magnets;
 mod sensors;
@@ -19,6 +20,7 @@ mod sensors;
 mod macros;
 
 use collection::{ObserverCollection, SourceCollection};
+use currents::*;
 use magnets::*;
 use sensors::*;
 
@@ -29,7 +31,9 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SourceCollection>()?;
     m.add_class::<CylinderMagnet>()?;
     m.add_class::<CuboidMagnet>()?;
+    m.add_class::<SphereMagnet>()?;
     m.add_class::<Dipole>()?;
+    m.add_class::<CircularCurrent>()?;
     m.add_class::<ObserverCollection>()?;
     m.add_class::<LinearHallSensor>()?;
     m.add_class::<HallSwitch>()?;
@@ -40,9 +44,15 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     let magnets = PyModule::new(py, "magnets")?;
     magnets.add_class::<CylinderMagnet>()?;
     magnets.add_class::<CuboidMagnet>()?;
+    magnets.add_class::<SphereMagnet>()?;
     magnets.add_class::<Dipole>()?;
     magnets.add_class::<SourceCollection>()?;
     m.add_submodule(&magnets)?;
+
+    let currents = PyModule::new(py, "currents")?;
+    currents.add_class::<CircularCurrent>()?;
+    currents.add_class::<SourceCollection>()?;
+    m.add_submodule(&currents)?;
 
     let sensors = PyModule::new(py, "sensors")?;
     sensors.add_class::<LinearHallSensor>()?;
@@ -54,6 +64,8 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fields::cylinder_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::dipole_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::cuboid_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::sphere_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::circular_B, &m)?)?;
 
     let fields_mod = PyModule::new(m.py(), "fields")?;
     fields::fields(&fields_mod)?;

@@ -124,7 +124,30 @@ impl LinearHallSensor {
         )?
         .unbind())
     }
+
+    fn compute_B_perp(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
+        if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::CylinderMagnet>>() {
+            Ok(self.inner.compute_B_perp(&m.inner))
+        } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::CuboidMagnet>>() {
+            Ok(self.inner.compute_B_perp(&m.inner))
+        } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::Dipole>>() {
+            Ok(self.inner.compute_B_perp(&m.inner))
+        } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::SphereMagnet>>() {
+            Ok(self.inner.compute_B_perp(&m.inner))
+        } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::currents::CircularCurrent>>()
+        {
+            Ok(self.inner.compute_B_perp(&m.inner))
+        } else if let Ok(m) =
+            source.extract::<pyo3::PyRef<'_, crate::collection::SourceCollection>>()
+        {
+            Ok(self.inner.compute_B_perp(&m.inner))
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "source must be a valid Magnet, Current, or SourceCollection",
+            ))
+        }
+    }
 }
 
 impl_pypose!(LinearHallSensor);
-impl_read_voltage!(LinearHallSensor);
+impl_unified_read!(LinearHallSensor, f64, Scalar);

@@ -31,15 +31,19 @@ impl SourceCollection {
         let srcs = sources.unwrap_or_default();
 
         for src in &srcs {
-            if let Ok(m) = src.extract::<PyRef<'_, CylinderMagnet>>(py) {
+            if let Ok(m) = src.extract::<PyRef<'_, crate::magnets::CylinderMagnet>>(py) {
                 components.push(m.inner.clone().into());
-            } else if let Ok(m) = src.extract::<PyRef<'_, CuboidMagnet>>(py) {
+            } else if let Ok(m) = src.extract::<PyRef<'_, crate::magnets::CuboidMagnet>>(py) {
                 components.push(m.inner.clone().into());
-            } else if let Ok(m) = src.extract::<PyRef<'_, Dipole>>(py) {
+            } else if let Ok(m) = src.extract::<PyRef<'_, crate::magnets::Dipole>>(py) {
+                components.push(m.inner.clone().into());
+            } else if let Ok(m) = src.extract::<PyRef<'_, crate::magnets::SphereMagnet>>(py) {
+                components.push(m.inner.clone().into());
+            } else if let Ok(m) = src.extract::<PyRef<'_, crate::currents::CircularCurrent>>(py) {
                 components.push(m.inner.clone().into());
             } else {
                 return Err(pyo3::exceptions::PyTypeError::new_err(
-                    "sources must be CylinderMagnet, CuboidMagnet, or Dipole",
+                    "sources must be CylinderMagnet, CuboidMagnet, SphereMagnet, Dipole, or CircularCurrent",
                 ));
             }
         }
@@ -65,17 +69,21 @@ impl SourceCollection {
 
     fn append(&mut self, source: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
         let bound = source.bind(py);
-        if let Ok(m) = bound.extract::<PyRef<'_, CylinderMagnet>>() {
+        if let Ok(m) = bound.extract::<PyRef<'_, crate::magnets::CylinderMagnet>>() {
             self.inner.push(m.inner.clone());
-        } else if let Ok(m) = bound.extract::<PyRef<'_, CuboidMagnet>>() {
+        } else if let Ok(m) = bound.extract::<PyRef<'_, crate::magnets::CuboidMagnet>>() {
             self.inner.push(m.inner.clone());
-        } else if let Ok(m) = bound.extract::<PyRef<'_, Dipole>>() {
+        } else if let Ok(m) = bound.extract::<PyRef<'_, crate::magnets::Dipole>>() {
+            self.inner.push(m.inner.clone());
+        } else if let Ok(m) = bound.extract::<PyRef<'_, crate::magnets::SphereMagnet>>() {
+            self.inner.push(m.inner.clone());
+        } else if let Ok(m) = bound.extract::<PyRef<'_, crate::currents::CircularCurrent>>() {
             self.inner.push(m.inner.clone());
         } else if let Ok(m) = bound.extract::<PyRef<'_, SourceCollection>>() {
             self.inner.push(m.inner.clone());
         } else {
             return Err(pyo3::exceptions::PyTypeError::new_err(
-                "source must be CylinderMagnet, CuboidMagnet, Dipole, or SourceCollection",
+                "source must be Magnet, CircularCurrent, or SourceCollection",
             ));
         }
 
@@ -312,17 +320,21 @@ impl ObserverCollection {
     }
 
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {
-        let results = if let Ok(m) = source.extract::<PyRef<'_, CylinderMagnet>>() {
+        let results = if let Ok(m) = source.extract::<PyRef<'_, crate::magnets::CylinderMagnet>>() {
             self.inner.read_all(&m.inner)
-        } else if let Ok(m) = source.extract::<PyRef<'_, CuboidMagnet>>() {
+        } else if let Ok(m) = source.extract::<PyRef<'_, crate::magnets::CuboidMagnet>>() {
             self.inner.read_all(&m.inner)
-        } else if let Ok(m) = source.extract::<PyRef<'_, Dipole>>() {
+        } else if let Ok(m) = source.extract::<PyRef<'_, crate::magnets::Dipole>>() {
+            self.inner.read_all(&m.inner)
+        } else if let Ok(m) = source.extract::<PyRef<'_, crate::magnets::SphereMagnet>>() {
+            self.inner.read_all(&m.inner)
+        } else if let Ok(m) = source.extract::<PyRef<'_, crate::currents::CircularCurrent>>() {
             self.inner.read_all(&m.inner)
         } else if let Ok(m) = source.extract::<PyRef<'_, SourceCollection>>() {
             self.inner.read_all(&m.inner)
         } else {
             return Err(pyo3::exceptions::PyTypeError::new_err(
-                "source must be CylinderMagnet, CuboidMagnet, Dipole, or SourceCollection",
+                "source must be a valid Magnet, Current, or SourceCollection",
             ));
         };
 
@@ -347,7 +359,8 @@ fn sensor_output_to_py(py: Python<'_>, output: magba::base::SensorOutput<f64>) -
             arr.into_any().unbind()
         }
         magba::base::SensorOutput::Digital(val) => {
-            val.into_pyobject(py).unwrap().into_any().unbind()
+            let b = val != 0;
+            b.into_pyobject(py).unwrap().to_owned().into_any().into()
         }
     }
 }

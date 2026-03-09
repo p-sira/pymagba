@@ -119,4 +119,4 @@ impl HallLatch {
 }
 
 impl_pypose!(HallLatch);
-impl_read_state!(HallLatch);
+impl_unified_read!(HallLatch, bool, Digital);
