@@ -75,26 +75,15 @@ macro_rules! impl_compute_B {
             #[pyo3(name = "compute_B")]
             fn compute_B<'py>(
                 &self,
-                py: ::pyo3::Python<'py>,
+                py: pyo3::Python<'py>,
                 points: crate::util::PointsLike,
-            ) -> ::pyo3::Bound<'py, ::numpy::PyArray2<f64>> {
-                use ::magba::base::Source;
-                use ::ndarray::Array2;
-                use ::numpy::IntoPyArray;
+            ) -> pyo3::Bound<'py, numpy::PyArray2<f64>> {
+                use magba::base::Source;
 
                 let pts = points.0;
-                let n_points = pts.len();
-
                 let b_field = self.inner.compute_B_batch(&pts);
 
-                let mut out = Array2::<f64>::zeros((n_points, 3));
-                for i in 0..n_points {
-                    out[[i, 0]] = b_field[i].x;
-                    out[[i, 1]] = b_field[i].y;
-                    out[[i, 2]] = b_field[i].z;
-                }
-
-                out.into_pyarray(py)
+                crate::util::vec3_to_pyarray2(py, b_field)
             }
         }
     };
