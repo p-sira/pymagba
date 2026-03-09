@@ -4,6 +4,8 @@ This changelog only records significant changes.
 
 ## 0.4.0
 
+This version corresponds to Magba v0.4.1.
+
 ### New Features
 
 - **Index, Append, Len:** Implement for `SourceCollection` and `ObserverCollection`.

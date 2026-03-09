@@ -468,9 +468,9 @@ checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
 name = "magba"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27eafd49058832a9457e402e9ac425f5ddc0cf57c1ab3911215b7a58f050010e"
+checksum = "53f746d53cc2851035aa8e510b7bddf08ba0e137ba5ed65c993bdb434477e5c8"
 dependencies = [
  "concat-idents",
  "delegate",
@@ -550,21 +550,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "ndarray"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "882ed72dce9365842bf196bdeedf5055305f11fc8c03dee7bb0194a6cad34841"
-dependencies = [
- "matrixmultiply",
- "num-complex",
- "num-integer",
- "num-traits",
- "portable-atomic",
- "portable-atomic-util",
- "rawpointer",
 ]
 
 [[package]]
@@ -659,7 +644,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "778da78c64ddc928ebf5ad9df5edf0789410ff3bdbf3619aed51cd789a6af1e2"
 dependencies = [
  "libc",
- "ndarray 0.16.1",
+ "ndarray",
  "num-complex",
  "num-integer",
  "num-traits",
@@ -794,7 +779,7 @@ version = "0.4.0"
 dependencies = [
  "magba",
  "nalgebra",
- "ndarray 0.17.2",
+ "ndarray",
  "numpy",
  "pyo3",
  "pyo3-stub-gen",
