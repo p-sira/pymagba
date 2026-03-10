@@ -6,6 +6,8 @@ on:
     branches: ["main", "dev"]
   pull_request:
     branches: ["main", "dev"]
+  release:
+    types: [published]
 
 jobs:
   benchmark:
@@ -43,11 +45,12 @@ jobs:
       - name: Machine info
         run: uv run asv machine --yes
 
-      - name: Run benchmarks
-        run: |
-          # Use the environment managed by uv to avoid building multiple times
-          uv add numpy scipy magpylib
-          uv run asv run HEAD~1..HEAD --show-stderr
+      - name: Test performance regressions
+        run: uv run asv continuous origin/main HEAD --factor 1.05 --bench "(.*)\('PyMagba'\)" --split
+
+      - name: Run MagpyLib benchmarks if release
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        run: uv run asv run HEAD --bench "(.*)\('MagpyLib'\)"
 
       - name: Upload results
         uses: actions/upload-artifact@v4

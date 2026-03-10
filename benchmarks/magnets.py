@@ -15,7 +15,7 @@ class MagnetCuboid:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             magnet = pymagba.magnets.CuboidMagnet(
                 position=(0, 0, 0),
@@ -42,7 +42,7 @@ class MagnetSphere:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             magnet = pymagba.magnets.SphereMagnet(
                 position=(0, 0, 0),
@@ -69,7 +69,7 @@ class MagnetCylinder:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             magnet = pymagba.magnets.CylinderMagnet(
                 position=(0, 0, 0),
@@ -97,7 +97,7 @@ class MagnetDipole:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             magnet = pymagba.magnets.Dipole(
                 position=(0, 0, 0),
@@ -122,7 +122,7 @@ class MagnetCircular:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             from pymagba.currents import CircularCurrent
 
@@ -151,7 +151,7 @@ class MagnetCollection:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             m1 = pymagba.magnets.CylinderMagnet(
                 position=(0.005, 0.0, 0.0),
