@@ -27,28 +27,36 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-python-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+
       - name: Install asv
-        run: |
-          uv add asv
+        run: uv add asv
 
       - name: Machine info
-        run: asv machine --yes
+        run: uv run asv machine --yes
 
       - name: Run benchmarks
         run: |
           # Use the environment managed by uv to avoid building multiple times
           uv add numpy scipy magpylib
-          asv run NEW --show-stderr --python=same
+          uv run asv run NEW --show-stderr --python=same
 
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
           name: asv-results
-          path: |
-            .asv/results
+          path: .asv/results
 
       - name: Generate HTML
-        run: asv publish
+        run: uv run asv publish
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
