@@ -18,7 +18,7 @@
 /// `$struct` must have a field `inner` that exposes the above methods.
 macro_rules! impl_pypose {
     ($struct:ty) => {
-        #[gen_stub_pymethods]
+        #[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
         #[pyo3::pymethods]
         impl $struct {
             #[getter]
@@ -68,7 +68,7 @@ pub(crate) use impl_pypose;
 /// Requires `inner` to implement `magba::base::Source`.
 macro_rules! impl_compute_B {
     ($struct:ty) => {
-        #[gen_stub_pymethods]
+        #[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
         #[pyo3::pymethods]
         impl $struct {
             #[pyo3(name = "compute_B")]

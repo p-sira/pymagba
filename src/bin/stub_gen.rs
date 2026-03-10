@@ -3,12 +3,15 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-use pymagba_binding::stub_info;
-use pyo3_stub_gen::Result;
-
+#[cfg(feature = "stub-gen")]
 fn main() -> Result<()> {
+    use pymagba_binding::stub_info;
+    use pyo3_stub_gen::Result;
     let stub_info = stub_info()?;
     stub_info.generate()?;
 
     Ok(())
 }
+
+#[cfg(not(feature = "stub-gen"))]
+fn main() {}

@@ -6,7 +6,9 @@
 use numpy::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
 use pyo3::types::PySequence;
-use pyo3_stub_gen::{PyStubType, TypeInfo};
+
+#[cfg(feature = "stub-gen")]
+use pyo3_stub_gen::{ImportRef, PyStubType, TypeInfo};
 
 /// A wrapper for extracting 3-element arrays from Python objects.
 ///
@@ -14,6 +16,7 @@ use pyo3_stub_gen::{PyStubType, TypeInfo};
 /// array [f64; 3] if they contain exactly 3 elements.
 pub struct ArrayLike3(pub [f64; 3]);
 
+#[cfg(feature = "stub-gen")]
 impl PyStubType for ArrayLike3 {
     fn type_output() -> TypeInfo {
         TypeInfo {
@@ -73,13 +76,12 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
 /// [x, y, z] by converting it to a single-element batch [[x, y, z]].
 pub struct PointsLike(pub Vec<nalgebra::Point3<f64>>);
 
+#[cfg(feature = "stub-gen")]
 impl PyStubType for PointsLike {
     fn type_output() -> TypeInfo {
         TypeInfo {
             name: "typing.Sequence[typing.Sequence[float]]".to_string(),
-            import: [pyo3_stub_gen::ImportRef::Module("typing".into())]
-                .into_iter()
-                .collect(),
+            import: [ImportRef::Module("typing".into())].into_iter().collect(),
             source_module: None,
             type_refs: std::collections::HashMap::new(),
         }
@@ -139,14 +141,15 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
 /// representing quaternions as [x, y, z, w].
 pub struct PyRotation(pub nalgebra::UnitQuaternion<f64>);
 
+#[cfg(feature = "stub-gen")]
 impl PyStubType for PyRotation {
     fn type_output() -> TypeInfo {
         TypeInfo {
             name: "typing.Union[scipy.spatial.transform.Rotation, typing.Sequence[float]]"
                 .to_string(),
             import: [
-                pyo3_stub_gen::ImportRef::Module("scipy".into()),
-                pyo3_stub_gen::ImportRef::Module("typing".into()),
+                ImportRef::Module("scipy".into()),
+                ImportRef::Module("typing".into()),
             ]
             .into_iter()
             .collect(),

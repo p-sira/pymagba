@@ -3,21 +3,24 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
+use std::sync::Arc;
+
 use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, SourceComponent};
 use numpy::PyArray1;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
 use pyo3::IntoPyObject;
+
+#[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
-use std::sync::Arc;
 
 use crate::{
     base::{ObserverRef, SourceRef},
     macros::{impl_compute_B, impl_pypose},
 };
 
-#[gen_stub_pyclass]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
 #[derive(Clone)]
 pub struct SourceCollection {
@@ -25,7 +28,7 @@ pub struct SourceCollection {
     pub(crate) sources: Arc<Vec<Py<PyAny>>>,
 }
 
-#[gen_stub_pymethods]
+#[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
 #[pymethods]
 impl SourceCollection {
     #[new]
@@ -134,7 +137,7 @@ impl SourceCollection {
 impl_pypose!(SourceCollection);
 impl_compute_B!(SourceCollection);
 
-#[gen_stub_pyclass]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
 #[derive(Clone)]
 pub struct ObserverCollection {
@@ -142,7 +145,7 @@ pub struct ObserverCollection {
     pub(crate) sensors: Arc<Vec<Py<PyAny>>>,
 }
 
-#[gen_stub_pymethods]
+#[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
 #[pymethods]
 impl ObserverCollection {
     #[new]
