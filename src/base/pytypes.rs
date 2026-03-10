@@ -5,6 +5,7 @@
 
 use numpy::{PyReadonlyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
+use pyo3::types::PySequence;
 use pyo3_stub_gen::{PyStubType, TypeInfo};
 
 /// A wrapper for extracting 3-element arrays from Python objects.
@@ -45,10 +46,19 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
             }
         }
 
-        // 2. Fallback for native Python lists: [[x, y, z], ...]
-        // PyO3 automatically maps python sequences of length 3 to [T; 3]
+        // 2. Fallback for native Python lists: [x, y, z]
         if let Ok(list_1d) = ob.extract::<[f64; 3]>() {
             return Ok(ArrayLike3(list_1d));
+        }
+
+        // Check if it's a sequence but wrong length
+        if let Ok(seq) = ob.cast::<PySequence>() {
+            if seq.len().unwrap_or(0) != 3 {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Expected exactly 3 elements, got {}",
+                    seq.len().unwrap_or(0)
+                )));
+            }
         }
 
         Err(pyo3::exceptions::PyTypeError::new_err(

@@ -24,3 +24,20 @@ pub fn vec3_to_pyarray2<'py>(
         .reshape([n, 3])
         .unwrap()
 }
+
+/// Runs a closure and catches any panics, converting them to a Python `ValueError`.
+pub fn catch_unwind_to_pyerr<F, R>(f: F) -> PyResult<R>
+where
+    F: FnOnce() -> R + std::panic::UnwindSafe,
+{
+    std::panic::catch_unwind(f).map_err(|e| {
+        let msg = if let Some(s) = e.downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = e.downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "An unknown panic occurred in the Rust core.".to_string()
+        };
+        pyo3::exceptions::PyValueError::new_err(msg)
+    })
+}

@@ -7,7 +7,7 @@ use magba::magnets::CylinderMagnet as MagbaCylinderMagnet;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::{impl_compute_B, impl_pypose};
+use crate::{impl_compute_B, impl_pypose, util::catch_unwind_to_pyerr};
 
 #[gen_stub_pyclass]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
@@ -27,16 +27,16 @@ impl CylinderMagnet {
         diameter: f64,
         height: f64,
         polarization: Option<crate::base::ArrayLike3>,
-    ) -> Self {
+    ) -> PyResult<Self> {
         let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
         let rot = orientation
             .map(|rot| rot.0)
             .unwrap_or_else(nalgebra::UnitQuaternion::identity);
         let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
 
-        Self {
+        catch_unwind_to_pyerr(move || Self {
             inner: MagbaCylinderMagnet::new(pos, rot, pol, diameter, height),
-        }
+        })
     }
 
     #[getter]
@@ -45,8 +45,10 @@ impl CylinderMagnet {
     }
 
     #[setter]
-    fn set_diameter(&mut self, diameter: f64) {
-        self.inner.set_diameter(diameter);
+    fn set_diameter(&mut self, diameter: f64) -> PyResult<()> {
+        catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
+            self.inner.set_diameter(diameter);
+        }))
     }
 
     #[getter]
@@ -55,8 +57,10 @@ impl CylinderMagnet {
     }
 
     #[setter]
-    fn set_height(&mut self, height: f64) {
-        self.inner.set_height(height);
+    fn set_height(&mut self, height: f64) -> PyResult<()> {
+        catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
+            self.inner.set_height(height);
+        }))
     }
 
     #[getter]

@@ -7,7 +7,7 @@ use magba::magnets::CuboidMagnet as MagbaCuboidMagnet;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::{impl_compute_B, impl_pypose};
+use crate::{impl_compute_B, impl_pypose, util::catch_unwind_to_pyerr};
 
 #[gen_stub_pyclass]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
@@ -26,7 +26,7 @@ impl CuboidMagnet {
         orientation: Option<crate::base::PyRotation>,
         dimensions: Option<crate::base::ArrayLike3>,
         polarization: Option<crate::base::ArrayLike3>,
-    ) -> Self {
+    ) -> PyResult<Self> {
         let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
         let rot = orientation
             .map(|rot| rot.0)
@@ -34,9 +34,9 @@ impl CuboidMagnet {
         let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
         let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
 
-        Self {
+        catch_unwind_to_pyerr(move || Self {
             inner: MagbaCuboidMagnet::new(pos, rot, pol, dim),
-        }
+        })
     }
 
     #[getter]
@@ -55,8 +55,10 @@ impl CuboidMagnet {
     }
 
     #[setter]
-    fn set_dimensions(&mut self, dim: crate::base::ArrayLike3) {
-        self.inner.set_dimensions(dim.0);
+    fn set_dimensions(&mut self, dim: crate::base::ArrayLike3) -> PyResult<()> {
+        catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
+            self.inner.set_dimensions(dim.0);
+        }))
     }
 
     fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<pyo3::types::PyDict>> {

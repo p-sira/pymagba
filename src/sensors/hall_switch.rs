@@ -7,7 +7,7 @@ use magba::sensors::hall_effect::HallSwitch as MagbaHallSwitch;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::impl_pypose;
+use crate::{impl_pypose, util::catch_unwind_to_pyerr};
 
 #[gen_stub_pyclass]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
@@ -26,16 +26,16 @@ impl HallSwitch {
         orientation: Option<crate::base::PyRotation>,
         sensitive_axis: Option<crate::base::ArrayLike3>,
         b_op: f64,
-    ) -> Self {
+    ) -> PyResult<Self> {
         let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
         let rot = orientation
             .map(|rot| rot.0)
             .unwrap_or_else(nalgebra::UnitQuaternion::identity);
         let s_axis = sensitive_axis.map(|a| a.0).unwrap_or([0.0, 0.0, 1.0]);
 
-        Self {
+        catch_unwind_to_pyerr(move || Self {
             inner: MagbaHallSwitch::new(pos, rot, s_axis, b_op),
-        }
+        })
     }
 
     #[getter]
@@ -45,8 +45,10 @@ impl HallSwitch {
     }
 
     #[setter]
-    fn set_sensitive_axis(&mut self, axis: crate::base::ArrayLike3) {
-        self.inner.set_sensitive_axis(axis.0);
+    fn set_sensitive_axis(&mut self, axis: crate::base::ArrayLike3) -> PyResult<()> {
+        catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
+            self.inner.set_sensitive_axis(axis.0);
+        }))
     }
 
     #[getter]
@@ -55,8 +57,10 @@ impl HallSwitch {
     }
 
     #[setter]
-    fn set_b_op(&mut self, b_op: f64) {
-        self.inner.set_b_op(b_op);
+    fn set_b_op(&mut self, b_op: f64) -> PyResult<()> {
+        catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
+            self.inner.set_b_op(b_op);
+        }))
     }
 
     fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<pyo3::types::PyDict>> {
