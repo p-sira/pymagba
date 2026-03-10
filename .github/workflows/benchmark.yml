@@ -47,5 +47,26 @@ jobs:
           path: |
             .asv/results
 
-      - name: Publish results
-        run: asv gh-pages
+      - name: Generate HTML
+        run: asv publish
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .asv/html
+
+  deploy:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
