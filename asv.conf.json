@@ -3,30 +3,28 @@
     "project": "pymagba",
     "project_url": "https://github.com/p-sira/pymagba",
     "repo": ".",
+    "branches": [
+        "main",
+        "dev"
+    ],
     "environment_type": "virtualenv",
     "env_dir": ".asv/env",
     "results_dir": ".asv/results",
     "html_dir": ".asv/html",
     "benchmark_dir": "benchmarks",
     "pythons": [
-        "3.14"
+        "3.12"
     ],
     "matrix": {
         "req": {
-            "numpy": [
-                ""
-            ],
-            "scipy": [
-                ""
-            ],
-            "magpylib": [
-                ""
-            ]
+            "numpy": "",
+            "scipy": "",
+            "magpylib": ""
         }
     },
     "build_command": [
         "python -m pip install maturin",
-        "maturin build --release --out {build_cache_dir}"
+        "maturin build --release --strip --out {build_cache_dir}"
     ],
     "install_command": [
         "python -m pip install {wheel_file}"
