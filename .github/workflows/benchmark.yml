@@ -47,7 +47,7 @@ jobs:
         run: |
           # Use the environment managed by uv to avoid building multiple times
           uv add numpy scipy magpylib
-          uv run asv run NEW --show-stderr --python=same
+          uv run asv run HEAD --show-stderr
 
       - name: Upload results
         uses: actions/upload-artifact@v4
