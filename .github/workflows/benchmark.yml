@@ -50,7 +50,7 @@ jobs:
 
       - name: Run MagpyLib benchmarks if release
         if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
-        run: uv run asv run HEAD --bench "(.*)\('MagpyLib'\)"
+        run: uv run asv run HEAD^! --bench "(.*)\('MagpyLib'\)"
 
       - name: Upload results
         uses: actions/upload-artifact@v4
