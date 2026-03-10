@@ -5,6 +5,8 @@
 
 use magba::magnets::CuboidMagnet as MagbaCuboidMagnet;
 use pyo3::prelude::*;
+
+#[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
@@ -12,14 +14,14 @@ use crate::{
     util::catch_unwind_to_pyerr,
 };
 
-#[gen_stub_pyclass]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
 #[derive(Clone)]
 pub struct CuboidMagnet {
     pub(crate) inner: MagbaCuboidMagnet<f64>,
 }
 
-#[gen_stub_pymethods]
+#[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
 #[pymethods]
 impl CuboidMagnet {
     #[new]

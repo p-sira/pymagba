@@ -5,18 +5,20 @@
 
 use magba::magnets::Dipole as MagbaDipole;
 use pyo3::prelude::*;
+
+#[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::macros::{impl_compute_B, impl_pypose};
 
-#[gen_stub_pyclass]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
 #[derive(Clone)]
 pub struct Dipole {
     pub(crate) inner: MagbaDipole<f64>,
 }
 
-#[gen_stub_pymethods]
+#[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
 #[pymethods]
 impl Dipole {
     #[new]

@@ -5,7 +5,9 @@
 
 use nalgebra::Vector3;
 use pyo3::prelude::*;
-use pyo3_stub_gen::derive::gen_stub_pyfunction;
+
+#[cfg(feature = "stub-gen")]
+use pyo3_stub_gen::gen_stub_pyfunction;
 
 use crate::{
     base::{ArrayLike3, PointsLike, PyRotation},
@@ -22,7 +24,7 @@ pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-#[gen_stub_pyfunction]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
 #[pyfunction]
 /// Calculates the magnetic field of a cylindrical magnet.
 ///
@@ -81,7 +83,7 @@ pub fn cylinder_B<'py>(
     vec3_to_pyarray2(py, results)
 }
 
-#[gen_stub_pyfunction]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
 #[pyfunction]
 /// Calculates the magnetic field of a magnetic dipole source.
 ///
@@ -123,7 +125,7 @@ pub fn dipole_B<'py>(
     vec3_to_pyarray2(py, results)
 }
 
-#[gen_stub_pyfunction]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
 #[pyfunction]
 /// Calculates the magnetic field of a cuboid magnet.
 ///
@@ -176,7 +178,7 @@ pub fn cuboid_B<'py>(
     vec3_to_pyarray2(py, results)
 }
 
-#[gen_stub_pyfunction]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
 #[pyfunction]
 /// Calculates the magnetic field of a spherical magnet.
 ///
@@ -228,7 +230,7 @@ pub fn sphere_B<'py>(
     vec3_to_pyarray2(py, results)
 }
 
-#[gen_stub_pyfunction]
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
 #[pyfunction]
 /// Calculates the magnetic field of a circular current loop.
 ///

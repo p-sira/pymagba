@@ -24,6 +24,7 @@ use currents::*;
 use magnets::*;
 use sensors::*;
 
+#[cfg(feature = "stub-gen")]
 pyo3_stub_gen::define_stub_info_gatherer!(stub_info);
 
 #[pymodule(gil_used = false)]

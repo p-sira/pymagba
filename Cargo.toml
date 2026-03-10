@@ -26,8 +26,9 @@ nalgebra = "0.34.1"
 ndarray = "0.17.2"
 numpy = "0.28.0"
 pyo3 = { version = "0.28.2", features = ["multiple-pymethods"] }
-pyo3-stub-gen = "0.19.0"
+pyo3-stub-gen = { version = "0.19.0", optional = true }
 
 [features]
-extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
+extension-module = ["pyo3/extension-module"]
+stub-gen = ["dep:pyo3-stub-gen"]
