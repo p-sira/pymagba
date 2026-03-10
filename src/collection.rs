@@ -4,6 +4,7 @@
  */
 
 use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, SourceComponent};
+use numpy::PyArray1;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
