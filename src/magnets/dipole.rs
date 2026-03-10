@@ -7,7 +7,7 @@ use magba::magnets::Dipole as MagbaDipole;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::{impl_compute_B, impl_pypose};
+use crate::macros::{impl_compute_B, impl_pypose};
 
 #[gen_stub_pyclass]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]

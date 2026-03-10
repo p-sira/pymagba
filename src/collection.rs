@@ -13,7 +13,7 @@ use std::sync::Arc;
 
 use crate::{
     base::{ObserverRef, SourceRef},
-    impl_compute_B, impl_pypose,
+    macros::{impl_compute_B, impl_pypose},
 };
 
 #[gen_stub_pyclass]

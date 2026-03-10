@@ -16,7 +16,6 @@
 /// - `rotate_anchor(q: [f64; 4], anchor: [f64; 3])`
 ///
 /// `$struct` must have a field `inner` that exposes the above methods.
-#[macro_export]
 macro_rules! impl_pypose {
     ($struct:ty) => {
         #[gen_stub_pymethods]
@@ -63,10 +62,10 @@ macro_rules! impl_pypose {
         }
     };
 }
+pub(crate) use impl_pypose;
 
 /// Implements `compute_B` as a separate `#[pymethods]` impl block.
 /// Requires `inner` to implement `magba::base::Source`.
-#[macro_export]
 macro_rules! impl_compute_B {
     ($struct:ty) => {
         #[gen_stub_pymethods]
@@ -88,3 +87,4 @@ macro_rules! impl_compute_B {
         }
     };
 }
+pub(crate) use impl_compute_B;
