@@ -61,15 +61,28 @@ jobs:
             ${{ runner.os }}-python-
       - name: Install dependencies
         run: uv sync --group docs
+      - name: Install ASV
+        run: uv pip install asv
       - name: Build package
         uses: PyO3/maturin-action@v1
         with:
           command: develop
           args: --release
+      - name: Download benchmark results
+        uses: actions/download-artifact@v4
+        with:
+          name: asv-results
+          path: .asv/results
+      - name: Generate benchmark site
+        run: uv run asv publish
       - name: Build documentation
         run: |
           cd docs
           uv run make html
+      - name: Merge benchmark dashboard
+        run: |
+          mkdir -p docs/build/html/benchmarks
+          cp -r .asv/html/* docs/build/html/benchmarks/
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
