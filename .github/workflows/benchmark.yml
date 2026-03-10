@@ -1,0 +1,51 @@
+name: PyMagba Benchmarks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history needed for asv
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install asv
+        run: |
+          uv add asv
+
+      - name: Machine info
+        run: asv machine --yes
+
+      - name: Run benchmarks
+        run: |
+          # Use the environment managed by uv to avoid building multiple times
+          uv add numpy scipy magpylib
+          asv run NEW --show-stderr --python=same
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: asv-results
+          path: |
+            .asv/results
+
+      - name: Publish results
+        run: asv gh-pages

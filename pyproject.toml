@@ -30,9 +30,9 @@ dev = [
     "patchelf>=0.17.2.4",
     "pip-tools>=7.5.3",
     "pytest>=9.0.2",
-    "pytest-benchmark>=5.2.3",
     "mypy>=1.11.2",
     "asv>=0.6.5",
+    "jinja2>=3.1.2",
 ]
 docs = [
     "sphinx>=8.2.3",
@@ -44,7 +44,3 @@ docs = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-addopts = """
---benchmark-autosave
---benchmark-storage=.benchmarks
-"""
