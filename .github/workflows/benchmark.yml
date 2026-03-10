@@ -54,6 +54,3 @@ jobs:
         with:
           name: asv-results
           path: .asv/results
-
-      - name: Generate HTML
-        run: uv run asv publish
