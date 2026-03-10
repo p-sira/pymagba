@@ -17,7 +17,7 @@ class FieldCylinder:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             self.func = pymagba.fields.cylinder_B
             self.args = (
@@ -46,7 +46,7 @@ class FieldSphere:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             self.func = pymagba.fields.sphere_B
             self.args = (
@@ -74,7 +74,7 @@ class FieldCuboid:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             self.func = pymagba.fields.cuboid_B
             self.args = (
@@ -102,7 +102,7 @@ class FieldDipole:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             self.func = pymagba.fields.dipole_B
             self.args = (self.observers, (0, 0, 0), get_standard_rotation(), (1, 2, 3))
@@ -123,7 +123,7 @@ class FieldCircular:
     param_names = ["library"]
 
     def setup(self, library):
-        self.observers = get_observer_grid(10000)
+        self.observers = get_observer_grid(1000000)
         if library == "PyMagba":
             self.func = pymagba.fields.circular_B
             self.args = (self.observers, (0, 0, 0), get_standard_rotation(), 0.01, 1.0)
