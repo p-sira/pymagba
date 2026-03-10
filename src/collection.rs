@@ -281,11 +281,9 @@ fn sensor_output_to_py(py: Python<'_>, output: magba::base::SensorOutput<f64>) -
         magba::base::SensorOutput::Scalar(val) => {
             val.into_pyobject(py).unwrap().into_any().unbind()
         }
-        magba::base::SensorOutput::Vector(vec) => {
-            let np = py.import("numpy").unwrap();
-            let arr = np.call_method1("array", ([vec.x, vec.y, vec.z],)).unwrap();
-            arr.into_any().unbind()
-        }
+        magba::base::SensorOutput::Vector(vec) => PyArray1::from_slice(py, &[vec.x, vec.y, vec.z])
+            .into_any()
+            .unbind(),
         magba::base::SensorOutput::Digital(val) => {
             let b = val != 0;
             b.into_pyobject(py).unwrap().to_owned().into_any().into()

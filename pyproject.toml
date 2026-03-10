@@ -32,6 +32,7 @@ dev = [
     "pytest>=9.0.2",
     "pytest-benchmark>=5.2.3",
     "mypy>=1.11.2",
+    "asv>=0.6.5",
 ]
 docs = [
     "sphinx>=8.2.3",
@@ -43,3 +44,7 @@ docs = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = """
+--benchmark-autosave
+--benchmark-storage=.benchmarks
+"""
