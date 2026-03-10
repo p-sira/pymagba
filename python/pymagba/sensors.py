@@ -57,28 +57,37 @@ class LinearHallSensor(_LinearHallSensor):
 
     def read_voltage_cylinder(self, source):
         """Compute the analog output voltage (V) in the presence of a CylinderMagnet."""
-        return _LinearHallSensor.read_voltage_cylinder(self, source)
+        return self.read(source)
 
     def read_voltage_cuboid(self, source):
         """Compute the analog output voltage (V) in the presence of a CuboidMagnet."""
-        return _LinearHallSensor.read_voltage_cuboid(self, source)
+        return self.read(source)
 
     def read_voltage_dipole(self, source):
         """Compute the analog output voltage (V) in the presence of a Dipole source."""
-        return _LinearHallSensor.read_voltage_dipole(self, source)
+        return self.read(source)
 
     def read_voltage_collection(self, source):
         """Compute the analog output voltage (V) in the presence of a SourceCollection."""
-        return _LinearHallSensor.read_voltage_collection(self, source)
+        return self.read(source)
 
     def read(self, source):
         """Compute the analog output voltage (V) in the presence of a magnetic source.
 
         Args:
-            source (CylinderMagnet | CuboidMagnet | Dipole | SourceCollection):
+            source (CylinderMagnet | CuboidMagnet | SphereMagnet | Dipole | CircularCurrent | SourceCollection):
                 The magnetic source to measure.
         """
         return _LinearHallSensor.read(self, source)
+
+    def compute_B_perp(self, source):
+        """Compute the magnetic field component (T) perpendicular to the sensitive axis.
+
+        Args:
+            source (CylinderMagnet | CuboidMagnet | SphereMagnet | Dipole | CircularCurrent | SourceCollection):
+                The magnetic source to measure.
+        """
+        return _LinearHallSensor.compute_B_perp(self, source)
 
 
 class HallSwitch(_HallSwitch):
@@ -122,25 +131,25 @@ class HallSwitch(_HallSwitch):
 
     def read_state_cylinder(self, source):
         """Read the digital state of the sensor in the presence of a CylinderMagnet."""
-        return _HallSwitch.read_state_cylinder(self, source)
+        return self.read(source)
 
     def read_state_cuboid(self, source):
         """Read the digital state of the sensor in the presence of a CuboidMagnet."""
-        return _HallSwitch.read_state_cuboid(self, source)
+        return self.read(source)
 
     def read_state_dipole(self, source):
         """Read the digital state of the sensor in the presence of a Dipole source."""
-        return _HallSwitch.read_state_dipole(self, source)
+        return self.read(source)
 
     def read_state_collection(self, source):
         """Read the digital state of the sensor in the presence of a SourceCollection."""
-        return _HallSwitch.read_state_collection(self, source)
+        return self.read(source)
 
     def read(self, source):
         """Read the digital state (True/False) in the presence of a magnetic source.
 
         Args:
-            source (CylinderMagnet | CuboidMagnet | Dipole | SourceCollection):
+            source (CylinderMagnet | CuboidMagnet | SphereMagnet | Dipole | CircularCurrent | SourceCollection):
                 The magnetic source to measure.
         """
         return _HallSwitch.read(self, source)
@@ -193,25 +202,25 @@ class HallLatch(_HallLatch):
 
     def read_state_cylinder(self, source):
         """Read the digital state of the sensor in the presence of a CylinderMagnet."""
-        return _HallLatch.read_state_cylinder(self, source)
+        return self.read(source)
 
     def read_state_cuboid(self, source):
         """Read the digital state of the sensor in the presence of a CuboidMagnet."""
-        return _HallLatch.read_state_cuboid(self, source)
+        return self.read(source)
 
     def read_state_dipole(self, source):
         """Read the digital state of the sensor in the presence of a Dipole source."""
-        return _HallLatch.read_state_dipole(self, source)
+        return self.read(source)
 
     def read_state_collection(self, source):
         """Read the digital state of the sensor in the presence of a SourceCollection."""
-        return _HallLatch.read_state_collection(self, source)
+        return self.read(source)
 
     def read(self, source):
         """Read the digital state (True/False) in the presence of a magnetic source.
 
         Args:
-            source (CylinderMagnet | CuboidMagnet | Dipole | SourceCollection):
+            source (CylinderMagnet | CuboidMagnet | SphereMagnet | Dipole | CircularCurrent | SourceCollection):
                 The magnetic source to measure.
         """
         return _HallLatch.read(self, source)
@@ -250,25 +259,25 @@ class ObserverCollection(_ObserverCollection):
 
     def read_all_cylinder(self, source):
         """Perform a collective reading from all sensors in the presence of a CylinderMagnet."""
-        return _ObserverCollection.read_all_cylinder(self, source)
+        return self.read_all(source)
 
     def read_all_cuboid(self, source):
         """Perform a collective reading from all sensors in the presence of a CuboidMagnet."""
-        return _ObserverCollection.read_all_cuboid(self, source)
+        return self.read_all(source)
 
     def read_all_dipole(self, source):
         """Perform a collective reading from all sensors in the presence of a Dipole source."""
-        return _ObserverCollection.read_all_dipole(self, source)
+        return self.read_all(source)
 
     def read_all_collection(self, source):
         """Perform a collective reading from all sensors in the presence of a SourceCollection."""
-        return _ObserverCollection.read_all_collection(self, source)
+        return self.read_all(source)
 
     def read_all(self, source):
         """Perform a collective reading from all sensors in the presence of a magnetic source.
 
         Args:
-            source (CylinderMagnet | CuboidMagnet | Dipole | SourceCollection):
+            source (CylinderMagnet | CuboidMagnet | SphereMagnet | Dipole | CircularCurrent | SourceCollection):
                 The magnetic source to measure.
         """
         return _ObserverCollection.read_all(self, source)

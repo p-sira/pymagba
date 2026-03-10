@@ -3,82 +3,62 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-macro_rules! impl_read_voltage {
-    ($Struct:ty) => {
+macro_rules! impl_unified_read {
+    ($struct:ty, $output_type:ty, $variant:ident) => {
         #[pyo3::pymethods]
-        impl $Struct {
-            fn read_voltage_cylinder(&self, source: &crate::magnets::CylinderMagnet) -> f64 {
-                self.inner.read_voltage(&source.inner)
-            }
-            fn read_voltage_cuboid(&self, source: &crate::magnets::CuboidMagnet) -> f64 {
-                self.inner.read_voltage(&source.inner)
-            }
-            fn read_voltage_dipole(&self, source: &crate::magnets::Dipole) -> f64 {
-                self.inner.read_voltage(&source.inner)
-            }
-            fn read_voltage_collection(&self, source: &crate::collection::SourceCollection) -> f64 {
-                self.inner.read_voltage(&source.inner)
-            }
-
-            fn read(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
-                if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::CylinderMagnet>>() {
-                    Ok(self.read_voltage_cylinder(&m))
+        impl $struct {
+            fn read(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<$output_type> {
+                use magba::base::Observer;
+                let output = if let Ok(m) =
+                    source.extract::<pyo3::PyRef<'_, crate::magnets::CylinderMagnet>>()
+                {
+                    self.inner.read(&m.inner)
                 } else if let Ok(m) =
                     source.extract::<pyo3::PyRef<'_, crate::magnets::CuboidMagnet>>()
                 {
-                    Ok(self.read_voltage_cuboid(&m))
+                    self.inner.read(&m.inner)
                 } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::Dipole>>() {
-                    Ok(self.read_voltage_dipole(&m))
+                    self.inner.read(&m.inner)
+                } else if let Ok(m) =
+                    source.extract::<pyo3::PyRef<'_, crate::magnets::SphereMagnet>>()
+                {
+                    self.inner.read(&m.inner)
+                } else if let Ok(m) =
+                    source.extract::<pyo3::PyRef<'_, crate::currents::CircularCurrent>>()
+                {
+                    self.inner.read(&m.inner)
                 } else if let Ok(m) =
                     source.extract::<pyo3::PyRef<'_, crate::collection::SourceCollection>>()
                 {
-                    Ok(self.read_voltage_collection(&m))
+                    self.inner.read(&m.inner)
                 } else {
-                    Err(pyo3::exceptions::PyTypeError::new_err(
-                        "source must be CylinderMagnet, CuboidMagnet, Dipole, or SourceCollection",
-                    ))
-                }
+                    return Err(pyo3::exceptions::PyTypeError::new_err(
+                        "source must be a valid Magnet, Current, or SourceCollection",
+                    ));
+                };
+
+                impl_unified_read!(@convert output, $variant)
             }
         }
     };
-}
 
-macro_rules! impl_read_state {
-    ($Struct:ty) => {
-        #[pyo3::pymethods]
-        impl $Struct {
-            fn read_state_cylinder(&self, source: &crate::magnets::CylinderMagnet) -> bool {
-                self.inner.read_state(&source.inner)
-            }
-            fn read_state_cuboid(&self, source: &crate::magnets::CuboidMagnet) -> bool {
-                self.inner.read_state(&source.inner)
-            }
-            fn read_state_dipole(&self, source: &crate::magnets::Dipole) -> bool {
-                self.inner.read_state(&source.inner)
-            }
-            fn read_state_collection(&self, source: &crate::collection::SourceCollection) -> bool {
-                self.inner.read_state(&source.inner)
-            }
+    (@convert $output:expr, Scalar) => {
+        if let magba::base::SensorOutput::Scalar(val) = $output {
+            Ok(val)
+        } else {
+            Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "Expected Scalar output",
+            ))
+        }
+    };
 
-            fn read(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<bool> {
-                if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::CylinderMagnet>>() {
-                    Ok(self.read_state_cylinder(&m))
-                } else if let Ok(m) =
-                    source.extract::<pyo3::PyRef<'_, crate::magnets::CuboidMagnet>>()
-                {
-                    Ok(self.read_state_cuboid(&m))
-                } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::Dipole>>() {
-                    Ok(self.read_state_dipole(&m))
-                } else if let Ok(m) =
-                    source.extract::<pyo3::PyRef<'_, crate::collection::SourceCollection>>()
-                {
-                    Ok(self.read_state_collection(&m))
-                } else {
-                    Err(pyo3::exceptions::PyTypeError::new_err(
-                        "source must be CylinderMagnet, CuboidMagnet, Dipole, or SourceCollection",
-                    ))
-                }
-            }
+    (@convert $output:expr, Digital) => {
+        if let magba::base::SensorOutput::Digital(val) = $output {
+            Ok(val != 0)
+        } else {
+            Err(pyo3::exceptions::PyRuntimeError::new_err(
+                "Expected Digital output",
+            ))
         }
     };
 }

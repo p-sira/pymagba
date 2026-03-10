@@ -12,4 +12,6 @@ from __future__ import annotations
 from .__about__ import *
 
 from . import magnets
+from . import currents
 from . import sensors
+from . import fields

@@ -57,5 +57,4 @@ def test_small_cylinder():
 
 
 if __name__ == "__main__":
-    # generate_small_cylinder_expected()
-    pass
+    generate_small_cylinder_expected()

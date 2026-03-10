@@ -49,6 +49,45 @@ class TestData(ABC):
         pass
 
 
+def _compute_field(obj, points: FloatArray) -> FloatArray:
+    """Helper to call compute_B or getB depending on what is available."""
+    if hasattr(obj, "compute_B"):
+        return obj.compute_B(points)
+    elif hasattr(obj, "getB"):
+        return obj.getB(points)
+    else:
+        raise AttributeError(f"Object {obj} has neither compute_B nor getB method")
+
+
+def _translate(obj, vec: FloatArray) -> None:
+    """Helper to call translate or move depending on what is available."""
+    if hasattr(obj, "translate"):
+        obj.translate(vec)
+    elif hasattr(obj, "move"):
+        obj.move(vec)
+    else:
+        raise AttributeError(f"Object {obj} has neither translate nor move method")
+
+
+def _rotate(obj, rot: Any) -> None:
+    """Helper to call rotate with appropriate arguments."""
+    if hasattr(obj, "rotate"):
+        obj.rotate(rot)
+    elif hasattr(obj, "rotate_from_quat"):
+        # magpylib objects
+        from scipy.spatial.transform import Rotation
+
+        if isinstance(rot, Rotation):
+            obj.rotate(rot)
+        else:
+            # Assume it might be something magpylib's rotate can handle,
+            # but magpylib's .rotate() usually takes a Rotation object too.
+            # Let's try raw rotate first.
+            obj.rotate(rot)
+    else:
+        raise AttributeError(f"Object {obj} has no rotate method")
+
+
 def generate_general_expected_results(magnet, test_data_class: type[TestData]) -> None:
     """Generate and save expected results for a general test suite.
 
@@ -60,19 +99,19 @@ def generate_general_expected_results(magnet, test_data_class: type[TestData]) -
     data_paths = test_data_class.get_test_data_paths()
     test_params = test_data_class.get_test_params()
 
-    np.save(data_paths[0], magnet.compute_B(points))
+    np.save(data_paths[0], _compute_field(magnet, points))
 
     magnet.position = test_params[0]
-    np.save(data_paths[1], magnet.compute_B(points))
+    np.save(data_paths[1], _compute_field(magnet, points))
 
     magnet.orientation = test_params[1]
-    np.save(data_paths[2], magnet.compute_B(points))
+    np.save(data_paths[2], _compute_field(magnet, points))
 
-    magnet.translate(test_params[2])
-    np.save(data_paths[3], magnet.compute_B(points))
+    _translate(magnet, test_params[2])
+    np.save(data_paths[3], _compute_field(magnet, points))
 
-    magnet.rotate(test_params[3])
-    np.save(data_paths[4], magnet.compute_B(points))
+    _rotate(magnet, test_params[3])
+    np.save(data_paths[4], _compute_field(magnet, points))
 
 
 def run_test_general(
@@ -92,21 +131,21 @@ def run_test_general(
     data_paths = test_data_class.get_test_data_paths()
     test_params = test_data_class.get_test_params()
 
-    assert_allclose(magnet.compute_B(points), np.load(data_paths[0]), rtol, atol)
+    assert_allclose(_compute_field(magnet, points), np.load(data_paths[0]), rtol, atol)
 
     magnet.position = test_params[0]
-    assert_allclose(magnet.compute_B(points), np.load(data_paths[1]), rtol, atol)
+    assert_allclose(_compute_field(magnet, points), np.load(data_paths[1]), rtol, atol)
 
     magnet.orientation = test_params[1]
     assert isinstance(magnet.orientation, Rotation)
-    assert_allclose(magnet.compute_B(points), np.load(data_paths[2]), rtol, atol)
+    assert_allclose(_compute_field(magnet, points), np.load(data_paths[2]), rtol, atol)
 
-    magnet.translate(test_params[2])
-    assert_allclose(magnet.compute_B(points), np.load(data_paths[3]), rtol, atol)
+    _translate(magnet, test_params[2])
+    assert_allclose(_compute_field(magnet, points), np.load(data_paths[3]), rtol, atol)
 
-    magnet.rotate(test_params[3])
+    _rotate(magnet, test_params[3])
     assert isinstance(magnet.orientation, Rotation)
-    assert_allclose(magnet.compute_B(points), np.load(data_paths[4]), rtol, atol)
+    assert_allclose(_compute_field(magnet, points), np.load(data_paths[4]), rtol, atol)
 
 
 def generate_grid(bounds: FloatArray, N: Iterable) -> FloatArray:

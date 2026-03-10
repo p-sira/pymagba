@@ -8,9 +8,16 @@ from .pymagba_binding import (
     SourceCollection as _SourceCollection,
     CuboidMagnet as _CuboidMagnet,
     Dipole as _Dipole,
+    SphereMagnet as _SphereMagnet,
 )
 
-__all__ = ["CylinderMagnet", "SourceCollection", "CuboidMagnet", "Dipole"]
+__all__ = [
+    "CylinderMagnet",
+    "SourceCollection",
+    "CuboidMagnet",
+    "Dipole",
+    "SphereMagnet",
+]
 
 
 class CylinderMagnet(_CylinderMagnet):
@@ -127,6 +134,43 @@ class Dipole(_Dipole):
     """
 
 
+class SphereMagnet(_SphereMagnet):
+    """Uniformly magnetized spherical magnet.
+
+    All dimensions are in SI units (meters, Tesla).
+
+    Args:
+
+        position (ArrayLike3, optional): Center of the sphere [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
+            or a scipy.spatial.transform.Rotation object. Defaults to identity.
+        diameter (float, optional): Sphere diameter in meters. Must be positive.
+            Defaults to 1.0.
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 0.0].
+
+    Examples:
+
+        .. code-block:: python
+
+            from pymagba.magnets import SphereMagnet
+            from scipy.spatial.transform import Rotation
+
+            magnet = SphereMagnet(
+                position=[0.0, 0.0, 0.0],
+                orientation=Rotation.from_euler('x', 90, degrees=True),
+                diameter=0.01,
+                polarization=[0.0, 0.0, 1.0],
+            )
+
+    References:
+        Ortner, Michael, and Lucas Gabriel Coliado Bandeira. "Magpylib: A Free Python Package
+        for Magnetic Field Computation." SoftwareX 11 (2020): 100466.
+        https://doi.org/10.1016/j.softx.2020.100466
+    """
+
+
 class SourceCollection(_SourceCollection):
     """A group of magnetic sources that can be transformed and queried as a unit.
 
@@ -145,7 +189,7 @@ class SourceCollection(_SourceCollection):
 
         .. code-block:: python
 
-            from pymagba.magnets import CylinderMagnet, CuboidMagnet, SourceCollection
+            from pymagba.magnets import CylinderMagnet, CuboidMagnet, Dipole, SourceCollection
             import numpy as np
 
             m1 = CylinderMagnet(
@@ -161,5 +205,6 @@ class SourceCollection(_SourceCollection):
             )
             collection = SourceCollection([m1, m2])
             points = np.array([[0.0, 0.0, 0.05]])
+            B = collection.compute_B(points)  # shape (1, 3)
             B = collection.compute_B(points)  # shape (1, 3)
     """

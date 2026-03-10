@@ -2,6 +2,26 @@
 
 This changelog only records significant changes.
 
+## 0.4.0
+
+This version corresponds to Magba v0.4.2.
+
+### New Features
+
+- **Index, Append, Len:** Implement for `SourceCollection` and `ObserverCollection`.
+- **Pickle Support:** Allow PyMagba objects to be packed into Python dict, pickled, and reconstruct from the dict.
+- **Field Functions:** Direct access to magnetic field functions, which support parallelization.
+- **Stubs:** Add stubs for autocomplete and typehinting.
+
+### Improvements
+
+- **Improve Performance:** Reduce Python object parsing overhead.
+- **Improve Documentation:** Add common sections for transformation and source methods for easy comprehension.
+
+### Internal Structure Improvements
+
+- Implement `SourceRef` and `ObserverRef` enums to facilitate polymorphic Python class extraction.
+
 ## 0.3.0
 
 - Use PyO3's PyClass to bind directly to Magba structs.
