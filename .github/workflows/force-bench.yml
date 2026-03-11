@@ -1,0 +1,54 @@
+name: Force Benchmark
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: pymagba
+    steps:
+      - name: Checkout asv branch
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-python-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+      - name: Install dependencies
+        run: uv add asv
+      - name: Run benchmark
+        run: |
+          uv run asv machine --machine github-runner --yes
+          uv run asv run v0.1.0 --steps 1
+          uv run asv run v0.3.0 --steps 1
+          uv run asv run v0.3.1-dev.1 --steps 1
+          uv run asv run v0.3.1-dev.2 --steps 1
+          uv run asv run v0.4.0 --steps 1
+
+      - name: Push results to asv branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin asv
+          git checkout asv || git checkout -b asv
+
+          # Move new results into the branch
+          mkdir -p results
+          cp -r .asv/results/* results/
+
+          git add results/
+          git commit -m "Update benchmark results: ${GITHUB_SHA::8}"
+          git push origin asv
