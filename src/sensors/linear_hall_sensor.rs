@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::{macros::impl_pypose, util::catch_unwind_to_pyerr};
+use crate::{base::SourceRef, macros::impl_pypose, util::catch_unwind_to_pyerr};
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
@@ -131,27 +131,14 @@ impl LinearHallSensor {
         .unbind())
     }
 
+    fn read_voltage(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
+        let source_ref = SourceRef::try_extract(&source)?;
+        Ok(self.inner.read_voltage(source_ref.as_source()))
+    }
+
     fn compute_B_perp(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
-        if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::CylinderMagnet>>() {
-            Ok(self.inner.compute_B_perp(&m.inner))
-        } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::CuboidMagnet>>() {
-            Ok(self.inner.compute_B_perp(&m.inner))
-        } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::Dipole>>() {
-            Ok(self.inner.compute_B_perp(&m.inner))
-        } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::SphereMagnet>>() {
-            Ok(self.inner.compute_B_perp(&m.inner))
-        } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::currents::CircularCurrent>>()
-        {
-            Ok(self.inner.compute_B_perp(&m.inner))
-        } else if let Ok(m) =
-            source.extract::<pyo3::PyRef<'_, crate::collection::SourceCollection>>()
-        {
-            Ok(self.inner.compute_B_perp(&m.inner))
-        } else {
-            Err(pyo3::exceptions::PyTypeError::new_err(
-                "source must be a valid Magnet, Current, or SourceCollection",
-            ))
-        }
+        let source_ref = SourceRef::try_extract(&source)?;
+        Ok(self.inner.compute_B_perp(source_ref.as_source()))
     }
 }
 

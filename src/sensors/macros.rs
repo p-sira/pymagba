@@ -9,34 +9,8 @@ macro_rules! impl_unified_read {
         impl $struct {
             fn read(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<$output_type> {
                 use magba::base::Observer;
-                let output = if let Ok(m) =
-                    source.extract::<pyo3::PyRef<'_, crate::magnets::CylinderMagnet>>()
-                {
-                    self.inner.read(&m.inner)
-                } else if let Ok(m) =
-                    source.extract::<pyo3::PyRef<'_, crate::magnets::CuboidMagnet>>()
-                {
-                    self.inner.read(&m.inner)
-                } else if let Ok(m) = source.extract::<pyo3::PyRef<'_, crate::magnets::Dipole>>() {
-                    self.inner.read(&m.inner)
-                } else if let Ok(m) =
-                    source.extract::<pyo3::PyRef<'_, crate::magnets::SphereMagnet>>()
-                {
-                    self.inner.read(&m.inner)
-                } else if let Ok(m) =
-                    source.extract::<pyo3::PyRef<'_, crate::currents::CircularCurrent>>()
-                {
-                    self.inner.read(&m.inner)
-                } else if let Ok(m) =
-                    source.extract::<pyo3::PyRef<'_, crate::collection::SourceCollection>>()
-                {
-                    self.inner.read(&m.inner)
-                } else {
-                    return Err(pyo3::exceptions::PyTypeError::new_err(
-                        "source must be a valid Magnet, Current, or SourceCollection",
-                    ));
-                };
-
+                let source_ref = crate::base::SourceRef::try_extract(&source)?;
+                let output = self.inner.read(source_ref.as_source());
                 impl_unified_read!(@convert output, $variant)
             }
         }
