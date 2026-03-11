@@ -1,0 +1,4 @@
+[submodule "pymagba"]
+	path = pymagba
+	url = https://github.com/p-sira/pymagba.git
+	branch = main
