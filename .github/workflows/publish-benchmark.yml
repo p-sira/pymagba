@@ -1,4 +1,4 @@
-name: Build and Deploy to Cloudflare
+name: Deploy Benchmark Results
 on:
     push:
         branches:
