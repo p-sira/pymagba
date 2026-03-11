@@ -23,7 +23,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-python-
       - name: Install dependencies
-        run: uv add asv
+        run: uv sync --group dev
       - name: Run benchmark
         run: |
           uv run asv machine --machine github-runner --yes
@@ -40,7 +40,8 @@ jobs:
           # Ensure we have the latest asv branch
           git fetch origin asv
           if git show-ref --quiet refs/heads/asv; then
-            git checkout asv
+            # Use -f to ignore changes to pyproject.toml/uv.lock caused by uv sync
+            git checkout -f asv
             git reset --hard origin/asv
           else
             git checkout -b asv origin/asv
