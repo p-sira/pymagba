@@ -68,6 +68,10 @@ jobs:
         with:
           command: develop
           args: --release
+      - name: Build documentation
+        run: |
+          cd docs
+          uv run make html
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
