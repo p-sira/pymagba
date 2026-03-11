@@ -7,9 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    defaults:
-      run:
-        working-directory: pymagba
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,7 +23,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-python-
       - name: Install dependencies
-        run: uv sync --group docs
+        run: uv add asv
       - name: Run benchmark
         run: |
           uv run asv machine --machine github-runner --yes
