@@ -42,7 +42,7 @@ jobs:
           uv run asv publish
       - name: Build Benchmark Docs
         run: |
-          rm -rf ../build/html/
+          find ../build/html -mindepth 1 ! -name 'wrangler.jsonc' -delete
           mkdir -p ../build/html/
           cp -r .asv/html/* ../build/html/
       - name: Commit and push
