@@ -36,13 +36,24 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Ensure we have the latest asv branch
           git fetch origin asv
-          git checkout asv || git checkout -b asv
+          if git show-ref --quiet refs/heads/asv; then
+            git checkout asv
+            git reset --hard origin/asv
+          else
+            git checkout -b asv origin/asv
+          fi
 
           # Move new results into the branch
           mkdir -p results
           cp -r .asv/results/* results/
 
           git add results/
-          git commit -m "Update benchmark results: ${GITHUB_SHA::8}"
-          git push origin asv
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update benchmark results: ${GITHUB_SHA::8}"
+            git push origin asv
+          fi
