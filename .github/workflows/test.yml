@@ -20,6 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history needed for asv
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -45,3 +47,7 @@ jobs:
       - name: Run tests
         run: |
           uv run pytest python/tests/
+      - name: Test performance regressions
+        run: |
+          uv run asv machine --yes
+          uv run asv continuous origin/main HEAD --factor 1.05 --bench "(.*)\('PyMagba'\)" --split
