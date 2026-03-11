@@ -1211,6 +1211,7 @@ dev = [
     { name = "pytest" },
 ]
 docs = [
+    { name = "asv" },
     { name = "myst-parser" },
     { name = "pydata-sphinx-theme" },
     { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -1235,6 +1236,7 @@ dev = [
     { name = "pytest", specifier = ">=9.0.2" },
 ]
 docs = [
+    { name = "asv", specifier = ">=0.6.5" },
     { name = "myst-parser", specifier = ">=4.0.1" },
     { name = "pydata-sphinx-theme", specifier = ">=0.16.1" },
     { name = "sphinx", specifier = ">=8.2.3" },
