@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pymagba
     steps:
       - name: Checkout asv branch
         uses: actions/checkout@v4
@@ -19,12 +22,11 @@ jobs:
           path: |
             ~/pymagba/.cache/uv
             pymagba/.venv
-          key: ${{ runner.os }}-python-${{ hashFiles('uv.lock') }}
+          key: ${{ runner.os }}-python-${{ hashFiles('pymagba/uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-python-
-      - run: cd pymagba
-      - name: Install asv
-        run: uv add asv
+      - name: Install dependencies
+        run: uv sync --group dev
       - name: Generate ASV HTML
         run: |
           mkdir -p .asv
@@ -34,8 +36,8 @@ jobs:
         run: |
           cd docs
           uv run make html
-          mkdir -p build/html/
-          cp -r ../.asv/html/* build/html/
+          mkdir -p ../build/html/
+          cp -r ../.asv/html/* ../build/html/
       - name: Commit and push
         run: |
           git config --global user.name "github-actions[bot]"
