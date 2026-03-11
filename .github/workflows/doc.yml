@@ -84,7 +84,7 @@ jobs:
 
       - name: Run benchmark
         run: |
-          uv run asv machine --yes
+          uv run asv machine --machine github-runner --yes
           uv run asv run origin/main~1..origin/main
       - name: Push results to asv branch
         run: |
