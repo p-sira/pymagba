@@ -50,4 +50,4 @@ jobs:
       - name: Test performance regressions
         run: |
           uv run asv machine --yes
-          uv run asv continuous origin/main HEAD --factor 1.05 --bench "(.*)\('PyMagba'\)" --split
+          uv run asv continuous origin/main HEAD --factor 1.05 --split
