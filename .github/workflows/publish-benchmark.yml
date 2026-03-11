@@ -41,7 +41,7 @@ jobs:
       - name: Build Benchmark Docs
         run: |
           mkdir -p ../build/html/
-          cp -r ../.asv/html/* ../build/html/
+          cp -r .asv/html/* ../build/html/
       - name: Commit and push
         run: |
           git config --global user.name "github-actions[bot]"
