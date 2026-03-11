@@ -1,9 +1,0 @@
-{
-    "arch": "x86_64",
-    "cpu": "AMD Ryzen 5 4600H with Radeon Graphics",
-    "machine": "psira-arch",
-    "num_cpu": "12",
-    "os": "Linux 6.19.6-arch1-1",
-    "ram": "16GB",
-    "version": 1
-}
