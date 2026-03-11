@@ -8,34 +8,44 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: pymagba
     steps:
       - name: Checkout asv branch
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Fetch submodule branches
+        run: |
+          git fetch origin main:main dev:dev
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Cache Python dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/uv
-            .venv
-          key: ${{ runner.os }}-python-${{ hashFiles('uv.lock') }}
+            ~/pymagba/.cache/uv
+            pymagba/.venv
+          key: ${{ runner.os }}-python-${{ hashFiles('pymagba/uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-python-
-      - name: Install asv
-        run: uv add asv
+      - name: Install dependencies
+        run: uv sync --group dev
       - name: Generate ASV HTML
         run: |
           mkdir -p .asv
-          cp -r results .asv/
+          cp -r ../results .asv/
           uv run asv publish
       - name: Build Benchmark Docs
         run: |
-          cd docs
-          uv run make html
-          mkdir -p build/html/
-          cp -r ../.asv/html/* build/html/
+          mkdir -p ../build/html/
+          cp -r .asv/html/* ../build/html/
       - name: Commit and push
+        working-directory: .
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
