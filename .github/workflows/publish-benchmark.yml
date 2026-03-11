@@ -17,17 +17,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/uv
-            .venv
+            ~/pymagba/.cache/uv
+            pymagba/.venv
           key: ${{ runner.os }}-python-${{ hashFiles('uv.lock') }}
           restore-keys: |
             ${{ runner.os }}-python-
+      - run: cd pymagba
       - name: Install asv
         run: uv add asv
       - name: Generate ASV HTML
         run: |
           mkdir -p .asv
-          cp -r results .asv/
+          cp -r ../results .asv/
           uv run asv publish
       - name: Build Benchmark Docs
         run: |
