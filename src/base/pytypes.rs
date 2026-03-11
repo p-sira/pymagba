@@ -20,8 +20,8 @@ pub struct ArrayLike3(pub [f64; 3]);
 impl PyStubType for ArrayLike3 {
     fn type_output() -> TypeInfo {
         TypeInfo {
-            name: "typing.Sequence[float]".to_string(),
-            import: [pyo3_stub_gen::ImportRef::Module("typing".into())]
+            name: "numpy.typing.ArrayLike".to_string(),
+            import: [pyo3_stub_gen::ImportRef::Module("numpy.typing".into())]
                 .into_iter()
                 .collect(),
             source_module: None,
@@ -80,8 +80,10 @@ pub struct PointsLike(pub Vec<nalgebra::Point3<f64>>);
 impl PyStubType for PointsLike {
     fn type_output() -> TypeInfo {
         TypeInfo {
-            name: "typing.Sequence[typing.Sequence[float]]".to_string(),
-            import: [ImportRef::Module("typing".into())].into_iter().collect(),
+            name: "numpy.typing.ArrayLike".to_string(),
+            import: [ImportRef::Module("numpy.typing".into())]
+                .into_iter()
+                .collect(),
             source_module: None,
             type_refs: std::collections::HashMap::new(),
         }
@@ -145,11 +147,10 @@ pub struct PyRotation(pub nalgebra::UnitQuaternion<f64>);
 impl PyStubType for PyRotation {
     fn type_output() -> TypeInfo {
         TypeInfo {
-            name: "typing.Union[scipy.spatial.transform.Rotation, typing.Sequence[float]]"
-                .to_string(),
+            name: "scipy.spatial.transform.Rotation | numpy.typing.ArrayLike".to_string(),
             import: [
                 ImportRef::Module("scipy".into()),
-                ImportRef::Module("typing".into()),
+                ImportRef::Module("numpy.typing".into()),
             ]
             .into_iter()
             .collect(),
