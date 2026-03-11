@@ -27,7 +27,6 @@ jobs:
       - name: Run benchmark
         run: |
           uv run asv machine --machine github-runner --yes
-          uv run asv run v0.1.0 --steps 1
           uv run asv run v0.3.0 --steps 1
           uv run asv run v0.3.1-dev.1 --steps 1
           uv run asv run v0.3.1-dev.2 --steps 1
