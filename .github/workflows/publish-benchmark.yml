@@ -43,9 +43,10 @@ jobs:
           mkdir -p ../build/html/
           cp -r .asv/html/* ../build/html/
       - name: Commit and push
+        working-directory: .
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add ../build/html/
+          git add build/html/
           git commit -m "Update benchmark results: ${GITHUB_SHA::8}"
           git push origin asv
