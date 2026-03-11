@@ -7,7 +7,7 @@ use nalgebra::Vector3;
 use pyo3::prelude::*;
 
 #[cfg(feature = "stub-gen")]
-use pyo3_stub_gen::gen_stub_pyfunction;
+use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
 use crate::{
     base::{ArrayLike3, PointsLike, PyRotation},

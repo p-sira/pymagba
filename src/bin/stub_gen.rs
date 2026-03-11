@@ -4,9 +4,8 @@
  */
 
 #[cfg(feature = "stub-gen")]
-fn main() -> Result<()> {
+fn main() -> pyo3_stub_gen::Result<()> {
     use pymagba_binding::stub_info;
-    use pyo3_stub_gen::Result;
     let stub_info = stub_info()?;
     stub_info.generate()?;
 
