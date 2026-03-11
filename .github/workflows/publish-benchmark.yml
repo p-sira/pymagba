@@ -49,6 +49,15 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Sync with remote in case of concurrent changes
+          git fetch origin asv
+          git merge origin/asv --no-edit || echo "Merge failed or nothing to merge"
+
           git add build/html/
-          git commit -m "Update benchmark results: ${GITHUB_SHA::8}"
-          git push origin asv
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update benchmark results: ${GITHUB_SHA::8}"
+            git push origin asv
+          fi
