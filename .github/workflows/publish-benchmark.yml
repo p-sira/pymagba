@@ -17,6 +17,9 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - name: Fetch submodule branches
+        run: |
+          git fetch origin main:main dev:dev
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Cache Python dependencies
