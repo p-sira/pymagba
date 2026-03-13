@@ -59,7 +59,7 @@ pip install pymagba
 uv add pymagba
 ```
 
-To install from source see the[Reproducibility](#reproducibility) section.
+To install from source see the [Reproducibility](#reproducibility) section.
 
 
 
