@@ -15,7 +15,7 @@ use pyo3::IntoPyObject;
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::base::{extract_states, try_into_quat};
+use crate::base::{extract_states, try_into_quat, try_into_slice};
 use crate::{
     base::{ObserverRef, SourceRef},
     macros::{impl_compute_B, impl_pypose},
@@ -33,8 +33,13 @@ pub struct SourceCollection {
 #[pymethods]
 impl SourceCollection {
     #[new]
-    #[pyo3(signature = (sources=None))]
-    fn new(sources: Option<Vec<Py<PyAny>>>, py: Python<'_>) -> PyResult<Self> {
+    #[pyo3(signature = (sources=None, position=None, orientation=None))]
+    fn new(
+        sources: Option<Vec<Py<PyAny>>>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
+        py: Python<'_>,
+    ) -> PyResult<Self> {
         let srcs = sources.unwrap_or_default();
         let mut components = Vec::with_capacity(srcs.len());
 
@@ -43,8 +48,11 @@ impl SourceCollection {
             components.push(s_ref.into_component());
         }
 
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
+
         Ok(Self {
-            inner: SourceAssembly::from(components),
+            inner: SourceAssembly::new(pos.into(), rot, components),
             sources: Arc::new(srcs),
         })
     }
@@ -138,17 +146,11 @@ impl ObserverCollection {
             components.push(o_ref.into_component());
         }
 
-        let pos: nalgebra::Point3<f64> = position
-            .map(|p| p.0.into())
-            .unwrap_or_else(|| [0.0, 0.0, 0.0].into());
-        let rot: nalgebra::UnitQuaternion<f64> = try_into_quat!(orientation);
-
-        let mut inner = ObserverAssembly::from(components);
-        inner.set_position(pos);
-        inner.set_orientation(rot);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
 
         Ok(Self {
-            inner,
+            inner: ObserverAssembly::new(pos.into(), rot, components),
             sensors: Arc::new(sens),
         })
     }

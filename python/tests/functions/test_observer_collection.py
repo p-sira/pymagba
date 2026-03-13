@@ -58,10 +58,10 @@ def test_observer_collection_pose_application():
         diameter=0.01, height=0.01, polarization=[0, 0, 1], position=[0, 0, 0]
     )
 
-    # Reading should be same as sensor at [0,0,0.01]
+    # Reading should be same as sensor at [0,0,0]
     res_coll = coll.read_all(magnet)[0]
 
-    s_direct = LinearHallSensor(position=[0, 0, 0.01], sensitive_axis=[0, 0, 1])
+    s_direct = LinearHallSensor(position=[0, 0, 0], sensitive_axis=[0, 0, 1])
     res_direct = s_direct.read(magnet)
 
     assert np.allclose(res_coll, res_direct)
