@@ -108,9 +108,7 @@ impl LinearHallSensor {
 
         self.inner = MagbaLinearHallSensor::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
-                orientation.into(),
-            )),
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
             sensitive_axis,
             sensitivity,
             supply_voltage,

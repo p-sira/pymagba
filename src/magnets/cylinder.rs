@@ -97,9 +97,7 @@ impl CylinderMagnet {
 
         self.inner = MagbaCylinderMagnet::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
-                orientation.into(),
-            )),
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
             polarization,
             diameter,
             height,

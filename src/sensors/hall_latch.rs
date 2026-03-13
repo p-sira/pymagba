@@ -102,9 +102,7 @@ impl HallLatch {
 
         self.inner = MagbaHallLatch::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
-                orientation.into(),
-            )),
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
             sensitive_axis,
             b_op,
             b_rp,

@@ -80,9 +80,7 @@ impl CircularCurrent {
 
         self.inner = MagbaCircularCurrent::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
-                orientation.into(),
-            )),
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
             diameter,
             current,
         );
