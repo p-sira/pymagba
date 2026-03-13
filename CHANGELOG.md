@@ -2,6 +2,15 @@
 
 This changelog only records significant changes.
 
+## 0.4.1
+
+This version corresponds to Magba v0.4.3.
+
+### Bug Fixes
+
+- Use `ArrayLike` in stubs instead of Sequence
+- Fix default polarization vectors of magnet classes to [0, 0, 1].
+
 ## 0.4.0
 
 This version corresponds to Magba v0.4.2.
