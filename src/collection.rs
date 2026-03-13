@@ -9,7 +9,7 @@ use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, So
 use numpy::PyArray1;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PyTuple};
+use pyo3::types::{PyDict, PyList};
 use pyo3::IntoPyObject;
 
 #[cfg(feature = "stub-gen")]
@@ -116,22 +116,6 @@ impl SourceCollection {
         self.inner = inner;
         self.sources = Arc::new(sources);
         Ok(())
-    }
-
-    fn __reduce__(&self, py: Python<'_>) -> PyResult<Py<PyTuple>> {
-        let cls = py.get_type::<Self>();
-        let sources_list = PyList::new(py, self.sources.as_ref())?;
-        let args = PyTuple::new(py, [sources_list.into_any()])?;
-        let state = self.__getstate__(py)?;
-        Ok(PyTuple::new(
-            py,
-            [
-                cls.into_any(),
-                args.into_any(),
-                state.into_bound(py).into_any(),
-            ],
-        )?
-        .unbind())
     }
 }
 
@@ -247,22 +231,6 @@ impl ObserverCollection {
         self.inner = inner;
         self.sensors = Arc::new(sensors);
         Ok(())
-    }
-
-    fn __reduce__(&self, py: Python<'_>) -> PyResult<Py<PyTuple>> {
-        let cls = py.get_type::<Self>();
-        let sensors_list = PyList::new(py, self.sensors.as_ref())?;
-        let args = PyTuple::new(py, [sensors_list.into_any()])?;
-        let state = self.__getstate__(py)?;
-        Ok(PyTuple::new(
-            py,
-            [
-                cls.into_any(),
-                args.into_any(),
-                state.into_bound(py).into_any(),
-            ],
-        )?
-        .unbind())
     }
 
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {

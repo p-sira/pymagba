@@ -95,21 +95,6 @@ impl HallSwitch {
         Ok(())
     }
 
-    fn __reduce__(&self, py: Python<'_>) -> PyResult<pyo3::Py<pyo3::types::PyTuple>> {
-        let cls = py.get_type::<Self>();
-        let state = self.__getstate__(py)?;
-        let args = pyo3::types::PyTuple::empty(py);
-        Ok(pyo3::types::PyTuple::new(
-            py,
-            [
-                cls.into_any(),
-                args.into_any(),
-                state.into_bound(py).into_any(),
-            ],
-        )?
-        .unbind())
-    }
-
     fn read_state(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<bool> {
         let source_ref = SourceRef::try_extract(&source)?;
         Ok(self.inner.read_state(source_ref.as_source()))
