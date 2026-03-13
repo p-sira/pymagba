@@ -95,6 +95,7 @@ impl SourceCollection {
             }
         }
 
+        // Build the assembly first, then set the pose, since the components are saved in local frame.
         let mut inner = SourceAssembly::from(components);
         inner.set_position(position);
         inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
@@ -198,6 +199,7 @@ impl ObserverCollection {
             }
         }
 
+        // Build the assembly first, then set the pose, since the components are saved in local frame.
         let mut inner = ObserverAssembly::from(components);
         inner.set_position(nalgebra::Point3::from(position));
         inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
