@@ -12,6 +12,7 @@ use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 use crate::{
     base::{
         extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, PyRotation,
+        SourceRef,
     },
     macros::impl_pypose,
     util::catch_unwind_to_pyerr,
@@ -109,6 +110,11 @@ impl HallSwitch {
             ],
         )?
         .unbind())
+    }
+
+    fn read_state(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<bool> {
+        let source_ref = SourceRef::try_extract(&source)?;
+        Ok(self.inner.read_state(source_ref.as_source()))
     }
 }
 
