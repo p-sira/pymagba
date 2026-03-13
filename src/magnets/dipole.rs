@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{extract_states, try_into_quat, try_into_slice},
+    base::{extract_states, try_into_quat, try_into_slice, ArrayLike3, PyRotation},
     macros::{impl_compute_B, impl_pypose},
 };
 
@@ -27,9 +27,9 @@ impl Dipole {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, moment=None))]
     fn new(
-        position: Option<crate::base::ArrayLike3>,
-        orientation: Option<crate::base::PyRotation>,
-        moment: Option<crate::base::ArrayLike3>,
+        position: Option<ArrayLike3>,
+        orientation: Option<PyRotation>,
+        moment: Option<ArrayLike3>,
     ) -> Self {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
@@ -46,7 +46,7 @@ impl Dipole {
     }
 
     #[setter]
-    fn set_moment(&mut self, moment: crate::base::ArrayLike3) {
+    fn set_moment(&mut self, moment: ArrayLike3) {
         self.inner.set_moment(moment.0);
     }
 

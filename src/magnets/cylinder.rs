@@ -10,7 +10,9 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{extract_states, try_into_quat, try_into_slice, try_into_slice_or},
+    base::{
+        extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, PyRotation,
+    },
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -28,11 +30,11 @@ impl CylinderMagnet {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, diameter=1.0, height=1.0, polarization=None))]
     fn new(
-        position: Option<crate::base::ArrayLike3>,
-        orientation: Option<crate::base::PyRotation>,
+        position: Option<ArrayLike3>,
+        orientation: Option<PyRotation>,
         diameter: f64,
         height: f64,
-        polarization: Option<crate::base::ArrayLike3>,
+        polarization: Option<ArrayLike3>,
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
@@ -73,7 +75,7 @@ impl CylinderMagnet {
     }
 
     #[setter]
-    fn set_polarization(&mut self, pol: crate::base::ArrayLike3) {
+    fn set_polarization(&mut self, pol: ArrayLike3) {
         self.inner.set_polarization(pol.0);
     }
 

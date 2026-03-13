@@ -199,11 +199,11 @@ pub fn cuboid_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, diameter=1.0, polarization=None))]
 pub fn sphere_B<'py>(
     py: Python<'py>,
-    points: crate::base::PointsLike,
-    position: Option<crate::base::ArrayLike3>,
-    orientation: Option<crate::base::PyRotation>,
+    points: PointsLike,
+    position: Option<ArrayLike3>,
+    orientation: Option<PyRotation>,
     diameter: f64,
-    polarization: Option<crate::base::ArrayLike3>,
+    polarization: Option<ArrayLike3>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
     let points = points.0;
     let n = points.len();
@@ -251,9 +251,9 @@ pub fn sphere_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, diameter=1.0, current=1.0))]
 pub fn circular_B<'py>(
     py: Python<'py>,
-    points: crate::base::PointsLike,
-    position: Option<crate::base::ArrayLike3>,
-    orientation: Option<crate::base::PyRotation>,
+    points: PointsLike,
+    position: Option<ArrayLike3>,
+    orientation: Option<PyRotation>,
     diameter: f64,
     current: f64,
 ) -> Bound<'py, numpy::PyArray2<f64>> {

@@ -10,7 +10,9 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{extract_states, try_into_quat, try_into_slice, try_into_slice_or},
+    base::{
+        extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, PyRotation,
+    },
     macros::impl_pypose,
     util::catch_unwind_to_pyerr,
 };
@@ -28,9 +30,9 @@ impl HallLatch {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, sensitive_axis=None, b_op=0.010, b_rp=-0.010))]
     fn new(
-        position: Option<crate::base::ArrayLike3>,
-        orientation: Option<crate::base::PyRotation>,
-        sensitive_axis: Option<crate::base::ArrayLike3>,
+        position: Option<ArrayLike3>,
+        orientation: Option<PyRotation>,
+        sensitive_axis: Option<ArrayLike3>,
         b_op: f64,
         b_rp: f64,
     ) -> PyResult<Self> {
@@ -50,7 +52,7 @@ impl HallLatch {
     }
 
     #[setter]
-    fn set_sensitive_axis(&mut self, axis: crate::base::ArrayLike3) -> PyResult<()> {
+    fn set_sensitive_axis(&mut self, axis: ArrayLike3) -> PyResult<()> {
         catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
             self.inner.set_sensitive_axis(axis.0);
         }))

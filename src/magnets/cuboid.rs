@@ -10,7 +10,9 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{extract_states, try_into_quat, try_into_slice, try_into_slice_or},
+    base::{
+        extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, PyRotation,
+    },
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -28,10 +30,10 @@ impl CuboidMagnet {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, dimensions=None, polarization=None))]
     fn new(
-        position: Option<crate::base::ArrayLike3>,
-        orientation: Option<crate::base::PyRotation>,
-        dimensions: Option<crate::base::ArrayLike3>,
-        polarization: Option<crate::base::ArrayLike3>,
+        position: Option<ArrayLike3>,
+        orientation: Option<PyRotation>,
+        dimensions: Option<ArrayLike3>,
+        polarization: Option<ArrayLike3>,
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
@@ -49,7 +51,7 @@ impl CuboidMagnet {
     }
 
     #[setter]
-    fn set_polarization(&mut self, pol: crate::base::ArrayLike3) {
+    fn set_polarization(&mut self, pol: ArrayLike3) {
         self.inner.set_polarization(pol.0);
     }
 
@@ -59,7 +61,7 @@ impl CuboidMagnet {
     }
 
     #[setter]
-    fn set_dimensions(&mut self, dim: crate::base::ArrayLike3) -> PyResult<()> {
+    fn set_dimensions(&mut self, dim: ArrayLike3) -> PyResult<()> {
         catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
             self.inner.set_dimensions(dim.0);
         }))
