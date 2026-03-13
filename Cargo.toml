@@ -1,6 +1,6 @@
 [package]
 name = "pymagba_binding"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Sira Pornsiriprasert <code@psira.me>"]
 description = "Rust-to-Python binding for PyMagba"
