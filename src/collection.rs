@@ -6,7 +6,6 @@
 use std::sync::Arc;
 
 use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, SourceComponent};
-use nalgebra::UnitQuaternion;
 use numpy::PyArray1;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
@@ -16,7 +15,7 @@ use pyo3::IntoPyObject;
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::base::{extract_states, try_into_quat};
+use crate::base::try_into_quat;
 use crate::{
     base::{ObserverRef, SourceRef},
     macros::{impl_compute_B, impl_pypose},
@@ -86,8 +85,20 @@ impl SourceCollection {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
-        let sources: Vec<Py<PyAny>> = state.get_item("sources")?.unwrap().extract()?;
-        extract_states!(state, [position;3, orientation;4]);
+        let sources_bound = state
+            .get_item("sources")?
+            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("sources missing from state"))?;
+        let sources: Vec<Py<PyAny>> = sources_bound.extract()?;
+
+        let pos_bound = state
+            .get_item("position")?
+            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("position missing from state"))?;
+        let position: [f64; 3] = pos_bound.extract()?;
+
+        let rot_bound = state.get_item("orientation")?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err("orientation missing from state")
+        })?;
+        let orientation: [f64; 4] = rot_bound.extract()?;
 
         let mut components: Vec<SourceComponent<f64>> = Vec::with_capacity(sources.len());
         for src in sources.iter() {
@@ -96,11 +107,13 @@ impl SourceCollection {
             }
         }
 
-        self.inner = SourceAssembly::new(
-            position.into(),
-            UnitQuaternion::from_quaternion(orientation.into()),
-            components,
-        );
+        let mut inner = SourceAssembly::from(components);
+        inner.set_position(position);
+        inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
+            nalgebra::Quaternion::from_vector(orientation.into()),
+        ));
+
+        self.inner = inner;
         self.sources = Arc::new(sources);
         Ok(())
     }
@@ -187,21 +200,35 @@ impl ObserverCollection {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
-        let sensors: Vec<Py<PyAny>> = state.get_item("sensors")?.unwrap().extract()?;
-        extract_states!(state, [position;3, orientation;4]);
+        let sensors_bound = state
+            .get_item("sensors")?
+            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("sensors missing from state"))?;
+        let sensors: Vec<Py<PyAny>> = sensors_bound.extract()?;
+
+        let pos_bound = state
+            .get_item("position")?
+            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("position missing from state"))?;
+        let position: [f64; 3] = pos_bound.extract()?;
+
+        let rot_bound = state.get_item("orientation")?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err("orientation missing from state")
+        })?;
+        let orientation: [f64; 4] = rot_bound.extract()?;
 
         let mut components: Vec<ObserverComponent<f64>> = Vec::with_capacity(sensors.len());
-        for src in sensors.iter() {
-            if let Ok(s_ref) = src.extract::<ObserverRef>(py) {
-                components.push(s_ref.into_component());
+        for s in &sensors {
+            if let Ok(o_ref) = s.extract::<ObserverRef>(py) {
+                components.push(o_ref.into_component());
             }
         }
 
-        self.inner = ObserverAssembly::new(
-            position.into(),
-            UnitQuaternion::from_quaternion(orientation.into()),
-            components,
-        );
+        let mut inner = ObserverAssembly::from(components);
+        inner.set_position(nalgebra::Point3::from(position));
+        inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
+            nalgebra::Quaternion::from_vector(orientation.into()),
+        ));
+
+        self.inner = inner;
         self.sensors = Arc::new(sensors);
         Ok(())
     }
