@@ -35,7 +35,7 @@ impl SphereMagnet {
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
-        let pol = try_into_slice_or!(polarization, [0.0, 0.0, 0.0]);
+        let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaSphereMagnet::new(pos, rot, pol, diameter),

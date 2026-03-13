@@ -62,7 +62,7 @@ pub fn cylinder_B<'py>(
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 0.0]);
+    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
 
     // Pre-allocate the result buffer
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
@@ -160,7 +160,7 @@ pub fn cuboid_B<'py>(
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
     let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
-    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 0.0]);
+    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
@@ -212,7 +212,7 @@ pub fn sphere_B<'py>(
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 0.0]);
+    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
