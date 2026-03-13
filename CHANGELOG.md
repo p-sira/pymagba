@@ -4,6 +4,10 @@
 
 This version corresponds to Magba v0.4.3.
 
+### New Features
+
+- Add `read_state` for `HallLatch` and `HallSwitch`.
+
 ### Bug Fixes
 
 - Use `ArrayLike` in stubs instead of Sequence
