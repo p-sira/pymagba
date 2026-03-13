@@ -21,7 +21,7 @@ name = "stub_gen"
 path = "src/bin/stub_gen.rs"
 
 [dependencies]
-magba = "0.4.2"
+magba = "0.4.3"
 nalgebra = "0.34.1"
 ndarray = "0.17.2"
 numpy = "0.28.0"
