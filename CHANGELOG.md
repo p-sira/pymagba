@@ -10,7 +10,8 @@ This version corresponds to Magba v0.4.3.
 
 ### Bug Fixes
 
-- Use `ArrayLike` in stubs instead of Sequence
+- Fix collection constructors interpreting children pose as in local frame. Now assume children poses in global frame.
+- Use `ArrayLike` in stubs instead of Sequence.
 - Fix default polarization vectors of magnet classes to [0, 0, 1].
 
 ## 0.4.0
