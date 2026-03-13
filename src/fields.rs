@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
 
 use crate::{
-    base::{ArrayLike3, PointsLike, PyRotation},
+    base::{try_into_slice, try_into_slice_or, ArrayLike3, PointsLike, PyRotation},
     util::vec3_to_pyarray2,
 };
 
@@ -58,11 +58,11 @@ pub fn cylinder_B<'py>(
     let n = points.len();
 
     // Map options to defaults
-    let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+    let pos = try_into_slice!(position);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-    let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 0.0]);
 
     // Pre-allocate the result buffer
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
@@ -110,11 +110,11 @@ pub fn dipole_B<'py>(
     let points = points.0;
     let n = points.len();
 
-    let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+    let pos = try_into_slice!(position);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-    let m = moment.map(|m| m.0).unwrap_or([0.0, 0.0, 0.0]);
+    let m = try_into_slice!(moment);
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
@@ -155,12 +155,12 @@ pub fn cuboid_B<'py>(
     let points = points.0;
     let n = points.len();
 
-    let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+    let pos = try_into_slice!(position);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
     let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
-    let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 0.0]);
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
@@ -208,11 +208,11 @@ pub fn sphere_B<'py>(
     let points = points.0;
     let n = points.len();
 
-    let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+    let pos = try_into_slice!(position);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-    let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 0.0]);
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
@@ -260,7 +260,7 @@ pub fn circular_B<'py>(
     let points = points.0;
     let n = points.len();
 
-    let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+    let pos = try_into_slice!(position);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);

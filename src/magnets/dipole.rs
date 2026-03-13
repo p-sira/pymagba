@@ -9,7 +9,10 @@ use pyo3::prelude::*;
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::macros::{impl_compute_B, impl_pypose};
+use crate::{
+    base::{try_into_quat, try_into_slice},
+    macros::{impl_compute_B, impl_pypose},
+};
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
@@ -28,11 +31,9 @@ impl Dipole {
         orientation: Option<crate::base::PyRotation>,
         moment: Option<crate::base::ArrayLike3>,
     ) -> Self {
-        let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
-        let rot = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-        let m = moment.map(|m| m.0).unwrap_or([0.0, 0.0, 0.0]);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
+        let m = try_into_slice!(moment);
 
         Self {
             inner: MagbaDipole::new(pos, rot, m),

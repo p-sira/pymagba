@@ -15,6 +15,7 @@ use pyo3::IntoPyObject;
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
+use crate::base::try_into_quat;
 use crate::{
     base::{ObserverRef, SourceRef},
     macros::{impl_compute_B, impl_pypose},
@@ -167,9 +168,7 @@ impl ObserverCollection {
         let pos: nalgebra::Point3<f64> = position
             .map(|p| p.0.into())
             .unwrap_or_else(|| [0.0, 0.0, 0.0].into());
-        let rot: nalgebra::UnitQuaternion<f64> = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
+        let rot: nalgebra::UnitQuaternion<f64> = try_into_quat!(orientation);
 
         let mut inner = ObserverAssembly::from(components);
         inner.set_position(pos);

@@ -10,6 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
+    base::{try_into_quat, try_into_slice},
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -32,10 +33,8 @@ impl CircularCurrent {
         diameter: f64,
         current: f64,
     ) -> PyResult<Self> {
-        let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
-        let rot = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaCircularCurrent::new(pos, rot, diameter, current),

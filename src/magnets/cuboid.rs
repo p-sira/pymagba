@@ -10,6 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
+    base::{try_into_quat, try_into_slice, try_into_slice_or},
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -32,12 +33,10 @@ impl CuboidMagnet {
         dimensions: Option<crate::base::ArrayLike3>,
         polarization: Option<crate::base::ArrayLike3>,
     ) -> PyResult<Self> {
-        let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
-        let rot = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-        let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
-        let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
+        let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
+        let dim = try_into_slice_or!(dimensions, [1.0, 1.0, 1.0]);
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaCuboidMagnet::new(pos, rot, pol, dim),
