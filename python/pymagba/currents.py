@@ -23,5 +23,3 @@ class CircularCurrent(_CircularCurrent):
         current (float, optional): Current in the loop in Amperes.
             Defaults to 1.0.
     """
-
-    pass

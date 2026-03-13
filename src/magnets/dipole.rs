@@ -9,7 +9,10 @@ use pyo3::prelude::*;
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::macros::{impl_compute_B, impl_pypose};
+use crate::{
+    base::{extract_states, try_into_quat, try_into_slice, ArrayLike3, PyRotation},
+    macros::{impl_compute_B, impl_pypose},
+};
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
@@ -24,15 +27,13 @@ impl Dipole {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, moment=None))]
     fn new(
-        position: Option<crate::base::ArrayLike3>,
-        orientation: Option<crate::base::PyRotation>,
-        moment: Option<crate::base::ArrayLike3>,
+        position: Option<ArrayLike3>,
+        orientation: Option<PyRotation>,
+        moment: Option<ArrayLike3>,
     ) -> Self {
-        let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
-        let rot = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-        let m = moment.map(|m| m.0).unwrap_or([0.0, 0.0, 0.0]);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
+        let m = try_into_slice!(moment);
 
         Self {
             inner: MagbaDipole::new(pos, rot, m),
@@ -45,7 +46,7 @@ impl Dipole {
     }
 
     #[setter]
-    fn set_moment(&mut self, moment: crate::base::ArrayLike3) {
+    fn set_moment(&mut self, moment: ArrayLike3) {
         self.inner.set_moment(moment.0);
     }
 
@@ -61,15 +62,11 @@ impl Dipole {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
-        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
-        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
-        let moment: [f64; 3] = state.get_item("moment")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4, moment;3]);
 
         self.inner = MagbaDipole::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
-                orientation.into(),
-            )),
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
             moment,
         );
         Ok(())

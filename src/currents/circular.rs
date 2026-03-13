@@ -10,6 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
+    base::{extract_states, try_into_quat, try_into_slice, ArrayLike3, PyRotation},
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -27,15 +28,13 @@ impl CircularCurrent {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, diameter=1.0, current=1.0))]
     fn new(
-        position: Option<crate::base::ArrayLike3>,
-        orientation: Option<crate::base::PyRotation>,
+        position: Option<ArrayLike3>,
+        orientation: Option<PyRotation>,
         diameter: f64,
         current: f64,
     ) -> PyResult<Self> {
-        let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
-        let rot = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaCircularCurrent::new(pos, rot, diameter, current),
@@ -77,35 +76,15 @@ impl CircularCurrent {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
-        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
-        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
-        let diameter: f64 = state.get_item("diameter")?.unwrap().extract()?;
-        let current: f64 = state.get_item("current")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4, diameter, current]);
 
         self.inner = MagbaCircularCurrent::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
-                orientation.into(),
-            )),
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
             diameter,
             current,
         );
         Ok(())
-    }
-
-    fn __reduce__(&self, py: Python<'_>) -> PyResult<pyo3::Py<pyo3::types::PyTuple>> {
-        let cls = py.get_type::<Self>();
-        let state = self.__getstate__(py)?;
-        let args = pyo3::types::PyTuple::empty(py);
-        Ok(pyo3::types::PyTuple::new(
-            py,
-            [
-                cls.into_any(),
-                args.into_any(),
-                state.into_bound(py).into_any(),
-            ],
-        )?
-        .unbind())
     }
 }
 

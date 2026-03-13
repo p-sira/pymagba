@@ -10,6 +10,9 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
+    base::{
+        extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, PyRotation,
+    },
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -27,17 +30,15 @@ impl CylinderMagnet {
     #[new]
     #[pyo3(signature = (position=None, orientation=None, diameter=1.0, height=1.0, polarization=None))]
     fn new(
-        position: Option<crate::base::ArrayLike3>,
-        orientation: Option<crate::base::PyRotation>,
+        position: Option<ArrayLike3>,
+        orientation: Option<PyRotation>,
         diameter: f64,
         height: f64,
-        polarization: Option<crate::base::ArrayLike3>,
+        polarization: Option<ArrayLike3>,
     ) -> PyResult<Self> {
-        let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
-        let rot = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-        let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
+        let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaCylinderMagnet::new(pos, rot, pol, diameter, height),
@@ -74,7 +75,7 @@ impl CylinderMagnet {
     }
 
     #[setter]
-    fn set_polarization(&mut self, pol: crate::base::ArrayLike3) {
+    fn set_polarization(&mut self, pol: ArrayLike3) {
         self.inner.set_polarization(pol.0);
     }
 
@@ -92,17 +93,11 @@ impl CylinderMagnet {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
-        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
-        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
-        let diameter: f64 = state.get_item("diameter")?.unwrap().extract()?;
-        let height: f64 = state.get_item("height")?.unwrap().extract()?;
-        let polarization: [f64; 3] = state.get_item("polarization")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4, diameter, height, polarization;3]);
 
         self.inner = MagbaCylinderMagnet::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
-                orientation.into(),
-            )),
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
             polarization,
             diameter,
             height,

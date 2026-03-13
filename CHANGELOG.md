@@ -1,6 +1,19 @@
 # CHANGELOG
 
-This changelog only records significant changes.
+## 0.4.1
+
+This version corresponds to Magba v0.4.3.
+
+### New Features
+
+- Add `read_state` for `HallLatch` and `HallSwitch`.
+
+### Bug Fixes
+
+- Fix collection constructors interpreting children pose as in local frame. Now assume children poses in global frame.
+- Fix stub return types from `pymagba_binding` classes to `pymagba` classes.
+- Use `ArrayLike` in stubs instead of Sequence.
+- Fix default polarization vectors of magnet classes to [0, 0, 1].
 
 ## 0.4.0
 

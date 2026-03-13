@@ -10,6 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
+    base::{extract_states, try_into_quat, try_into_slice, try_into_slice_or},
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -32,11 +33,9 @@ impl SphereMagnet {
         diameter: f64,
         polarization: Option<crate::base::ArrayLike3>,
     ) -> PyResult<Self> {
-        let pos = position.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
-        let rot = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-        let pol = polarization.map(|p| p.0).unwrap_or([0.0, 0.0, 0.0]);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
+        let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaSphereMagnet::new(pos, rot, pol, diameter),
@@ -78,35 +77,15 @@ impl SphereMagnet {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
-        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
-        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
-        let diameter: f64 = state.get_item("diameter")?.unwrap().extract()?;
-        let polarization: [f64; 3] = state.get_item("polarization")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4, diameter, polarization;3]);
 
         self.inner = MagbaSphereMagnet::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(
-                orientation.into(),
-            )),
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
             polarization,
             diameter,
         );
         Ok(())
-    }
-
-    fn __reduce__(&self, py: Python<'_>) -> PyResult<pyo3::Py<pyo3::types::PyTuple>> {
-        let cls = py.get_type::<Self>();
-        let state = self.__getstate__(py)?;
-        let args = pyo3::types::PyTuple::empty(py);
-        Ok(pyo3::types::PyTuple::new(
-            py,
-            [
-                cls.into_any(),
-                args.into_any(),
-                state.into_bound(py).into_any(),
-            ],
-        )?
-        .unbind())
     }
 }
 
