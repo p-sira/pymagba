@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{try_into_quat, try_into_slice, try_into_slice_or},
+    base::{extract_states, try_into_quat, try_into_slice, try_into_slice_or},
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -78,10 +78,7 @@ impl CuboidMagnet {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
-        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
-        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
-        let dimensions: [f64; 3] = state.get_item("dimensions")?.unwrap().extract()?;
-        let polarization: [f64; 3] = state.get_item("polarization")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4, dimensions;3, polarization;3]);
 
         self.inner = MagbaCuboidMagnet::new(
             position,

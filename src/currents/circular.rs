@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{try_into_quat, try_into_slice},
+    base::{extract_states, try_into_quat, try_into_slice},
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -76,10 +76,7 @@ impl CircularCurrent {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
-        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
-        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
-        let diameter: f64 = state.get_item("diameter")?.unwrap().extract()?;
-        let current: f64 = state.get_item("current")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4, diameter, current]);
 
         self.inner = MagbaCircularCurrent::new(
             position,

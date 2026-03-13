@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{try_into_quat, try_into_slice, try_into_slice_or},
+    base::{extract_states, try_into_quat, try_into_slice, try_into_slice_or},
     macros::impl_pypose,
     util::catch_unwind_to_pyerr,
 };
@@ -95,11 +95,8 @@ impl HallLatch {
     }
 
     fn __setstate__(&mut self, state: pyo3::Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
-        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
-        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
-        let sensitive_axis: [f64; 3] = state.get_item("sensitive_axis")?.unwrap().extract()?;
-        let b_op: f64 = state.get_item("b_op")?.unwrap().extract()?;
-        let b_rp: f64 = state.get_item("b_rp")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4, sensitive_axis;3, b_op, b_rp]);
+
         self.inner = MagbaHallLatch::new(
             position,
             nalgebra::UnitQuaternion::from_quaternion(nalgebra::Quaternion::from_vector(

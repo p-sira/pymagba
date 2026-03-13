@@ -10,7 +10,9 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{try_into_quat, try_into_slice, try_into_slice_or}, macros::{impl_compute_B, impl_pypose}, util::catch_unwind_to_pyerr
+    base::{extract_states, try_into_quat, try_into_slice, try_into_slice_or},
+    macros::{impl_compute_B, impl_pypose},
+    util::catch_unwind_to_pyerr,
 };
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
@@ -75,10 +77,7 @@ impl SphereMagnet {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
-        let position: [f64; 3] = state.get_item("position")?.unwrap().extract()?;
-        let orientation: [f64; 4] = state.get_item("orientation")?.unwrap().extract()?;
-        let diameter: f64 = state.get_item("diameter")?.unwrap().extract()?;
-        let polarization: [f64; 3] = state.get_item("polarization")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4, diameter, polarization;3]);
 
         self.inner = MagbaSphereMagnet::new(
             position,
