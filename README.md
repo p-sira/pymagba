@@ -44,7 +44,7 @@ sensor = LinearHallSensor(
    supply_voltage=5.0,
 )
 b_field = magnet.compute_B([0.0, 0.0, 0.025])  # [[0, 0, 0.01652363]]
-voltage = sensor.read_voltage_cylinder(magnet)  # 2.5008261
+voltage = sensor.read_voltage(magnet)  # 2.5008261
 ```
 
 ## Installation
@@ -59,7 +59,7 @@ pip install pymagba
 uv add pymagba
 ```
 
-To install from source see the[Reproducibility](#reproducibility) section.
+To install from source see the [Reproducibility](#reproducibility) section.
 
 
 
