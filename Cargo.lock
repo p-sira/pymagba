@@ -492,9 +492,9 @@ checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
 name = "magba"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3901bd8ce984018e1d1cf0a3c9453f7e936bb1055b696d124ce6b26a69e8cc7c"
+checksum = "3a2ac7a3eb398d5b4701117711faf3d9493f0b39c603450e1cac3bddec0f1c48"
 dependencies = [
  "concat-idents",
  "delegate",
