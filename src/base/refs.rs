@@ -47,6 +47,7 @@ pub enum SourceRef<'py> {
     CircularCurrent(PyRef<'py, crate::currents::CircularCurrent>),
     PathCurrent(PyRef<'py, crate::currents::PathCurrent>),
     TriangleCurrent(PyRef<'py, crate::currents::TriangleCurrent>),
+    SheetCurrent(PyRef<'py, crate::currents::SheetCurrent>),
     Collection(PyRef<'py, crate::SourceCollection>),
 }
 
@@ -69,12 +70,13 @@ impl<'py> SourceRef<'py> {
             SourceRef::Cuboid(m) => m.inner.clone().into(),
             SourceRef::Dipole(m) => m.inner.clone().into(),
             SourceRef::Sphere(m) => m.inner.clone().into(),
-            SourceRef::TriangleMagnet(m) => magba::magnets::Magnet::Triangle(m.inner.clone()).into(),
-            SourceRef::TetrahedronMagnet(m) => magba::magnets::Magnet::Tetrahedron(m.inner.clone()).into(),
-            SourceRef::MeshMagnet(m) => magba::magnets::Magnet::Mesh(m.inner.clone()).into(),
+            SourceRef::TriangleMagnet(m) => m.inner.clone().into(),
+            SourceRef::TetrahedronMagnet(m) => m.inner.clone().into(),
+            SourceRef::MeshMagnet(m) => m.inner.clone().into(),
             SourceRef::CircularCurrent(m) => m.inner.clone().into(),
             SourceRef::PathCurrent(m) => m.inner.clone().into(),
             SourceRef::TriangleCurrent(m) => m.inner.clone().into(),
+            SourceRef::SheetCurrent(m) => m.inner.clone().into(),
             SourceRef::Collection(m) => m.inner.clone().into(),
         }
     }
@@ -91,6 +93,7 @@ impl<'py> SourceRef<'py> {
             SourceRef::CircularCurrent(m) => &m.inner,
             SourceRef::PathCurrent(m) => &m.inner,
             SourceRef::TriangleCurrent(m) => &m.inner,
+            SourceRef::SheetCurrent(m) => &m.inner,
             SourceRef::Collection(m) => &m.inner,
         }
     }

@@ -5,8 +5,10 @@
 
 pub mod circular;
 pub mod path;
+pub mod sheet;
 pub mod triangle;
 
 pub use circular::CircularCurrent;
 pub use path::PathCurrent;
+pub use sheet::SheetCurrent;
 pub use triangle::TriangleCurrent;

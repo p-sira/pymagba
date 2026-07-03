@@ -7,7 +7,7 @@ from pymagba.magnets import (
     Dipole,
     SourceCollection,
 )
-from pymagba.currents import CircularCurrent, PathCurrent, TriangleCurrent
+from pymagba.currents import CircularCurrent, PathCurrent, TriangleCurrent, SheetCurrent
 from pymagba.sensors import LinearHallSensor, HallSwitch, HallLatch, ObserverCollection
 
 
@@ -88,6 +88,16 @@ def test_triangle_current_validation():
     with pytest.raises(ValueError, match="Expected exactly 3 elements"):
         TriangleCurrent(current_density=[1.0, 2.0])
 
+
+def test_sheet_current_validation():
+    with pytest.raises(TypeError):
+        SheetCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(ValueError, match="(?i)index out of bounds"):
+        SheetCurrent(
+            current_densities=[[1.0, 2.0, 3.0]],
+            vertices=[[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1]],
+            faces=[[0, 2, 4]], # Out of bounds
+        )
 
 def test_linear_hall_sensor_validation():
     with pytest.raises(ValueError, match="Supply voltage must be positive"):

@@ -40,6 +40,7 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<CircularCurrent>()?;
     m.add_class::<PathCurrent>()?;
     m.add_class::<TriangleCurrent>()?;
+    m.add_class::<SheetCurrent>()?;
     m.add_class::<ObserverCollection>()?;
     m.add_class::<LinearHallSensor>()?;
     m.add_class::<HallSwitch>()?;
@@ -62,6 +63,7 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     currents.add_class::<CircularCurrent>()?;
     currents.add_class::<PathCurrent>()?;
     currents.add_class::<TriangleCurrent>()?;
+    currents.add_class::<SheetCurrent>()?;
     currents.add_class::<SourceCollection>()?;
     m.add_submodule(&currents)?;
 
