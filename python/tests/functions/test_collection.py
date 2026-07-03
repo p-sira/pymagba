@@ -129,9 +129,46 @@ def test_observer_collection_spatial_manipulation():
     np.testing.assert_allclose(col[0].position, child_pos)
 
 
+def test_child_indexing_methods():
+    # Source child
+    m1 = CylinderMagnet(position=[0, 0, 0], polarization=[0, 0, 1])
+    s_col = SourceCollection([m1])
+    s_child = s_col[0]
+    
+    # Reference independent source
+    m_ref = CylinderMagnet(position=[0, 0, 0], polarization=[0, 0, 1])
+    
+    # Test field function on child
+    np.testing.assert_allclose(s_child.compute_B([[0, 0, 2]]), m_ref.compute_B([[0, 0, 2]]))
+    
+    # Test spatial transformation on child
+    s_child.translate([0.1, 0, 0])
+    m_ref.translate([0.1, 0, 0])
+    np.testing.assert_allclose(s_child.position, [0.1, 0.0, 0.0])
+    np.testing.assert_allclose(s_child.compute_B([[0, 0, 2]]), m_ref.compute_B([[0, 0, 2]]))
+    
+    # Observer child
+    s1 = LinearHallSensor(position=[0, 0, 0])
+    o_col = ObserverCollection([s1])
+    o_child = o_col[0]
+    
+    # Reference independent observer
+    s_ref = LinearHallSensor(position=[0, 0, 0])
+    
+    # Test read function on child
+    np.testing.assert_allclose(o_child.read_voltage(m1), s_ref.read_voltage(m1))
+    
+    # Test spatial transformation on child
+    o_child.translate([0.1, 0, 0])
+    s_ref.translate([0.1, 0, 0])
+    np.testing.assert_allclose(o_child.position, [0.1, 0.0, 0.0])
+    np.testing.assert_allclose(o_child.read_voltage(m1), s_ref.read_voltage(m1))
+
+
 if __name__ == "__main__":
     test_source_collection_methods()
     test_observer_collection_methods()
     test_source_collection_spatial_manipulation()
     test_observer_collection_spatial_manipulation()
+    test_child_indexing_methods()
     print("All tests passed!")
