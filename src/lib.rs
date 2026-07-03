@@ -34,7 +34,13 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<CuboidMagnet>()?;
     m.add_class::<SphereMagnet>()?;
     m.add_class::<Dipole>()?;
+    m.add_class::<TriangleMagnet>()?;
+    m.add_class::<TetrahedronMagnet>()?;
+    m.add_class::<MeshMagnet>()?;
     m.add_class::<CircularCurrent>()?;
+    m.add_class::<PathCurrent>()?;
+    m.add_class::<TriangleCurrent>()?;
+    m.add_class::<SheetCurrent>()?;
     m.add_class::<ObserverCollection>()?;
     m.add_class::<LinearHallSensor>()?;
     m.add_class::<HallSwitch>()?;
@@ -47,11 +53,17 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     magnets.add_class::<CuboidMagnet>()?;
     magnets.add_class::<SphereMagnet>()?;
     magnets.add_class::<Dipole>()?;
+    magnets.add_class::<TriangleMagnet>()?;
+    magnets.add_class::<TetrahedronMagnet>()?;
+    magnets.add_class::<MeshMagnet>()?;
     magnets.add_class::<SourceCollection>()?;
     m.add_submodule(&magnets)?;
 
     let currents = PyModule::new(py, "currents")?;
     currents.add_class::<CircularCurrent>()?;
+    currents.add_class::<PathCurrent>()?;
+    currents.add_class::<TriangleCurrent>()?;
+    currents.add_class::<SheetCurrent>()?;
     currents.add_class::<SourceCollection>()?;
     m.add_submodule(&currents)?;
 
@@ -67,6 +79,9 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fields::cuboid_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::sphere_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::circular_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::triangle_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::tetrahedron_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::mesh_B, &m)?)?;
 
     let fields_mod = PyModule::new(m.py(), "fields")?;
     fields::fields(&fields_mod)?;

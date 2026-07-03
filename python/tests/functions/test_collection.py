@@ -3,7 +3,6 @@ import numpy as np
 from pymagba.magnets import CylinderMagnet, CuboidMagnet, SourceCollection
 from pymagba.sensors import LinearHallSensor, ObserverCollection
 
-
 def test_source_collection_methods():
     m1 = CylinderMagnet(polarization=[0, 0, 1], diameter=0.01, height=0.01)
     m2 = CuboidMagnet(polarization=[0, 0, 1], dimensions=[0.01, 0.01, 0.01])
@@ -59,7 +58,117 @@ def test_observer_collection_methods():
     assert col[2] is s3
 
 
+def test_source_collection_spatial_manipulation():
+    child_pos = [0.1, 0.2, 0.3]
+    m1 = CylinderMagnet(position=child_pos, polarization=[0, 0, 1])
+    col = SourceCollection([m1])
+    
+    # Translate collection
+    col.translate([0, 0, 1])
+    
+    # Direct translation for comparison
+    m2 = CylinderMagnet(position=child_pos, polarization=[0, 0, 1])
+    m2.translate([0, 0, 1])
+    
+    B_col = col.compute_B([[0, 0, 2]])
+    B_m2 = m2.compute_B([[0, 0, 2]])
+    
+    np.testing.assert_allclose(B_col, B_m2)
+    
+    # Verify child pose (position) remains at local offset
+    np.testing.assert_allclose(col[0].position, child_pos)
+    
+    # Rotate collection (90 degrees around x-axis, quat=[sin(pi/4), 0, 0, cos(pi/4)])
+    quat_x_90 = [0.70710678, 0.0, 0.0, 0.70710678]
+    col.rotate(quat_x_90)
+    m2.rotate_anchor(quat_x_90, anchor=col.position)
+    
+    B_col_rot = col.compute_B([[0, 0, 2]])
+    B_m2_rot = m2.compute_B([[0, 0, 2]])
+    
+    np.testing.assert_allclose(B_col_rot, B_m2_rot)
+    
+    # Verify child pose (position) remains unchanged
+    np.testing.assert_allclose(col[0].position, child_pos)
+
+
+def test_observer_collection_spatial_manipulation():
+    m1 = CylinderMagnet(position=[0, 0, 0], polarization=[0, 0, 1])
+    child_pos = [0.1, 0.2, 0.3]
+    
+    s1 = LinearHallSensor(position=child_pos)
+    col = ObserverCollection([s1])
+    
+    # Translate collection
+    col.translate([0, 0, 1])
+    
+    # Direct translation for comparison
+    s2 = LinearHallSensor(position=child_pos)
+    s2.translate([0, 0, 1])
+    
+    col_read = col.read_all(m1)
+    s2_read = s2.read_voltage(m1)
+    
+    assert len(col_read) == 1
+    np.testing.assert_allclose(col_read[0], s2_read)
+    
+    # Verify child pose (position) remains at local offset
+    np.testing.assert_allclose(col[0].position, child_pos)
+    
+    # Rotate collection
+    quat_x_90 = [0.70710678, 0.0, 0.0, 0.70710678]
+    col.rotate(quat_x_90)
+    s2.rotate_anchor(quat_x_90, anchor=col.position)
+    
+    col_read_rot = col.read_all(m1)
+    s2_read_rot = s2.read_voltage(m1)
+    
+    np.testing.assert_allclose(col_read_rot[0], s2_read_rot)
+    
+    # Verify child pose (position) remains unchanged
+    np.testing.assert_allclose(col[0].position, child_pos)
+
+
+def test_child_indexing_methods():
+    # Source child
+    m1 = CylinderMagnet(position=[0, 0, 0], polarization=[0, 0, 1])
+    s_col = SourceCollection([m1])
+    s_child = s_col[0]
+    
+    # Reference independent source
+    m_ref = CylinderMagnet(position=[0, 0, 0], polarization=[0, 0, 1])
+    
+    # Test field function on child
+    np.testing.assert_allclose(s_child.compute_B([[0, 0, 2]]), m_ref.compute_B([[0, 0, 2]]))
+    
+    # Test spatial transformation on child
+    s_child.translate([0.1, 0, 0])
+    m_ref.translate([0.1, 0, 0])
+    np.testing.assert_allclose(s_child.position, [0.1, 0.0, 0.0])
+    np.testing.assert_allclose(s_child.compute_B([[0, 0, 2]]), m_ref.compute_B([[0, 0, 2]]))
+    
+    # Observer child
+    s1 = LinearHallSensor(position=[0, 0, 0])
+    o_col = ObserverCollection([s1])
+    o_child = o_col[0]
+    
+    # Reference independent observer
+    s_ref = LinearHallSensor(position=[0, 0, 0])
+    
+    # Test read function on child
+    np.testing.assert_allclose(o_child.read_voltage(m1), s_ref.read_voltage(m1))
+    
+    # Test spatial transformation on child
+    o_child.translate([0.1, 0, 0])
+    s_ref.translate([0.1, 0, 0])
+    np.testing.assert_allclose(o_child.position, [0.1, 0.0, 0.0])
+    np.testing.assert_allclose(o_child.read_voltage(m1), s_ref.read_voltage(m1))
+
+
 if __name__ == "__main__":
     test_source_collection_methods()
     test_observer_collection_methods()
+    test_source_collection_spatial_manipulation()
+    test_observer_collection_spatial_manipulation()
+    test_child_indexing_methods()
     print("All tests passed!")

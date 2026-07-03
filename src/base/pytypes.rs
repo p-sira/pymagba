@@ -206,3 +206,99 @@ impl PyRotation {
         rot_cls.call_method1("from_quat", (quat,))
     }
 }
+
+/// A wrapper for extracting a batch of faces (F, 3).
+///
+/// Supports lists, tuples, and numpy arrays.
+pub struct FacesLike(pub Vec<[usize; 3]>);
+
+#[cfg(feature = "stub-gen")]
+impl PyStubType for FacesLike {
+    fn type_output() -> TypeInfo {
+        TypeInfo {
+            name: "numpy.typing.ArrayLike".to_string(),
+            import: [ImportRef::Module("numpy.typing".into())]
+                .into_iter()
+                .collect(),
+            source_module: None,
+            type_refs: std::collections::HashMap::new(),
+        }
+    }
+}
+
+impl<'a, 'py> FromPyObject<'a, 'py> for FacesLike {
+    type Error = PyErr;
+
+    fn extract(ob: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
+        // 1. Try extracting as an F x 3 numpy array
+        if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, i64>>() {
+            let view = arr2.as_array();
+            let shape = view.shape();
+
+            if shape[1] == 3 {
+                let n = shape[0];
+                let mut faces = Vec::with_capacity(n);
+                for i in 0..n {
+                    faces.push([
+                        view[[i, 0]] as usize,
+                        view[[i, 1]] as usize,
+                        view[[i, 2]] as usize,
+                    ]);
+                }
+                return Ok(FacesLike(faces));
+            }
+        }
+
+        // 2. Try unsigned 64-bit array (some mesh libraries might return unsigned)
+        if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, u64>>() {
+            let view = arr2.as_array();
+            let shape = view.shape();
+
+            if shape[1] == 3 {
+                let n = shape[0];
+                let mut faces = Vec::with_capacity(n);
+                for i in 0..n {
+                    faces.push([
+                        view[[i, 0]] as usize,
+                        view[[i, 1]] as usize,
+                        view[[i, 2]] as usize,
+                    ]);
+                }
+                return Ok(FacesLike(faces));
+            }
+        }
+
+        // 3. Try integer 32-bit array
+        if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, i32>>() {
+            let view = arr2.as_array();
+            let shape = view.shape();
+
+            if shape[1] == 3 {
+                let n = shape[0];
+                let mut faces = Vec::with_capacity(n);
+                for i in 0..n {
+                    faces.push([
+                        view[[i, 0]] as usize,
+                        view[[i, 1]] as usize,
+                        view[[i, 2]] as usize,
+                    ]);
+                }
+                return Ok(FacesLike(faces));
+            }
+        }
+
+        // 4. Native Python lists of lists: [[i, j, k], ...]
+        if let Ok(list_2d) = ob.extract::<Vec<[usize; 3]>>() {
+            return Ok(FacesLike(list_2d));
+        }
+
+        // 5. Try 1D flat python list [i, j, k]
+        if let Ok(single_face) = ob.extract::<[usize; 3]>() {
+            return Ok(FacesLike(vec![single_face]));
+        }
+
+        Err(pyo3::exceptions::PyTypeError::new_err(
+            "Expected a NumPy array of integers of shape (F, 3), or a compatible Python list.",
+        ))
+    }
+}

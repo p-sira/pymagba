@@ -23,7 +23,7 @@
     },
     "build_command": [
         "python -m pip install maturin",
-        "maturin build --release --strip --out {build_cache_dir}"
+        "maturin build --release --strip --out {build_cache_dir} --interpreter python"
     ],
     "install_command": [
         "python -m pip install {wheel_file}"

@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 0.5.0
+
+This version corresponds to Magba v0.6.2.
+
+### New Features
+
+- Add new magnets: `TriangleMagnet`, `TetrahedronMagnet`, and `MeshMagnet`.
+- Add new current geometries: `PathCurrent`, `TriangleCurrent`, and `SheetCurrent`.
+- Support loading stl files via `from_stl()` class method for `SheetCurrent` and `MeshMagnet`.
+
+### Testing
+
+- Delegate the test generation to external `p-sira/magba-testing` repository, which is included as a git submodule at `testing/`.
+- Standardize the tests between Magba and PyMagba.
+
 ## 0.4.1
 
 This version corresponds to Magba v0.4.3.
