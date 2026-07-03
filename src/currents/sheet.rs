@@ -12,8 +12,8 @@ use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
     base::{
-        extract_states, try_into_quat, try_into_slice, ArrayLike3, FacesLike,
-        PointsLike, PyRotation,
+        extract_states, try_into_quat, try_into_slice, ArrayLike3, FacesLike, PointsLike,
+        PyRotation,
     },
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
@@ -42,7 +42,7 @@ impl SheetCurrent {
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
-        
+
         let cd = current_densities
             .map(|pts| {
                 pts.0
@@ -87,26 +87,37 @@ impl SheetCurrent {
         orientation: Option<PyRotation>,
         current_densities: Option<PointsLike>,
     ) -> PyResult<Bound<'py, Self>> {
-        let mut file = std::fs::File::open(&path)
-            .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("Failed to open file: {}", e)))?;
-        
-        let mesh = stl_io::read_stl(&mut file)
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Failed to read STL: {}", e)))?;
-        
-        let vertices = mesh.vertices.iter().map(|v| [v[0] as f64, v[1] as f64, v[2] as f64]).collect::<Vec<_>>();
-        let faces = mesh.faces.iter().map(|f| [f.vertices[0], f.vertices[1], f.vertices[2]]).collect::<Vec<_>>();
-        
+        let mut file = std::fs::File::open(&path).map_err(|e| {
+            pyo3::exceptions::PyIOError::new_err(format!("Failed to open file: {}", e))
+        })?;
+
+        let mesh = stl_io::read_stl(&mut file).map_err(|e| {
+            pyo3::exceptions::PyValueError::new_err(format!("Failed to read STL: {}", e))
+        })?;
+
+        let vertices = mesh
+            .vertices
+            .iter()
+            .map(|v| [v[0] as f64, v[1] as f64, v[2] as f64])
+            .collect::<Vec<_>>();
+        let faces = mesh
+            .faces
+            .iter()
+            .map(|f| [f.vertices[0], f.vertices[1], f.vertices[2]])
+            .collect::<Vec<_>>();
+
         let pos_py = position.map(|p| p.0);
         let ori_py = orientation.map(|o| <[f64; 4]>::from(o.0.into_inner().coords));
-        let cd_py = current_densities.map(|pts| pts.0.into_iter().map(|p| [p.x, p.y, p.z]).collect::<Vec<_>>());
+        let cd_py = current_densities.map(|pts| {
+            pts.0
+                .into_iter()
+                .map(|p| [p.x, p.y, p.z])
+                .collect::<Vec<_>>()
+        });
 
-        Ok(cls.call1((
-            pos_py,
-            ori_py,
-            cd_py,
-            vertices,
-            faces,
-        ))?.downcast_into::<Self>()?)
+        Ok(cls
+            .call1((pos_py, ori_py, cd_py, vertices, faces))?
+            .cast_into::<Self>()?)
     }
 
     #[getter]
@@ -121,7 +132,11 @@ impl SheetCurrent {
 
     #[getter]
     fn current_densities(&self) -> Vec<[f64; 3]> {
-        self.inner.current_densities().iter().map(|v| [v.x, v.y, v.z]).collect()
+        self.inner
+            .current_densities()
+            .iter()
+            .map(|v| [v.x, v.y, v.z])
+            .collect()
     }
 
     fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<pyo3::types::PyDict>> {
@@ -139,10 +154,14 @@ impl SheetCurrent {
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4]);
-        
+
         let cd_obj = state.get_item("current_densities")?.unwrap();
         let current_densities: PointsLike = cd_obj.extract()?;
-        let cd = current_densities.0.into_iter().map(|p| Vector3::new(p.x, p.y, p.z)).collect::<Vec<_>>();
+        let cd = current_densities
+            .0
+            .into_iter()
+            .map(|p| Vector3::new(p.x, p.y, p.z))
+            .collect::<Vec<_>>();
 
         let vertices_obj = state.get_item("vertices")?.unwrap();
         let verts: PointsLike = vertices_obj.extract()?;
