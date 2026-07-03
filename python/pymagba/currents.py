@@ -102,4 +102,4 @@ class SheetCurrent(_SheetCurrent):
         Returns:
             SheetCurrent: A new SheetCurrent instance.
         """
-        ...
+        return super().from_stl(path, position, orientation, current_densities)  # type: ignore

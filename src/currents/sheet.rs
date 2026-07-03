@@ -80,13 +80,13 @@ impl SheetCurrent {
 
     #[classmethod]
     #[pyo3(signature = (path, position=None, orientation=None, current_densities=None))]
-    fn from_stl(
-        _cls: &Bound<'_, pyo3::types::PyType>,
+    fn from_stl<'py>(
+        cls: &Bound<'py, pyo3::types::PyType>,
         path: String,
         position: Option<ArrayLike3>,
         orientation: Option<PyRotation>,
         current_densities: Option<PointsLike>,
-    ) -> PyResult<Self> {
+    ) -> PyResult<Bound<'py, Self>> {
         let mut file = std::fs::File::open(&path)
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("Failed to open file: {}", e)))?;
         
@@ -96,31 +96,17 @@ impl SheetCurrent {
         let vertices = mesh.vertices.iter().map(|v| [v[0] as f64, v[1] as f64, v[2] as f64]).collect::<Vec<_>>();
         let faces = mesh.faces.iter().map(|f| [f.vertices[0], f.vertices[1], f.vertices[2]]).collect::<Vec<_>>();
         
-        let verts = vertices.iter().map(|v| Vector3::new(v[0], v[1], v[2])).collect::<Vec<_>>();
+        let pos_py = position.map(|p| p.0);
+        let ori_py = orientation.map(|o| <[f64; 4]>::from(o.0.into_inner().coords));
+        let cd_py = current_densities.map(|pts| pts.0.into_iter().map(|p| [p.x, p.y, p.z]).collect::<Vec<_>>());
 
-        let pos = try_into_slice!(position);
-        let rot = try_into_quat!(orientation);
-        
-        let cd = current_densities
-            .map(|pts| {
-                pts.0
-                    .into_iter()
-                    .map(|p| Vector3::new(p.x, p.y, p.z))
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
-
-        catch_unwind_to_pyerr(move || {
-            let mut inner = MagbaSheetCurrent::from_vertices_and_faces(verts, faces.clone(), cd)
-                .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
-            inner.set_position(Vector3::from(pos));
-            inner.set_orientation(rot);
-            Ok(Self {
-                inner,
-                _vertices: vertices,
-                _faces: faces,
-            })
-        })?
+        Ok(cls.call1((
+            pos_py,
+            ori_py,
+            cd_py,
+            vertices,
+            faces,
+        ))?.downcast_into::<Self>()?)
     }
 
     #[getter]
