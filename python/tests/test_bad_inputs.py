@@ -7,7 +7,7 @@ from pymagba.magnets import (
     Dipole,
     SourceCollection,
 )
-from pymagba.currents import CircularCurrent
+from pymagba.currents import CircularCurrent, PathCurrent
 from pymagba.sensors import LinearHallSensor, HallSwitch, HallLatch, ObserverCollection
 
 
@@ -73,6 +73,12 @@ def test_circular_current_validation():
     cur = CircularCurrent(diameter=1.0)
     with pytest.raises(ValueError, match="Diameter must be positive"):
         cur.diameter = 0
+
+def test_path_current_validation():
+    with pytest.raises(TypeError, match="Expected a NumPy array of shape"):
+        PathCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(TypeError, match="Expected a NumPy array of shape"):
+        PathCurrent(vertices=[[0, 0, 0]]).vertices = [[1.0, 2.0], [3.0, 4.0]]
 
 
 def test_linear_hall_sensor_validation():
