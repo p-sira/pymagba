@@ -21,6 +21,7 @@ pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(cuboid_B, m)?)?;
     m.add_function(wrap_pyfunction!(sphere_B, m)?)?;
     m.add_function(wrap_pyfunction!(circular_B, m)?)?;
+    m.add_function(wrap_pyfunction!(triangle_B, m)?)?;
     Ok(())
 }
 
@@ -274,6 +275,67 @@ pub fn circular_B<'py>(
             rot,
             diameter,
             current,
+            results.as_mut_slice(),
+        );
+    });
+
+    vec3_to_pyarray2(py, results)
+}
+
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
+#[pyfunction]
+/// Calculates the magnetic field of a triangular surface magnet.
+///
+/// Args:
+///     points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
+///         Can be a single point or an (N, 3) array of points.
+///     position (ArrayLike3, optional): Position [x, y, z] in meters.
+///         Defaults to [0.0, 0.0, 0.0].
+///     orientation (PyRotation, optional): Orientation.
+///         Defaults to identity.
+///     polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+///         in Tesla. Defaults to [0.0, 0.0, 1.0].
+///     vertices (list, optional): List of 3 vertices, each a list of 3 floats, in meters.
+///
+/// Returns:
+///     numpy.ndarray: Magnetic field (N, 3) in Tesla.
+#[pyo3(signature = (points, position=None, orientation=None, polarization=None, vertices=None))]
+pub fn triangle_B<'py>(
+    py: Python<'py>,
+    points: PointsLike,
+    position: Option<ArrayLike3>,
+    orientation: Option<PyRotation>,
+    polarization: Option<ArrayLike3>,
+    vertices: Option<[[f64; 3]; 3]>,
+) -> Bound<'py, numpy::PyArray2<f64>> {
+    let points = points.0;
+    let n = points.len();
+
+    let pos = try_into_slice!(position);
+    let rot = orientation
+        .map(|rot| rot.0)
+        .unwrap_or_else(nalgebra::UnitQuaternion::identity);
+    let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
+    let verts = vertices.unwrap_or([
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0],
+    ]);
+    let v = [
+        Vector3::new(verts[0][0], verts[0][1], verts[0][2]),
+        Vector3::new(verts[1][0], verts[1][1], verts[1][2]),
+        Vector3::new(verts[2][0], verts[2][1], verts[2][2]),
+    ];
+
+    let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
+
+    py.detach(|| {
+        magba::fields::triangle_B_batch(
+            &points,
+            pos.into(),
+            rot,
+            pol.into(),
+            v,
             results.as_mut_slice(),
         );
     });
