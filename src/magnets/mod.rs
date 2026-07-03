@@ -6,6 +6,7 @@
 mod cuboid;
 mod cylinder;
 mod dipole;
+mod mesh;
 mod sphere;
 mod tetrahedron;
 mod triangle;
@@ -13,6 +14,7 @@ mod triangle;
 pub use cuboid::CuboidMagnet;
 pub use cylinder::CylinderMagnet;
 pub use dipole::Dipole;
+pub use mesh::MeshMagnet;
 pub use sphere::SphereMagnet;
 pub use tetrahedron::TetrahedronMagnet;
 pub use triangle::TriangleMagnet;

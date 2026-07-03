@@ -36,6 +36,7 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Dipole>()?;
     m.add_class::<TriangleMagnet>()?;
     m.add_class::<TetrahedronMagnet>()?;
+    m.add_class::<MeshMagnet>()?;
     m.add_class::<CircularCurrent>()?;
     m.add_class::<ObserverCollection>()?;
     m.add_class::<LinearHallSensor>()?;
@@ -51,6 +52,7 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     magnets.add_class::<Dipole>()?;
     magnets.add_class::<TriangleMagnet>()?;
     magnets.add_class::<TetrahedronMagnet>()?;
+    magnets.add_class::<MeshMagnet>()?;
     magnets.add_class::<SourceCollection>()?;
     m.add_submodule(&magnets)?;
 
@@ -73,6 +75,7 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fields::circular_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::triangle_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::tetrahedron_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::mesh_B, &m)?)?;
 
     let fields_mod = PyModule::new(m.py(), "fields")?;
     fields::fields(&fields_mod)?;

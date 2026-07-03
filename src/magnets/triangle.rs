@@ -39,11 +39,7 @@ impl TriangleMagnet {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
         let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
-        let verts = vertices.unwrap_or([
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0],
-        ]);
+        let verts = vertices.unwrap_or([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]]);
 
         let v = [
             Vector3::new(verts[0][0], verts[0][1], verts[0][2]),
