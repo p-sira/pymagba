@@ -9,6 +9,9 @@ from .pymagba_binding import (
     CuboidMagnet as _CuboidMagnet,
     Dipole as _Dipole,
     SphereMagnet as _SphereMagnet,
+    TriangleMagnet as _TriangleMagnet,
+    TetrahedronMagnet as _TetrahedronMagnet,
+    MeshMagnet as _MeshMagnet,
 )
 
 __all__ = [
@@ -17,6 +20,9 @@ __all__ = [
     "CuboidMagnet",
     "Dipole",
     "SphereMagnet",
+    "TriangleMagnet",
+    "TetrahedronMagnet",
+    "MeshMagnet",
 ]
 
 
@@ -206,5 +212,13 @@ class SourceCollection(_SourceCollection):
             collection = SourceCollection([m1, m2])
             points = np.array([[0.0, 0.0, 0.05]])
             B = collection.compute_B(points)  # shape (1, 3)
-            B = collection.compute_B(points)  # shape (1, 3)
     """
+
+class TriangleMagnet(_TriangleMagnet):
+    """Uniformly magnetized triangular magnet."""
+
+class TetrahedronMagnet(_TetrahedronMagnet):
+    """Uniformly magnetized tetrahedral magnet."""
+
+class MeshMagnet(_MeshMagnet):
+    """Uniformly magnetized mesh magnet."""

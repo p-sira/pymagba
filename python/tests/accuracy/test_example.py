@@ -3,8 +3,8 @@
 
 import numpy as np
 
-from pymagba.magnets import *
-from pymagba.sensors import *
+from pymagba.magnets import CylinderMagnet
+from pymagba.sensors import LinearHallSensor
 
 magnet = CylinderMagnet(
     position=[0.0, 0.0, 0.01],

@@ -1,53 +1,25 @@
 # PyMagba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
-from abc import ABC, abstractmethod
-from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from numpy.testing import assert_allclose
+from scipy.spatial.transform import Rotation
 
 from pymagba.utils import FloatArray
 
+TESTING_DATA_DIR = Path("testing/data")
 
-class TestData(ABC):
-    @staticmethod
-    @abstractmethod
-    def get_points() -> FloatArray:
-        pass
+def load_test_array(filename: str) -> FloatArray:
+    return np.loadtxt(TESTING_DATA_DIR / filename, delimiter=",")
 
-    @staticmethod
-    def _get_test_data_paths(data_path_str: str) -> list[Path]:
-        """Helper to generate paths for numbered test data files.
+def get_points() -> FloatArray:
+    return load_test_array("points.csv")
 
-        Args:
-            data_path_str: Base name for the data files.
-
-        Returns:
-            Paths relative to python/tests/data.
-        """
-        return [
-            Path(f"python/tests/data/") / (data_path_str + f"{i}.npy") for i in range(5)
-        ]
-
-    @staticmethod
-    @abstractmethod
-    def get_test_data_paths() -> list[Path]:
-        """Get the paths to the actual test data files."""
-        pass
-
-    @staticmethod
-    @abstractmethod
-    def get_test_params() -> list[Any]:
-        """List parameters used for pose transformation tests.
-
-        Returns:
-            Parameters for position, orientation, translation, and rotation.
-        """
-        pass
-
+def get_points_small() -> FloatArray:
+    return load_test_array("points-small.csv")
 
 def _compute_field(obj, points: FloatArray) -> FloatArray:
     """Helper to call compute_B or getB depending on what is available."""
@@ -58,115 +30,82 @@ def _compute_field(obj, points: FloatArray) -> FloatArray:
     else:
         raise AttributeError(f"Object {obj} has neither compute_B nor getB method")
 
-
-def _translate(obj, vec: FloatArray) -> None:
-    """Helper to call translate or move depending on what is available."""
-    if hasattr(obj, "translate"):
-        obj.translate(vec)
-    elif hasattr(obj, "move"):
-        obj.move(vec)
-    else:
-        raise AttributeError(f"Object {obj} has neither translate nor move method")
-
-
-def _rotate(obj, rot: Any) -> None:
-    """Helper to call rotate with appropriate arguments."""
-    if hasattr(obj, "rotate"):
-        obj.rotate(rot)
-    elif hasattr(obj, "rotate_from_quat"):
-        # magpylib objects
-        from scipy.spatial.transform import Rotation
-
-        if isinstance(rot, Rotation):
-            obj.rotate(rot)
-        else:
-            # Assume it might be something magpylib's rotate can handle,
-            # but magpylib's .rotate() usually takes a Rotation object too.
-            # Let's try raw rotate first.
-            obj.rotate(rot)
-    else:
-        raise AttributeError(f"Object {obj} has no rotate method")
-
-
-def generate_general_expected_results(magnet, test_data_class: type[TestData]) -> None:
-    """Generate and save expected results for a general test suite.
-
-    Args:
-        magnet: The magnetic source object to test.
-        test_data_class: Class providing test points and parameters.
-    """
-    points = test_data_class.get_points()
-    data_paths = test_data_class.get_test_data_paths()
-    test_params = test_data_class.get_test_params()
-
-    np.save(data_paths[0], _compute_field(magnet, points))
-
-    magnet.position = test_params[0]
-    np.save(data_paths[1], _compute_field(magnet, points))
-
-    magnet.orientation = test_params[1]
-    np.save(data_paths[2], _compute_field(magnet, points))
-
-    _translate(magnet, test_params[2])
-    np.save(data_paths[3], _compute_field(magnet, points))
-
-    _rotate(magnet, test_params[3])
-    np.save(data_paths[4], _compute_field(magnet, points))
-
+def _check_close(actual, desired, rtol, atol, max_mismatches=0):
+    if actual.shape != desired.shape:
+        assert_allclose(actual, desired, rtol=rtol, atol=atol)
+        return
+    mask = ~np.isclose(actual, desired, rtol=rtol, atol=atol)
+    mismatches = np.sum(mask)
+    if mismatches > max_mismatches:
+        assert_allclose(actual, desired, rtol=rtol, atol=atol)
 
 def run_test_general(
-    magnet, test_data_class: type[TestData], rtol=1e-6, atol=0
+    magnet_class: type,
+    name: str,
+    kwargs: dict[str, Any],
+    rtol: float = 1e-6,
+    atol: float = 0.0,
+    max_mismatches: int = 0
 ) -> None:
-    """Validate a source object against pre-generated expected results.
+    """Validate a source object against pre-generated magba-testing CSV results.
 
     Args:
-        magnet: The magnetic source object to test.
-        test_data_class: Class providing test points and parameters.
-        rtol: Relative tolerance for comparisons.
-        atol: Absolute tolerance for comparisons.
+        magnet_class: The class of the magnetic source.
+        name: Base name for the CSV files (e.g. 'cuboid').
+        kwargs: Initial kwargs for the magnet.
+        rtol: Relative tolerance.
+        atol: Absolute tolerance.
+        max_mismatches: Maximum allowed mismatched points (useful for singularities).
     """
-    from scipy.spatial.transform import Rotation
+    points = get_points()
+    points_small = get_points_small()
 
-    points = test_data_class.get_points()
-    data_paths = test_data_class.get_test_data_paths()
-    test_params = test_data_class.get_test_params()
+    rotation = Rotation.from_rotvec([np.pi / 7, np.pi / 6, np.pi / 5])
+    
+    # 1. Base Magnet
+    magnet = magnet_class(
+        position=(0.1, 0.2, 0.3),
+        orientation=rotation,
+        **kwargs
+    )
+    expected = load_test_array(f"{name}.csv")
+    _check_close(_compute_field(magnet, points), expected, rtol, atol, max_mismatches)
 
-    assert_allclose(_compute_field(magnet, points), np.load(data_paths[0]), rtol, atol)
+    # 2. Small Magnet
+    small_kwargs = {}
+    for k, v in kwargs.items():
+        if isinstance(v, np.ndarray) and v.dtype.kind in "fc":
+            small_kwargs[k] = v / 10.0
+        elif isinstance(v, (float, int)):
+            small_kwargs[k] = v / 10.0
+        elif isinstance(v, (list, tuple)):
+            if k == "faces":
+                small_kwargs[k] = v
+            else:
+                small_kwargs[k] = (np.array(v) / 10.0).tolist()
+        else:
+            small_kwargs[k] = v
 
-    magnet.position = test_params[0]
-    assert_allclose(_compute_field(magnet, points), np.load(data_paths[1]), rtol, atol)
+    small_magnet = magnet_class(
+        position=(0.03, 0.02, 0.01),
+        orientation=rotation,
+        **small_kwargs
+    )
+    expected_small = load_test_array(f"{name}-small.csv")
+    _check_close(_compute_field(small_magnet, points_small), expected_small, rtol, atol, max_mismatches)
 
-    magnet.orientation = test_params[1]
-    assert isinstance(magnet.orientation, Rotation)
-    assert_allclose(_compute_field(magnet, points), np.load(data_paths[2]), rtol, atol)
+    # 3. Translate
+    magnet.translate((-0.1, -0.2, -0.3))
+    expected_trans = load_test_array(f"{name}-translate.csv")
+    _check_close(_compute_field(magnet, points), expected_trans, rtol, atol, max_mismatches)
 
-    _translate(magnet, test_params[2])
-    assert_allclose(_compute_field(magnet, points), np.load(data_paths[3]), rtol, atol)
+    # 4. Rotate
+    magnet.translate((0.1, 0.2, 0.3))
+    magnet.rotate(rotation.inv())
+    expected_rot = load_test_array(f"{name}-rotate.csv")
+    _check_close(_compute_field(magnet, points), expected_rot, rtol, atol, max_mismatches)
 
-    _rotate(magnet, test_params[3])
-    assert isinstance(magnet.orientation, Rotation)
-    assert_allclose(_compute_field(magnet, points), np.load(data_paths[4]), rtol, atol)
-
-
-def generate_grid(bounds: FloatArray, N: Iterable) -> FloatArray:
-    linsp = [np.linspace(bounds[i, 0], bounds[i, 1], n) for i, n in enumerate(N)]
-    mesh = np.meshgrid(*linsp)
-    return np.column_stack([m.flatten() for m in mesh])
-
-
-def generate_small_grid() -> None:
-    path = Path("python/tests/data/small-grid.npy")
-    bounds = np.array([[-0.25, 0.25]] * 3)
-    N = [20] * 3
-    points = generate_grid(bounds, N)
-    np.save(path, points)
-
-
-def get_small_grid() -> FloatArray:
-    path = Path("python/tests/data/small-grid.npy")
-    return np.load(path)
-
-
-if __name__ == "__main__":
-    # generate_small_grid()
-    pass
+    # 5. Rotate and Translate
+    magnet.translate((-0.1, -0.2, -0.3))
+    expected_rot_trans = load_test_array(f"{name}-rotate-translate.csv")
+    _check_close(_compute_field(magnet, points), expected_rot_trans, rtol, atol, max_mismatches)
