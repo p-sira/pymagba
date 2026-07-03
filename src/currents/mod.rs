@@ -5,6 +5,8 @@
 
 pub mod circular;
 pub mod path;
+pub mod triangle;
 
 pub use circular::CircularCurrent;
 pub use path::PathCurrent;
+pub use triangle::TriangleCurrent;

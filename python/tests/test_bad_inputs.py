@@ -7,7 +7,7 @@ from pymagba.magnets import (
     Dipole,
     SourceCollection,
 )
-from pymagba.currents import CircularCurrent, PathCurrent
+from pymagba.currents import CircularCurrent, PathCurrent, TriangleCurrent
 from pymagba.sensors import LinearHallSensor, HallSwitch, HallLatch, ObserverCollection
 
 
@@ -79,6 +79,14 @@ def test_path_current_validation():
         PathCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError, match="Expected a NumPy array of shape"):
         PathCurrent(vertices=[[0, 0, 0]]).vertices = [[1.0, 2.0], [3.0, 4.0]]
+
+def test_triangle_current_validation():
+    with pytest.raises(ValueError):
+        TriangleCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(ValueError):
+        TriangleCurrent().vertices = [[1.0, 2.0], [3.0, 4.0]]
+    with pytest.raises(ValueError, match="Expected exactly 3 elements"):
+        TriangleCurrent(current_density=[1.0, 2.0])
 
 
 def test_linear_hall_sensor_validation():

@@ -41,7 +41,12 @@ pub enum SourceRef<'py> {
     Cuboid(PyRef<'py, crate::magnets::CuboidMagnet>),
     Dipole(PyRef<'py, crate::magnets::Dipole>),
     Sphere(PyRef<'py, crate::magnets::SphereMagnet>),
-    Current(PyRef<'py, crate::currents::CircularCurrent>),
+    TriangleMagnet(PyRef<'py, crate::magnets::TriangleMagnet>),
+    TetrahedronMagnet(PyRef<'py, crate::magnets::TetrahedronMagnet>),
+    MeshMagnet(PyRef<'py, crate::magnets::MeshMagnet>),
+    CircularCurrent(PyRef<'py, crate::currents::CircularCurrent>),
+    PathCurrent(PyRef<'py, crate::currents::PathCurrent>),
+    TriangleCurrent(PyRef<'py, crate::currents::TriangleCurrent>),
     Collection(PyRef<'py, crate::SourceCollection>),
 }
 
@@ -64,7 +69,12 @@ impl<'py> SourceRef<'py> {
             SourceRef::Cuboid(m) => m.inner.clone().into(),
             SourceRef::Dipole(m) => m.inner.clone().into(),
             SourceRef::Sphere(m) => m.inner.clone().into(),
-            SourceRef::Current(m) => m.inner.clone().into(),
+            SourceRef::TriangleMagnet(m) => magba::magnets::Magnet::Triangle(m.inner.clone()).into(),
+            SourceRef::TetrahedronMagnet(m) => magba::magnets::Magnet::Tetrahedron(m.inner.clone()).into(),
+            SourceRef::MeshMagnet(m) => magba::magnets::Magnet::Mesh(m.inner.clone()).into(),
+            SourceRef::CircularCurrent(m) => m.inner.clone().into(),
+            SourceRef::PathCurrent(m) => m.inner.clone().into(),
+            SourceRef::TriangleCurrent(m) => m.inner.clone().into(),
             SourceRef::Collection(m) => m.inner.clone().into(),
         }
     }
@@ -75,7 +85,12 @@ impl<'py> SourceRef<'py> {
             SourceRef::Cuboid(m) => &m.inner,
             SourceRef::Dipole(m) => &m.inner,
             SourceRef::Sphere(m) => &m.inner,
-            SourceRef::Current(m) => &m.inner,
+            SourceRef::TriangleMagnet(m) => &m.inner,
+            SourceRef::TetrahedronMagnet(m) => &m.inner,
+            SourceRef::MeshMagnet(m) => &m.inner,
+            SourceRef::CircularCurrent(m) => &m.inner,
+            SourceRef::PathCurrent(m) => &m.inner,
+            SourceRef::TriangleCurrent(m) => &m.inner,
             SourceRef::Collection(m) => &m.inner,
         }
     }

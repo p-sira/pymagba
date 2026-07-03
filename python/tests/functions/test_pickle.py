@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import pytest
 from pymagba.magnets import CylinderMagnet, CuboidMagnet, Dipole, SourceCollection
-from pymagba.currents import PathCurrent
+from pymagba.currents import PathCurrent, TriangleCurrent
 from pymagba.sensors import LinearHallSensor, ObserverCollection
 
 
@@ -58,6 +58,21 @@ def test_pickle_path_current():
     np.testing.assert_array_equal(m.position, m2.position)
     np.testing.assert_array_equal(m.orientation.as_quat(), m2.orientation.as_quat())
     assert m.current == m2.current
+    np.testing.assert_array_equal(m.vertices, m2.vertices)
+
+def test_pickle_triangle_current():
+    m = TriangleCurrent(
+        position=[0.1, 0.2, 0.3],
+        orientation=[0.1, 0.2, 0.3, 0.4],
+        current_density=[1.0, 2.0, 3.0],
+        vertices=[[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1]],
+    )
+    b = pickle.dumps(m)
+    m2 = pickle.loads(b)
+    
+    np.testing.assert_array_equal(m.position, m2.position)
+    np.testing.assert_array_equal(m.orientation.as_quat(), m2.orientation.as_quat())
+    np.testing.assert_array_equal(m.current_density, m2.current_density)
     np.testing.assert_array_equal(m.vertices, m2.vertices)
 
 def test_pickle_source_collection_empty():
