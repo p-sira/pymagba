@@ -1,8 +1,8 @@
 {
-    "fields.FieldCircular.time_field": {
-        "code": "class FieldCircular:\n    def time_field(self):\n        self.func(*self.args)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        self.func = pymagba.fields.circular_B\n        self.args = (self.observers, (0, 0, 0), get_standard_rotation(), 0.01, 1.0)",
+    "benchmarks_currents.CircularCurrentBenchmark.time_getB": {
+        "code": "class CircularCurrentBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = CircularCurrent(\n            position=POSITION,\n            orientation=ORIENTATION,\n            diameter=1.0,\n            current=1.0\n        )",
         "min_run_count": 2,
-        "name": "fields.FieldCircular.time_field",
+        "name": "benchmarks_currents.CircularCurrentBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -11,13 +11,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "2e28875b54671ba23802f88fce0e90b1ff44901f00907b89832ac58b415a2d41",
+        "version": "2b07d8bb228e2eac5209407ae51e03b09fb885522db327a0c2a75926d41128cf",
         "warmup_time": -1
     },
-    "fields.FieldCuboid.time_field": {
-        "code": "class FieldCuboid:\n    def time_field(self):\n        self.func(*self.args)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        self.func = pymagba.fields.cuboid_B\n        self.args = (\n            self.observers,\n            (0, 0, 0),\n            get_standard_rotation(),\n            (0.1, 0.2, 0.3),\n            (1, 2, 3),\n        )",
+    "benchmarks_currents.PathCurrentBenchmark.time_getB": {
+        "code": "class PathCurrentBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = PathCurrent(\n            position=POSITION,\n            orientation=ORIENTATION,\n            current=100.0,\n            vertices=np.array([[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1], [0.0, 0.0, 0.1]])\n        )",
         "min_run_count": 2,
-        "name": "fields.FieldCuboid.time_field",
+        "name": "benchmarks_currents.PathCurrentBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -26,13 +26,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "38db85482a78925f69e50707da94dbeba21bf00e7fcf4093c118ae82d55a678c",
+        "version": "474415da494201abf38d0a94687dc5dc6a43a386c0396528474ad36c112493f1",
         "warmup_time": -1
     },
-    "fields.FieldCylinder.time_field": {
-        "code": "class FieldCylinder:\n    def time_field(self):\n        self.func(*self.args)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        self.func = pymagba.fields.cylinder_B\n        self.args = (\n            self.observers,\n            (0, 0, 0),\n            get_standard_rotation(),\n            0.1,\n            0.2,\n            (1, 2, 3),\n        )",
+    "benchmarks_currents.SheetCurrentBenchmark.time_getB": {
+        "code": "class SheetCurrentBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = SheetCurrent(\n            position=POSITION,\n            orientation=ORIENTATION,\n            vertices=np.array([\n                [-0.1, -0.1, -0.1],\n                [0.1, -0.1, -0.1],\n                [0.0, 0.1, -0.1],\n                [0.0, 0.0, 0.1],\n            ]),\n            faces=np.array([[0, 2, 1], [0, 1, 3], [1, 2, 3], [0, 3, 2]]),\n            current_densities=np.array([\n                [1.0, 2.0, 3.0],\n                [1.0, 2.0, 3.0],\n                [1.0, 2.0, 3.0],\n                [1.0, 2.0, 3.0],\n            ])\n        )",
         "min_run_count": 2,
-        "name": "fields.FieldCylinder.time_field",
+        "name": "benchmarks_currents.SheetCurrentBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -41,13 +41,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "025dd94e8a8bb6e98ea325c6db93d4f53358c0fb879324b8b234d84db83079cd",
+        "version": "5a18302c208a9926e3068c05dc6274cf4fd0086b4fca1b82b213360756b0e2d8",
         "warmup_time": -1
     },
-    "fields.FieldDipole.time_field": {
-        "code": "class FieldDipole:\n    def time_field(self):\n        self.func(*self.args)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        self.func = pymagba.fields.dipole_B\n        self.args = (self.observers, (0, 0, 0), get_standard_rotation(), (1, 2, 3))",
+    "benchmarks_currents.TriangleCurrentBenchmark.time_getB": {
+        "code": "class TriangleCurrentBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = TriangleCurrent(\n            position=POSITION,\n            orientation=ORIENTATION,\n            vertices=np.array([\n                [-0.1, -0.1, -0.1],\n                [0.1, -0.1, -0.1],\n                [0.0, 0.1, -0.1],\n            ]),\n            current_density=np.array([1.0, 2.0, 3.0])\n        )",
         "min_run_count": 2,
-        "name": "fields.FieldDipole.time_field",
+        "name": "benchmarks_currents.TriangleCurrentBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -56,13 +56,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "22126095c37af9e2125fa8b5f6e433ed6c7d89c38969c99f19fb06f40097b283",
+        "version": "c01c17f6dc0383a6e3774709ac4a8a59e9b265ffd899a1a2ec0244bff29119b5",
         "warmup_time": -1
     },
-    "fields.FieldSphere.time_field": {
-        "code": "class FieldSphere:\n    def time_field(self):\n        self.func(*self.args)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        self.func = pymagba.fields.sphere_B\n        self.args = (\n            self.observers,\n            (0, 0, 0),\n            get_standard_rotation(),\n            0.1,\n            (1, 2, 3),\n        )",
+    "benchmarks_magnets.CuboidMagnetBenchmark.time_getB": {
+        "code": "class CuboidMagnetBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = CuboidMagnet(\n            position=POSITION,\n            orientation=ORIENTATION,\n            dimensions=np.array((0.1, 0.2, 0.3)),\n            polarization=np.array((1.0, 2.0, 3.0))\n        )",
         "min_run_count": 2,
-        "name": "fields.FieldSphere.time_field",
+        "name": "benchmarks_magnets.CuboidMagnetBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -71,13 +71,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "f84ca304fc9978be56453b03850ac7a9e43dc4de01cf3090d7eb09ea38a1ef19",
+        "version": "2924487bc2f8f98902012bb86dd26ffaf2cd0824987e7f9070447201179a0fa1",
         "warmup_time": -1
     },
-    "magnets.MagnetCircular.time_compute_B": {
-        "code": "class MagnetCircular:\n    def time_compute_B(self):\n        self.func(self.observers)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        from pymagba.currents import CircularCurrent\n    \n        magnet = CircularCurrent(\n            position=(0, 0, 0),\n            orientation=get_standard_rotation(),\n            diameter=0.2,\n            current=10.0,\n        )\n        self.func = magnet.compute_B",
+    "benchmarks_magnets.CylinderMagnetBenchmark.time_getB": {
+        "code": "class CylinderMagnetBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = CylinderMagnet(\n            position=POSITION,\n            orientation=ORIENTATION,\n            diameter=0.1,\n            height=0.2,\n            polarization=np.array((1.0, 2.0, 3.0))\n        )",
         "min_run_count": 2,
-        "name": "magnets.MagnetCircular.time_compute_B",
+        "name": "benchmarks_magnets.CylinderMagnetBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -86,13 +86,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "8848e50b84683d431f317e541e76d041c12936a8180a61d275007944e1fb6789",
+        "version": "dab6c72ec3a358a5fcabbe48df5f862ac7dafa2d9926f962d050db388117193d",
         "warmup_time": -1
     },
-    "magnets.MagnetCollection.time_compute_B": {
-        "code": "class MagnetCollection:\n    def time_compute_B(self):\n        self.func(self.observers)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        m1 = pymagba.magnets.CylinderMagnet(\n            position=(0.005, 0.0, 0.0),\n            diameter=0.01,\n            height=0.02,\n            polarization=(0.0, 0.0, 1.0),\n        )\n        m2 = pymagba.magnets.CuboidMagnet(\n            position=(-0.005, 0.0, 0.0),\n            dimensions=(0.01, 0.01, 0.01),\n            polarization=(0.0, 0.0, -1.0),\n        )\n        magnet = pymagba.magnets.SourceCollection([m1, m2])\n        self.func = magnet.compute_B",
+    "benchmarks_magnets.DipoleBenchmark.time_getB": {
+        "code": "class DipoleBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = Dipole(\n            position=POSITION,\n            orientation=ORIENTATION,\n            moment=np.array((1.0, 2.0, 3.0))\n        )",
         "min_run_count": 2,
-        "name": "magnets.MagnetCollection.time_compute_B",
+        "name": "benchmarks_magnets.DipoleBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -101,13 +101,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "8c756f146b6fd0dd0bfa8df603d4f20b350070f8bfd7cb5d705cbe409aabfa94",
+        "version": "db675576d6d9a53acf5e7d450f55d7709c9b0d1562689f48b83bf952b0557f09",
         "warmup_time": -1
     },
-    "magnets.MagnetCuboid.time_compute_B": {
-        "code": "class MagnetCuboid:\n    def time_compute_B(self):\n        self.func(self.observers)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        magnet = pymagba.magnets.CuboidMagnet(\n            position=(0, 0, 0),\n            orientation=get_standard_rotation(),\n            dimensions=(0.1, 0.2, 0.3),\n            polarization=(1, 2, 3),\n        )\n        self.func = magnet.compute_B",
+    "benchmarks_magnets.MeshMagnetBenchmark.time_getB": {
+        "code": "class MeshMagnetBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = MeshMagnet(\n            position=POSITION,\n            orientation=ORIENTATION,\n            vertices=np.array([[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1], [0.0, 0.0, 0.1]]),\n            faces=np.array([[0, 2, 1], [0, 1, 3], [1, 2, 3], [0, 3, 2]]),\n            polarization=np.array((1.0, 2.0, 3.0))\n        )",
         "min_run_count": 2,
-        "name": "magnets.MagnetCuboid.time_compute_B",
+        "name": "benchmarks_magnets.MeshMagnetBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -116,13 +116,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "172e0c4228e56f04a13c2baaccba9873e1380a0402457a9647b559c8107cff5f",
+        "version": "3ab94060262e2f1fb139c9e4ebca19375d447793165f44ca11af72a594e12a93",
         "warmup_time": -1
     },
-    "magnets.MagnetCylinder.time_compute_B": {
-        "code": "class MagnetCylinder:\n    def time_compute_B(self):\n        self.func(self.observers)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        magnet = pymagba.magnets.CylinderMagnet(\n            position=(0, 0, 0),\n            orientation=get_standard_rotation(),\n            diameter=0.1,\n            height=0.2,\n            polarization=(1, 2, 3),\n        )\n        self.func = magnet.compute_B",
+    "benchmarks_magnets.SphereMagnetBenchmark.time_getB": {
+        "code": "class SphereMagnetBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = SphereMagnet(\n            position=POSITION,\n            orientation=ORIENTATION,\n            diameter=0.1,\n            polarization=np.array((1.0, 2.0, 3.0))\n        )",
         "min_run_count": 2,
-        "name": "magnets.MagnetCylinder.time_compute_B",
+        "name": "benchmarks_magnets.SphereMagnetBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -131,13 +131,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "226b1dba83d05f4f35d9d6c3e858194c7ab0904fb19483d0f2a79c0167942fde",
+        "version": "48ec2168a404ed532273193ba8bcb34db4d62a3f50eec8ef35dc48fab2f83fc1",
         "warmup_time": -1
     },
-    "magnets.MagnetDipole.time_compute_B": {
-        "code": "class MagnetDipole:\n    def time_compute_B(self):\n        self.func(self.observers)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        magnet = pymagba.magnets.Dipole(\n            position=(0, 0, 0),\n            orientation=get_standard_rotation(),\n            moment=(1, 2, 3),\n        )\n        self.func = magnet.compute_B",
+    "benchmarks_magnets.TetrahedronMagnetBenchmark.time_getB": {
+        "code": "class TetrahedronMagnetBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = TetrahedronMagnet(\n            position=POSITION,\n            orientation=ORIENTATION,\n            vertices=np.array([[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1], [0.0, 0.0, 0.1]]),\n            polarization=np.array((1.0, 2.0, 3.0))\n        )",
         "min_run_count": 2,
-        "name": "magnets.MagnetDipole.time_compute_B",
+        "name": "benchmarks_magnets.TetrahedronMagnetBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -146,13 +146,13 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "aede87c0cc2ab507333b940d8a6f5f0cd387452d9b8787120559db59bf50ab1b",
+        "version": "2d78dec4693430538e9a14f00644c65762640f6feabb1bb18ccd486b6cc30be9",
         "warmup_time": -1
     },
-    "magnets.MagnetSphere.time_compute_B": {
-        "code": "class MagnetSphere:\n    def time_compute_B(self):\n        self.func(self.observers)\n\n    def setup(self):\n        self.observers = get_observer_grid(1000000)\n        magnet = pymagba.magnets.SphereMagnet(\n            position=(0, 0, 0),\n            orientation=get_standard_rotation(),\n            diameter=0.1,\n            polarization=(1, 2, 3),\n        )\n        self.func = magnet.compute_B",
+    "benchmarks_magnets.TriangleMagnetBenchmark.time_getB": {
+        "code": "class TriangleMagnetBenchmark:\n    def time_getB(self):\n        self.source.compute_B(self.points)\n\n    def setup(self):\n        self.points = get_points()\n        self.source = TriangleMagnet(\n            position=POSITION,\n            orientation=ORIENTATION,\n            vertices=np.array([[-0.1, -0.1, -0.1], [0.1, -0.1, 0.1], [0.0, 0.2, 0.0]]),\n            polarization=np.array((1.0, 2.0, 3.0))\n        )",
         "min_run_count": 2,
-        "name": "magnets.MagnetSphere.time_compute_B",
+        "name": "benchmarks_magnets.TriangleMagnetBenchmark.time_getB",
         "number": 0,
         "param_names": [],
         "params": [],
@@ -161,7 +161,7 @@
         "sample_time": 0.01,
         "type": "time",
         "unit": "seconds",
-        "version": "78538b0a1a064449838489e0e57ef9cc6b49e7b040242f2c60d10fadb101eb3c",
+        "version": "ff8fa3cfca1aacfbcd006f99b7089a3d8dd1b40b8370317f7b5d57785e15a63b",
         "warmup_time": -1
     },
     "version": 2
