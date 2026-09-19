@@ -23,7 +23,7 @@
 
 ---
 
-**PyMagba** is a package for analytical magnetic computation, powered by Rust. All functions support numpy and parallelization.
+**PyMagba** is a package for analytical magnetic computation, powered by Rust [Magba](https://github.com/p-sira/magba). All functions support numpy and parallelization.
 
 ## Quick Start
 
@@ -61,7 +61,9 @@ uv add pymagba
 
 To install from source see the [Reproducibility](#reproducibility) section.
 
+## Testing
 
+Users should refer to [Magba's](https://github.com/p-sira/magba/blob/main/tests/README.md) for comprehensive accuracy report. The performance report of PyMagba can be found on [this]([https://pymagba.hellopsira.workers.dev/](https://pymagba.psira.me/) website. For performance comparison between PyMagba and MagpyLib, please see [PERFORMANCE.md](https://github.com/p-sira/magba/blob/main/PERFORMANCE.md).
 
 ## Reproducibility
 
