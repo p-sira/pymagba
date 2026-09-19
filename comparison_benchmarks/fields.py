@@ -138,3 +138,66 @@ class FieldCircular:
 
     def time_field(self, library):
         self.func(*self.args)
+
+class FieldTetrahedron:
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
+
+    def setup(self, library):
+        self.observers = get_observer_grid(1000000)
+        vertices = [[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]]
+        if library == "PyMagba":
+            self.func = pymagba.fields.tetrahedron_B
+            self.args = (
+                self.observers,
+                (0, 0, 0),
+                get_standard_rotation(),
+                (1, 2, 3),
+                vertices,
+            )
+        else:
+            import magpylib._src.fields.field_BH_tetrahedron
+            self.func = magpylib._src.fields.field_BH_tetrahedron._BHJM_magnet_tetrahedron
+            self.args = (
+                "B",
+                self.observers,
+                np.array([vertices] * len(self.observers)),
+                np.array([[1, 2, 3]] * len(self.observers)),
+            )
+
+    def time_field(self, library):
+        self.func(*self.args)
+
+
+class FieldMesh:
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
+
+    def setup(self, library):
+        self.observers = get_observer_grid(1000000)
+        vertices = [[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]]
+        faces = [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]]
+        if library == "PyMagba":
+            self.func = pymagba.fields.mesh_B
+            self.args = (
+                self.observers,
+                (0, 0, 0),
+                get_standard_rotation(),
+                (1, 2, 3),
+                vertices,
+                faces,
+            )
+        else:
+            import magpylib._src.fields.field_BH_triangularmesh
+            self.func = magpylib._src.fields.field_BH_triangularmesh._BHJM_magnet_trimesh
+            v = np.array(vertices)
+            mesh = v[faces]
+            self.args = (
+                "B",
+                self.observers,
+                np.array([mesh] * len(self.observers)),
+                np.array([[1, 2, 3]] * len(self.observers)),
+            )
+
+    def time_field(self, library):
+        self.func(*self.args)

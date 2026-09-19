@@ -5,7 +5,8 @@ import os
 import magpylib as magpy
 import numpy as np
 from magpylib.current import Circle
-from magpylib.magnet import Cuboid, Cylinder, Sphere
+from magpylib.magnet import Cuboid, Cylinder, Sphere, Tetrahedron, TriangularMesh
+from magpylib.current import Polyline
 from magpylib.misc import Dipole as MagpyDipole
 from pymagba.currents import CircularCurrent
 from pymagba.magnets import (
@@ -14,7 +15,11 @@ from pymagba.magnets import (
     Dipole,
     SourceCollection,
     SphereMagnet,
+    TetrahedronMagnet,
+    MeshMagnet,
 )
+from pymagba.currents import PathCurrent
+
 from scipy.spatial.transform import Rotation
 
 
@@ -122,6 +127,53 @@ def calc_accuracy():
         col_ma.getB(observers),  # type: ignore
     )
 
+    # Tetrahedron
+    m_py = TetrahedronMagnet(
+        position=(0, 0, 0),
+        orientation=rot,
+        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
+        polarization=(1, 2, 3),
+    )
+    m_ma = Tetrahedron(
+        position=(0, 0, 0),
+        orientation=rot,
+        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
+        polarization=(1, 2, 3),
+    )
+    acc["Tetrahedron"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+
+    # Mesh
+    m_py = MeshMagnet(
+        position=(0, 0, 0),
+        orientation=rot,
+        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
+        faces=[[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]],
+        polarization=(1, 2, 3),
+    )
+    m_ma = TriangularMesh(
+        position=(0, 0, 0),
+        orientation=rot,
+        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
+        faces=[[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]],
+        polarization=(1, 2, 3),
+    )
+    acc["Mesh"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+
+    # Polyline
+    m_py = PathCurrent(
+        position=(0, 0, 0),
+        orientation=rot,
+        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
+        current=1.5,
+    )
+    m_ma = Polyline(
+        position=(0, 0, 0),
+        orientation=rot,
+        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
+        current=1.5,
+    )
+    acc["Polyline"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+
     return acc
 
 
@@ -189,12 +241,26 @@ def main():
     accuracy = calc_accuracy()
 
     import jinja2
+    import pymagba
+    import magpylib
+
+    pymagba_version = getattr(pymagba, "__version__", "Unknown")
+    magpylib_version = getattr(magpylib, "__version__", "Unknown")
 
     with open("PERFORMANCE.md.j2", "r") as f:
         template = jinja2.Template(f.read())
 
     field_rows = []
-    for geom in ["Cylinder", "Sphere", "Cuboid", "Dipole", "Circular"]:
+    for geom in [
+        "Cylinder",
+        "Sphere",
+        "Cuboid",
+        "Dipole",
+        "Tetrahedron",
+        "Mesh",
+        "Circular",
+        "Polyline",
+    ]:
         sp = speedups.get(geom, {})
         acc = accuracy.get(geom)
         field_rows.append(
@@ -265,6 +331,8 @@ def main():
         create_rows=create_rows,
         man_rows=man_rows,
         env=env,
+        pymagba_version=pymagba_version,
+        magpylib_version=magpylib_version,
     )
 
     with open("PERFORMANCE.md", "w") as f:

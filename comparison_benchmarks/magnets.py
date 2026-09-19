@@ -189,3 +189,63 @@ class MagnetCollection:
 
     def time_compute_B(self, library):
         self.func(self.observers)
+
+class MagnetTetrahedron:
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
+
+    def setup(self, library):
+        self.observers = get_observer_grid(1000000)
+        vertices = [[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]]
+        if library == "PyMagba":
+            magnet = pymagba.magnets.TetrahedronMagnet(
+                position=(0, 0, 0),
+                orientation=get_standard_rotation(),
+                vertices=vertices,
+                polarization=(1, 2, 3),
+            )
+            self.func = magnet.compute_B
+        else:
+            from magpylib.magnet import Tetrahedron
+            magnet = Tetrahedron(
+                position=(0, 0, 0),
+                orientation=get_standard_rotation(),
+                vertices=vertices,
+                polarization=(1, 2, 3),
+            )
+            self.func = magnet.getB
+
+    def time_compute_B(self, library):
+        self.func(self.observers)
+
+
+class MagnetMesh:
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
+
+    def setup(self, library):
+        self.observers = get_observer_grid(1000000)
+        vertices = [[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]]
+        faces = [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]]
+        if library == "PyMagba":
+            magnet = pymagba.magnets.MeshMagnet(
+                position=(0, 0, 0),
+                orientation=get_standard_rotation(),
+                vertices=vertices,
+                faces=faces,
+                polarization=(1, 2, 3),
+            )
+            self.func = magnet.compute_B
+        else:
+            from magpylib.magnet import TriangularMesh
+            magnet = TriangularMesh(
+                position=(0, 0, 0),
+                orientation=get_standard_rotation(),
+                vertices=vertices,
+                faces=faces,
+                polarization=(1, 2, 3),
+            )
+            self.func = magnet.getB
+
+    def time_compute_B(self, library):
+        self.func(self.observers)
