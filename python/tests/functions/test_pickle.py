@@ -1,7 +1,7 @@
 import pickle
+
 import numpy as np
-import pytest
-from pymagba.magnets import CylinderMagnet, CuboidMagnet, Dipole, SourceCollection
+from pymagba.magnets import CuboidMagnet, CylinderMagnet, Dipole, SourceCollection
 from pymagba.sensors import LinearHallSensor, ObserverCollection
 
 

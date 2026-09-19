@@ -1,18 +1,17 @@
 # PyMagba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
-import numpy as np
-from magpylib.magnet import Cuboid, Sphere, Cylinder
-from magpylib.misc import Dipole
 import magpylib as magpy
-
 import pymagba.magnets
+from magpylib.magnet import Cuboid, Cylinder, Sphere
+from magpylib.misc import Dipole
+
 from .common import get_observer_grid, get_standard_rotation
 
 
 class MagnetCuboid:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -38,8 +37,8 @@ class MagnetCuboid:
 
 
 class MagnetSphere:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -65,8 +64,8 @@ class MagnetSphere:
 
 
 class MagnetCylinder:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -93,8 +92,8 @@ class MagnetCylinder:
 
 
 class MagnetDipole:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -118,8 +117,8 @@ class MagnetDipole:
 
 
 class MagnetCircular:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -147,8 +146,8 @@ class MagnetCircular:
 
 
 class MagnetCollection:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -164,7 +163,11 @@ class MagnetCollection:
                 dimensions=(0.01, 0.01, 0.01),
                 polarization=(0.0, 0.0, -1.0),
             )
-            magnet = pymagba.magnets.SourceCollection([m1, m2])
+            m3 = pymagba.magnets.Dipole(
+                position=(0.0, 0.005, 0.0),
+                moment=(0.0, 1.0, 0.0),
+            )
+            magnet = pymagba.magnets.SourceCollection([m1, m2, m3])
             self.func = magnet.compute_B
         else:
             m1_py = magpy.magnet.Cylinder(
@@ -177,7 +180,11 @@ class MagnetCollection:
                 dimension=(0.01, 0.01, 0.01),
                 polarization=(0.0, 0.0, -1.0),
             )
-            magnet = magpy.Collection(m1_py, m2_py)
+            m3_py = Dipole(
+                position=(0.0, 0.005, 0.0),
+                moment=(0.0, 1.0, 0.0),
+            )
+            magnet = magpy.Collection(m1_py, m2_py, m3_py)
             self.func = magnet.getB
 
     def time_compute_B(self, library):

@@ -1,14 +1,14 @@
 import numpy as np
 import pytest
+from pymagba.currents import CircularCurrent
 from pymagba.magnets import (
-    SphereMagnet,
     CuboidMagnet,
     CylinderMagnet,
     Dipole,
     SourceCollection,
+    SphereMagnet,
 )
-from pymagba.currents import CircularCurrent
-from pymagba.sensors import LinearHallSensor, HallSwitch, HallLatch, ObserverCollection
+from pymagba.sensors import HallLatch, HallSwitch, LinearHallSensor, ObserverCollection
 
 
 def test_arraylike3_invalid():

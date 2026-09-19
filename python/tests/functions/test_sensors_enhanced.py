@@ -1,14 +1,13 @@
 import numpy as np
 import pytest
-from pymagba.sensors import LinearHallSensor, HallSwitch, HallLatch, ObserverCollection
+from pymagba.currents import CircularCurrent
 from pymagba.magnets import (
-    CylinderMagnet,
     CuboidMagnet,
+    CylinderMagnet,
     Dipole,
     SphereMagnet,
-    SourceCollection,
 )
-from pymagba.currents import CircularCurrent
+from pymagba.sensors import HallLatch, HallSwitch, LinearHallSensor, ObserverCollection
 
 
 def test_sensor_unified_read_all_sources():

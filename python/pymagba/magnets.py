@@ -4,18 +4,26 @@
 """Magnet class module."""
 
 from .pymagba_binding import (
-    CylinderMagnet as _CylinderMagnet,
-    SourceCollection as _SourceCollection,
     CuboidMagnet as _CuboidMagnet,
+)
+from .pymagba_binding import (
+    CylinderMagnet as _CylinderMagnet,
+)
+from .pymagba_binding import (
     Dipole as _Dipole,
+)
+from .pymagba_binding import (
+    SourceCollection as _SourceCollection,
+)
+from .pymagba_binding import (
     SphereMagnet as _SphereMagnet,
 )
 
 __all__ = [
-    "CylinderMagnet",
-    "SourceCollection",
     "CuboidMagnet",
+    "CylinderMagnet",
     "Dipole",
+    "SourceCollection",
     "SphereMagnet",
 ]
 

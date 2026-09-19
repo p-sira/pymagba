@@ -1,20 +1,20 @@
 # PyMagba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
-import numpy as np
-import magpylib._src.fields.field_BH_cylinder
-import magpylib._src.fields.field_BH_sphere
-import magpylib._src.fields.field_BH_cuboid
-import magpylib._src.fields.field_BH_dipole
 import magpylib._src.fields.field_BH_circle
-
+import magpylib._src.fields.field_BH_cuboid
+import magpylib._src.fields.field_BH_cylinder
+import magpylib._src.fields.field_BH_dipole
+import magpylib._src.fields.field_BH_sphere
+import numpy as np
 import pymagba.fields
+
 from .common import get_observer_grid, get_standard_rotation
 
 
 class FieldCylinder:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -42,8 +42,8 @@ class FieldCylinder:
 
 
 class FieldSphere:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -70,8 +70,8 @@ class FieldSphere:
 
 
 class FieldCuboid:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -98,8 +98,8 @@ class FieldCuboid:
 
 
 class FieldDipole:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
@@ -119,8 +119,8 @@ class FieldDipole:
 
 
 class FieldCircular:
-    params = ["PyMagba", "MagpyLib"]
-    param_names = ["library"]
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)

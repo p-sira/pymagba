@@ -1,6 +1,5 @@
 import pytest
-import numpy as np
-from pymagba.magnets import CylinderMagnet, CuboidMagnet, SourceCollection
+from pymagba.magnets import CuboidMagnet, CylinderMagnet, SourceCollection
 from pymagba.sensors import LinearHallSensor, ObserverCollection
 
 

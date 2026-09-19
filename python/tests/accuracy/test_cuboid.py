@@ -3,17 +3,19 @@
 
 from pathlib import Path
 from typing import Any
-from magpylib.magnet import Cuboid
+
 import numpy as np
-from scipy.spatial.transform import Rotation
+from magpylib.magnet import Cuboid
 from pymagba.magnets import CuboidMagnet
+from pymagba.utils import FloatArray
+from scipy.spatial.transform import Rotation
+
 from tests.testing_util import (
     TestData,
     generate_general_expected_results,
     get_small_grid,
     run_test_general,
 )
-from pymagba.utils import FloatArray
 
 
 class CuboidTestData(TestData):

@@ -8,7 +8,6 @@ from typing import Any
 
 import numpy as np
 from numpy.testing import assert_allclose
-
 from pymagba.utils import FloatArray
 
 
@@ -29,14 +28,13 @@ class TestData(ABC):
             Paths relative to python/tests/data.
         """
         return [
-            Path(f"python/tests/data/") / (data_path_str + f"{i}.npy") for i in range(5)
+            Path("python/tests/data/") / (data_path_str + f"{i}.npy") for i in range(5)
         ]
 
     @staticmethod
     @abstractmethod
     def get_test_data_paths() -> list[Path]:
         """Get the paths to the actual test data files."""
-        pass
 
     @staticmethod
     @abstractmethod
@@ -46,7 +44,6 @@ class TestData(ABC):
         Returns:
             Parameters for position, orientation, translation, and rotation.
         """
-        pass
 
 
 def _compute_field(obj, points: FloatArray) -> FloatArray:

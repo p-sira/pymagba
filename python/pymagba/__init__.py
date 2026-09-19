@@ -9,9 +9,5 @@ engine, including various magnetic sources and sensors.
 
 from __future__ import annotations
 
+from . import currents, fields, magnets, sensors
 from .__about__ import *
-
-from . import magnets
-from . import currents
-from . import sensors
-from . import fields

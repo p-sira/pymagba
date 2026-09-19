@@ -24,4 +24,3 @@ class CircularCurrent(_CircularCurrent):
             Defaults to 1.0.
     """
 
-    pass

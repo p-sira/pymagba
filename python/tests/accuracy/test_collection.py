@@ -3,17 +3,19 @@
 
 from pathlib import Path
 from typing import Any
+
 import magpylib as magpy
 import numpy as np
+from pymagba.magnets import CuboidMagnet, CylinderMagnet, SourceCollection
+from pymagba.utils import FloatArray
 from scipy.spatial.transform import Rotation
-from pymagba.magnets import CylinderMagnet, CuboidMagnet, SourceCollection
+
 from tests.testing_util import (
     TestData,
     generate_general_expected_results,
     get_small_grid,
     run_test_general,
 )
-from pymagba.utils import FloatArray
 
 
 class CollectionTestData(TestData):

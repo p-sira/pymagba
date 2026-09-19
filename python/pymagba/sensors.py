@@ -4,13 +4,19 @@
 """Sensor class module."""
 
 from .pymagba_binding import (
-    LinearHallSensor as _LinearHallSensor,
-    HallSwitch as _HallSwitch,
     HallLatch as _HallLatch,
+)
+from .pymagba_binding import (
+    HallSwitch as _HallSwitch,
+)
+from .pymagba_binding import (
+    LinearHallSensor as _LinearHallSensor,
+)
+from .pymagba_binding import (
     ObserverCollection as _ObserverCollection,
 )
 
-__all__ = ["LinearHallSensor", "HallSwitch", "HallLatch", "ObserverCollection"]
+__all__ = ["HallLatch", "HallSwitch", "LinearHallSensor", "ObserverCollection"]
 
 
 class LinearHallSensor(_LinearHallSensor):

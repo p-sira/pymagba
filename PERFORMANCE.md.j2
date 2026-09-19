@@ -16,11 +16,10 @@ Below is a comparison of computation times for various source geometries, calcul
 
 | Geometry Type | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
 |---------------|--------------|---------------|---------|----------------|----------------|
-| **Cylinder** | 68.19 ms | 1627.35 ms | 23.9x | 2.16e-09 | 2.28e-12 |
-| **Sphere** | 22.49 ms | 393.71 ms | 17.5x | 2.65e-15 | 1.02e-15 |
-| **Cuboid** | 90.25 ms | 1410.60 ms | 15.6x | 1.36e-12 | 2.64e-13 |
-| **Dipole** | 23.72 ms | 284.01 ms | 12.0x | 1.32e-10 | 1.32e-10 |
-| **Circular** | 34.30 ms | 598.57 ms | 17.5x | 1.32e-10 | 1.32e-10 |
+{% for row in field_rows -%}
+| **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
+{% endfor -%}
+
 *(Note: The above benchmarks are executed using `asv` via our `benchmarks/` suite).*
 
 ## 2. Collection Performance
@@ -29,33 +28,39 @@ Evaluating the performance of field computation for a collection of objects over
 
 | Operation | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
 |-----------|--------------|---------------|---------|----------------|----------------|
-| **Collection** | 142.26 ms | 2509.71 ms | 17.6x | 1.67e-10 | 1.58e-10 |
+{% for row in collection_rows -%}
+| **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
+{% endfor -%}
+
 ## 3. Object Creation
 
 Creating objects in bulk or iteratively can introduce overhead. Here we compare the time taken to instantiate 10,000 objects such as `Cuboid`, `Cylinder`, etc.
 
 | Operation | PyMagba Time | Magpylib Time | Speedup |
 |-----------|--------------|---------------|---------|
-| Cuboid | 360.28 ms | 842.91 ms | 2.3x |
-| Cylinder | 359.66 ms | 829.82 ms | 2.3x |
-| Collection | 67.66 ms | 2486.77 ms | 36.8x |
+{% for row in create_rows -%}
+| {{ row.label }} | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} |
+{% endfor -%}
+
 ## 4. Object Manipulation
 
 Simulations often require dynamic movement of sources. This benchmark measures the overhead of translating and rotating objects in 3D space (10,000 operations).
 
 | Operation | PyMagba Time | Magpylib Time | Speedup |
 |-----------|--------------|---------------|---------|
-| Translate | 2.34 ms | 350.42 ms | 149.5x |
-| Rotate | 30.38 ms | 2926.04 ms | 96.3x |
+{% for row in man_rows -%}
+| {{ row.label }} | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} |
+{% endfor -%}
+
 ---
 
 ## Reproducing these Benchmarks
 
 These benchmarks were executed on the following environment:
-- **OS:** Linux 6.19.6-arch1-1
-- **CPU:** AMD Ryzen 5 4600H with Radeon Graphics (12 cores)
-- **RAM:** 16 GB
-- **Python:** 3.12
+- **OS:** {{ env.os }}
+- **CPU:** {{ env.cpu }}
+- **RAM:** {{ env.ram }}
+- **Python:** {{ env.python }}
 
 To reproduce these benchmarks on your local machine, run the `asv` suite provided in the repository:
 

@@ -2,9 +2,9 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 import numpy as np
-from pymagba.sensors import LinearHallSensor, HallSwitch, HallLatch, ObserverCollection
-from pymagba.magnets import CylinderMagnet
 import pytest
+from pymagba.magnets import CylinderMagnet
+from pymagba.sensors import HallSwitch, LinearHallSensor, ObserverCollection
 
 
 def test_observer_collection_init():

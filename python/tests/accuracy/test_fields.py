@@ -2,8 +2,8 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 import numpy as np
-from pymagba.fields import cylinder_B, dipole_B, cuboid_B
-from pymagba.magnets import CylinderMagnet, Dipole, CuboidMagnet
+from pymagba.fields import cuboid_B, cylinder_B, dipole_B
+from pymagba.magnets import CuboidMagnet, CylinderMagnet, Dipole
 
 
 def test_cylinder_B():
