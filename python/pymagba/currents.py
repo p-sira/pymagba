@@ -4,16 +4,22 @@ Current sources for PyMagba.
 
 from .pymagba_binding import (
     CircularCurrent as _CircularCurrent,
+)
+from .pymagba_binding import (
     PathCurrent as _PathCurrent,
-    TriangleCurrent as _TriangleCurrent,
+)
+from .pymagba_binding import (
     SheetCurrent as _SheetCurrent,
+)
+from .pymagba_binding import (
+    TriangleCurrent as _TriangleCurrent,
 )
 
 __all__ = [
     "CircularCurrent",
     "PathCurrent",
-    "TriangleCurrent",
     "SheetCurrent",
+    "TriangleCurrent",
 ]
 
 
@@ -32,6 +38,7 @@ class CircularCurrent(_CircularCurrent):
             Defaults to 1.0.
     """
 
+
 class PathCurrent(_PathCurrent):
     """
     A current path modeling a sequence of straight current-carrying wire segments.
@@ -46,6 +53,7 @@ class PathCurrent(_PathCurrent):
         vertices (array_like, optional): The vertices of the path as an Nx3 array.
             Defaults to an empty list.
     """
+
 
 class TriangleCurrent(_TriangleCurrent):
     """
@@ -62,6 +70,7 @@ class TriangleCurrent(_TriangleCurrent):
             Defaults to [[1, 0, 0], [0, 1, 0], [0, 0, 0]].
     """
 
+
 class SheetCurrent(_SheetCurrent):
     """
     A meshed current sheet.
@@ -71,7 +80,7 @@ class SheetCurrent(_SheetCurrent):
             Defaults to [0, 0, 0].
         orientation (Rotation, optional): Orientation of the mesh.
             Defaults to identity.
-        current_densities (array_like, optional): Current densities vectors for each face, 
+        current_densities (array_like, optional): Current densities vectors for each face,
             provided as an Mx3 array where M is the number of faces. Defaults to empty.
         vertices (array_like, optional): The vertices of the mesh as an Nx3 array.
             Defaults to empty.
@@ -96,7 +105,7 @@ class SheetCurrent(_SheetCurrent):
                 Defaults to [0, 0, 0].
             orientation (Rotation, optional): Orientation of the mesh.
                 Defaults to identity.
-            current_densities (array_like, optional): Current densities vectors for each face, 
+            current_densities (array_like, optional): Current densities vectors for each face,
                 provided as an Mx3 array where M is the number of faces in the STL. Defaults to empty.
 
         Returns:

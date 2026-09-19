@@ -2,9 +2,9 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 import numpy as np
-from pymagba.sensors import LinearHallSensor, HallSwitch, HallLatch, ObserverCollection
-from pymagba.magnets import CylinderMagnet
 import pytest
+from pymagba.magnets import CylinderMagnet
+from pymagba.sensors import HallSwitch, LinearHallSensor, ObserverCollection
 
 
 def test_observer_collection_init():
@@ -62,7 +62,7 @@ def test_observer_collection_pose_application():
     res_coll = coll.read_all(magnet)[0]
 
     s_direct = LinearHallSensor(position=[0, 0, 0], sensitive_axis=[0, 0, 1])
-    res_direct = s_direct.read(magnet)
+    res_direct = s_direct.read_voltage(magnet)
 
     assert np.allclose(res_coll, res_direct)
 
@@ -89,7 +89,7 @@ def test_observer_collection_read_source_collection():
     assert len(results) == 1
 
     # Compare with direct reading
-    res_direct = s1.read(sources)
+    res_direct = s1.read_voltage(sources)
     assert np.allclose(results[0], res_direct)
 
 

@@ -4,25 +4,39 @@
 """Magnet class module."""
 
 from .pymagba_binding import (
-    CylinderMagnet as _CylinderMagnet,
-    SourceCollection as _SourceCollection,
     CuboidMagnet as _CuboidMagnet,
+)
+from .pymagba_binding import (
+    CylinderMagnet as _CylinderMagnet,
+)
+from .pymagba_binding import (
     Dipole as _Dipole,
-    SphereMagnet as _SphereMagnet,
-    TriangleMagnet as _TriangleMagnet,
-    TetrahedronMagnet as _TetrahedronMagnet,
+)
+from .pymagba_binding import (
     MeshMagnet as _MeshMagnet,
+)
+from .pymagba_binding import (
+    SourceCollection as _SourceCollection,
+)
+from .pymagba_binding import (
+    SphereMagnet as _SphereMagnet,
+)
+from .pymagba_binding import (
+    TetrahedronMagnet as _TetrahedronMagnet,
+)
+from .pymagba_binding import (
+    TriangleMagnet as _TriangleMagnet,
 )
 
 __all__ = [
-    "CylinderMagnet",
-    "SourceCollection",
     "CuboidMagnet",
+    "CylinderMagnet",
     "Dipole",
-    "SphereMagnet",
-    "TriangleMagnet",
-    "TetrahedronMagnet",
     "MeshMagnet",
+    "SourceCollection",
+    "SphereMagnet",
+    "TetrahedronMagnet",
+    "TriangleMagnet",
 ]
 
 
@@ -214,11 +228,14 @@ class SourceCollection(_SourceCollection):
             B = collection.compute_B(points)  # shape (1, 3)
     """
 
+
 class TriangleMagnet(_TriangleMagnet):
     """Uniformly magnetized triangular magnet."""
 
+
 class TetrahedronMagnet(_TetrahedronMagnet):
     """Uniformly magnetized tetrahedral magnet."""
+
 
 class MeshMagnet(_MeshMagnet):
     """Uniformly magnetized mesh magnet."""

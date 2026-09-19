@@ -2,7 +2,6 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 import numpy as np
-
 from pymagba.magnets import CylinderMagnet
 from pymagba.sensors import LinearHallSensor
 

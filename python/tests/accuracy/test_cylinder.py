@@ -3,7 +3,9 @@
 
 import numpy as np
 from pymagba.magnets import CylinderMagnet
+
 from tests.testing_util import run_test_general
+
 
 def test_cylinder():
     kwargs = {
