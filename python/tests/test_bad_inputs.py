@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pymagba.currents import CircularCurrent
+from pymagba.currents import CircularCurrent, PathCurrent, SheetCurrent, TriangleCurrent
 from pymagba.magnets import (
     CuboidMagnet,
     CylinderMagnet,
@@ -73,6 +73,33 @@ def test_circular_current_validation():
     cur = CircularCurrent(diameter=1.0)
     with pytest.raises(ValueError, match="Diameter must be positive"):
         cur.diameter = 0
+
+
+def test_path_current_validation():
+    with pytest.raises(TypeError, match="Expected a NumPy array of shape"):
+        PathCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(TypeError, match="Expected a NumPy array of shape"):
+        PathCurrent(vertices=[[0, 0, 0]]).vertices = [[1.0, 2.0], [3.0, 4.0]]
+
+
+def test_triangle_current_validation():
+    with pytest.raises(ValueError):
+        TriangleCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(ValueError):
+        TriangleCurrent().vertices = [[1.0, 2.0], [3.0, 4.0]]
+    with pytest.raises(ValueError, match="Expected exactly 3 elements"):
+        TriangleCurrent(current_density=[1.0, 2.0])
+
+
+def test_sheet_current_validation():
+    with pytest.raises(TypeError):
+        SheetCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(ValueError, match="(?i)index out of bounds"):
+        SheetCurrent(
+            current_densities=[[1.0, 2.0, 3.0]],
+            vertices=[[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1]],
+            faces=[[0, 2, 4]],  # Out of bounds
+        )
 
 
 def test_linear_hall_sensor_validation():

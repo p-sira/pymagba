@@ -8,15 +8,16 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent / "python"))
 
-import pymagba
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+from pymagba.__about__ import __author__, __copyright__, __version__
+
 project = "PyMagba"
-copyright = pymagba.__copyright__
-author = pymagba.__author__
-release = pymagba.__version__
+copyright = __copyright__
+author = __author__
+release = __version__
 
 html_title = f"{project} {release}"
 

@@ -84,4 +84,5 @@ Submodules
 
    base
    magnets
+   currents
    sensors

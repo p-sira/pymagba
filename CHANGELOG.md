@@ -1,6 +1,48 @@
 # CHANGELOG
 
-This changelog only records significant changes.
+## 0.6.0
+
+This version corresponds to Magba v0.6.2.
+
+### New Features
+
+- Implement pure functions `path_current_B`, `sheet_current_B`, and `triangle_current_B`.
+
+## 0.5.1
+
+### Documentation
+
+- Add `Currents`, `TriangleMagnet`, `TetrahedronMagnet`, `MeshMagnet`, and `ObserverCollection` documentation.
+
+## 0.5.0
+
+This version corresponds to Magba v0.6.2.
+
+### New Features
+
+- Add new magnets: `TriangleMagnet`, `TetrahedronMagnet`, and `MeshMagnet`.
+- Add new current geometries: `PathCurrent`, `TriangleCurrent`, and `SheetCurrent`.
+- Support loading stl files via `from_stl()` class method for `SheetCurrent` and `MeshMagnet`.
+
+### Testing
+
+- Delegate the test generation to external `p-sira/magba-testing` repository, which is included as a git submodule at `testing/`.
+- Standardize the tests between Magba and PyMagba.
+
+## 0.4.1
+
+This version corresponds to Magba v0.4.3.
+
+### New Features
+
+- Add `read_state` for `HallLatch` and `HallSwitch`.
+
+### Bug Fixes
+
+- Fix collection constructors interpreting children pose as in local frame. Now assume children poses in global frame.
+- Fix stub return types from `pymagba_binding` classes to `pymagba` classes.
+- Use `ArrayLike` in stubs instead of Sequence.
+- Fix default polarization vectors of magnet classes to [0, 0, 1].
 
 ## 0.4.0
 

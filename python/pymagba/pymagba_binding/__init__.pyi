@@ -15,14 +15,23 @@ __all__ = [
     "HallLatch",
     "HallSwitch",
     "LinearHallSensor",
+    "MeshMagnet",
     "ObserverCollection",
+    "PathCurrent",
+    "SheetCurrent",
     "SourceCollection",
     "SphereMagnet",
+    "TetrahedronMagnet",
+    "TriangleCurrent",
+    "TriangleMagnet",
     "circular_B",
     "cuboid_B",
     "cylinder_B",
     "dipole_B",
+    "mesh_B",
     "sphere_B",
+    "tetrahedron_B",
+    "triangle_B",
 ]
 
 class CircularCurrent:
@@ -37,79 +46,78 @@ class CircularCurrent:
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
         diameter: builtins.float = 1.0,
         current: builtins.float = 1.0,
-    ) -> CircularCurrent: ...
+    ) -> typing.Self: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def __reduce__(self) -> tuple: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
     def compute_B(
-        self, points: typing.Sequence[typing.Sequence[float]]
+        self, points: numpy.typing.ArrayLike
     ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 class CuboidMagnet:
     @property
     def polarization(self) -> builtins.list[builtins.float]: ...
     @polarization.setter
-    def polarization(self, value: typing.Sequence[float]) -> None: ...
+    def polarization(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def dimensions(self) -> builtins.list[builtins.float]: ...
     @dimensions.setter
-    def dimensions(self, value: typing.Sequence[float]) -> None: ...
+    def dimensions(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
-        dimensions: typing.Sequence[float] | None = None,
-        polarization: typing.Sequence[float] | None = None,
-    ) -> CuboidMagnet: ...
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        dimensions: numpy.typing.ArrayLike | None = None,
+        polarization: numpy.typing.ArrayLike | None = None,
+    ) -> typing.Self: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
     def compute_B(
-        self, points: typing.Sequence[typing.Sequence[float]]
+        self, points: numpy.typing.ArrayLike
     ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 class CylinderMagnet:
@@ -124,85 +132,85 @@ class CylinderMagnet:
     @property
     def polarization(self) -> builtins.list[builtins.float]: ...
     @polarization.setter
-    def polarization(self, value: typing.Sequence[float]) -> None: ...
+    def polarization(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
         diameter: builtins.float = 1.0,
         height: builtins.float = 1.0,
-        polarization: typing.Sequence[float] | None = None,
-    ) -> CylinderMagnet: ...
+        polarization: numpy.typing.ArrayLike | None = None,
+    ) -> typing.Self: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
     def compute_B(
-        self, points: typing.Sequence[typing.Sequence[float]]
+        self, points: numpy.typing.ArrayLike
     ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 class Dipole:
     @property
     def moment(self) -> builtins.list[builtins.float]: ...
     @moment.setter
-    def moment(self, value: typing.Sequence[float]) -> None: ...
+    def moment(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
-        moment: typing.Sequence[float] | None = None,
-    ) -> Dipole: ...
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        moment: numpy.typing.ArrayLike | None = None,
+    ) -> typing.Self: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
     def compute_B(
-        self, points: typing.Sequence[typing.Sequence[float]]
+        self, points: numpy.typing.ArrayLike
     ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 class HallLatch:
     @property
     def sensitive_axis(self) -> builtins.list[builtins.float]: ...
     @sensitive_axis.setter
-    def sensitive_axis(self, value: typing.Sequence[float]) -> None: ...
+    def sensitive_axis(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def b_op(self) -> builtins.float: ...
     @b_op.setter
@@ -214,41 +222,41 @@ class HallLatch:
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
-        sensitive_axis: typing.Sequence[float] | None = None,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        sensitive_axis: numpy.typing.ArrayLike | None = None,
         b_op: builtins.float = 0.01,
         b_rp: builtins.float = -0.01,
-    ) -> HallLatch: ...
+    ) -> typing.Self: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def __reduce__(self) -> tuple: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def read_state(self, source: typing.Any) -> builtins.bool: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
 
 class HallSwitch:
     @property
     def sensitive_axis(self) -> builtins.list[builtins.float]: ...
     @sensitive_axis.setter
-    def sensitive_axis(self, value: typing.Sequence[float]) -> None: ...
+    def sensitive_axis(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def b_op(self) -> builtins.float: ...
     @b_op.setter
@@ -256,40 +264,40 @@ class HallSwitch:
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
-        sensitive_axis: typing.Sequence[float] | None = None,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        sensitive_axis: numpy.typing.ArrayLike | None = None,
         b_op: builtins.float = 0.01,
-    ) -> HallSwitch: ...
+    ) -> typing.Self: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def __reduce__(self) -> tuple: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def read_state(self, source: typing.Any) -> builtins.bool: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
 
 class LinearHallSensor:
     @property
     def sensitive_axis(self) -> builtins.list[builtins.float]: ...
     @sensitive_axis.setter
-    def sensitive_axis(self, value: typing.Sequence[float]) -> None: ...
+    def sensitive_axis(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def sensitivity(self) -> builtins.float: ...
     @sensitivity.setter
@@ -301,106 +309,256 @@ class LinearHallSensor:
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
-        sensitive_axis: typing.Sequence[float] | None = None,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        sensitive_axis: numpy.typing.ArrayLike | None = None,
         sensitivity: builtins.float = 1.0,
         supply_voltage: builtins.float = 5.0,
-    ) -> LinearHallSensor: ...
+    ) -> typing.Self: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def __reduce__(self) -> tuple: ...
+    def read_voltage(self, source: typing.Any) -> builtins.float: ...
     def compute_B_perp(self, source: typing.Any) -> builtins.float: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
+
+class MeshMagnet:
+    @property
+    def vertices(self) -> builtins.list[builtins.list[builtins.float]]: ...
+    @property
+    def faces(self) -> builtins.list[builtins.list[builtins.int]]: ...
+    @property
+    def polarization(self) -> builtins.list[builtins.float]: ...
+    @polarization.setter
+    def polarization(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def position(self) -> builtins.list[builtins.float]: ...
+    @position.setter
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def orientation(self) -> typing.Any: ...
+    @orientation.setter
+    def orientation(
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def __new__(
+        cls,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        polarization: numpy.typing.ArrayLike | None = None,
+        vertices: numpy.typing.ArrayLike | None = None,
+        faces: numpy.typing.ArrayLike | None = None,
+    ) -> typing.Self: ...
+    @classmethod
+    def from_stl(
+        cls,
+        path: builtins.str,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        polarization: numpy.typing.ArrayLike | None = None,
+    ) -> MeshMagnet: ...
+    def __getstate__(self) -> dict: ...
+    def __setstate__(self, state: dict) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
+    def rotate(
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def rotate_anchor(
+        self,
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
+    ) -> None: ...
+    def compute_B(
+        self, points: numpy.typing.ArrayLike
+    ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 class ObserverCollection:
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
         sensors: typing.Sequence[typing.Any] | None = None,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
-    ) -> ObserverCollection: ...
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+    ) -> typing.Self: ...
     def __len__(self) -> builtins.int: ...
     def __getitem__(self, idx: builtins.int) -> typing.Any: ...
     def append(self, sensor: typing.Any) -> None: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def __reduce__(self) -> tuple: ...
     def read_all(self, source: typing.Any) -> typing.Any: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
+
+class PathCurrent:
+    @property
+    def current(self) -> builtins.float: ...
+    @current.setter
+    def current(self, value: builtins.float) -> None: ...
+    @property
+    def vertices(self) -> numpy.typing.NDArray[numpy.float64]: ...
+    @vertices.setter
+    def vertices(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def position(self) -> builtins.list[builtins.float]: ...
+    @position.setter
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def orientation(self) -> typing.Any: ...
+    @orientation.setter
+    def orientation(
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def __new__(
+        cls,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        current: builtins.float = 1.0,
+        vertices: numpy.typing.ArrayLike | None = None,
+    ) -> typing.Self: ...
+    def __getstate__(self) -> dict: ...
+    def __setstate__(self, state: dict) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
+    def rotate(
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def rotate_anchor(
+        self,
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
+    ) -> None: ...
+    def compute_B(
+        self, points: numpy.typing.ArrayLike
+    ) -> numpy.typing.NDArray[numpy.float64]: ...
+
+class SheetCurrent:
+    @property
+    def vertices(self) -> builtins.list[builtins.list[builtins.float]]: ...
+    @property
+    def faces(self) -> builtins.list[builtins.list[builtins.int]]: ...
+    @property
+    def current_densities(self) -> builtins.list[builtins.list[builtins.float]]: ...
+    @property
+    def position(self) -> builtins.list[builtins.float]: ...
+    @position.setter
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def orientation(self) -> typing.Any: ...
+    @orientation.setter
+    def orientation(
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def __new__(
+        cls,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        current_densities: numpy.typing.ArrayLike | None = None,
+        vertices: numpy.typing.ArrayLike | None = None,
+        faces: numpy.typing.ArrayLike | None = None,
+    ) -> typing.Self: ...
+    @classmethod
+    def from_stl(
+        cls,
+        path: builtins.str,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        current_densities: numpy.typing.ArrayLike | None = None,
+    ) -> SheetCurrent: ...
+    def __getstate__(self) -> dict: ...
+    def __setstate__(self, state: dict) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
+    def rotate(
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def rotate_anchor(
+        self,
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
+    ) -> None: ...
+    def compute_B(
+        self, points: numpy.typing.ArrayLike
+    ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 class SourceCollection:
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
-        cls, sources: typing.Sequence[typing.Any] | None = None
-    ) -> SourceCollection: ...
+        cls,
+        sources: typing.Sequence[typing.Any] | None = None,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+    ) -> typing.Self: ...
     def __len__(self) -> builtins.int: ...
     def __getitem__(self, idx: builtins.int) -> typing.Any: ...
     def append(self, source: typing.Any) -> None: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def __reduce__(self) -> tuple: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
     def compute_B(
-        self, points: typing.Sequence[typing.Sequence[float]]
+        self, points: numpy.typing.ArrayLike
     ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 class SphereMagnet:
@@ -411,46 +569,176 @@ class SphereMagnet:
     @property
     def polarization(self) -> builtins.list[builtins.float]: ...
     @polarization.setter
-    def polarization(self, value: typing.Sequence[float]) -> None: ...
+    def polarization(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
-    def position(self, value: typing.Sequence[float]) -> None: ...
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
     @property
     def orientation(self) -> typing.Any: ...
     @orientation.setter
     def orientation(
-        self,
-        value: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def __new__(
         cls,
-        position: typing.Sequence[float] | None = None,
-        orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
         diameter: builtins.float = 1.0,
-        polarization: typing.Sequence[float] | None = None,
-    ) -> SphereMagnet: ...
+        polarization: numpy.typing.ArrayLike | None = None,
+    ) -> typing.Self: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
-    def __reduce__(self) -> tuple: ...
-    def translate(self, translation: typing.Sequence[float]) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
     def rotate(
-        self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
     ) -> None: ...
     def rotate_anchor(
         self,
-        rot: scipy.spatial.transform.Rotation | typing.Sequence[float],
-        anchor: typing.Sequence[float],
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
     ) -> None: ...
     def compute_B(
-        self, points: typing.Sequence[typing.Sequence[float]]
+        self, points: numpy.typing.ArrayLike
+    ) -> numpy.typing.NDArray[numpy.float64]: ...
+
+class TetrahedronMagnet:
+    @property
+    def vertices(self) -> builtins.list[builtins.list[builtins.float]]: ...
+    @vertices.setter
+    def vertices(self, value: builtins.list[builtins.list[builtins.float]]) -> None: ...
+    @property
+    def polarization(self) -> builtins.list[builtins.float]: ...
+    @polarization.setter
+    def polarization(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def position(self) -> builtins.list[builtins.float]: ...
+    @position.setter
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def orientation(self) -> typing.Any: ...
+    @orientation.setter
+    def orientation(
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def __new__(
+        cls,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        polarization: numpy.typing.ArrayLike | None = None,
+        vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
+    ) -> typing.Self: ...
+    def __getstate__(self) -> dict: ...
+    def __setstate__(self, state: dict) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
+    def rotate(
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def rotate_anchor(
+        self,
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
+    ) -> None: ...
+    def compute_B(
+        self, points: numpy.typing.ArrayLike
+    ) -> numpy.typing.NDArray[numpy.float64]: ...
+
+class TriangleCurrent:
+    @property
+    def current_density(self) -> builtins.list[builtins.float]: ...
+    @current_density.setter
+    def current_density(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def vertices(self) -> builtins.list[builtins.list[builtins.float]]: ...
+    @vertices.setter
+    def vertices(self, value: builtins.list[builtins.list[builtins.float]]) -> None: ...
+    @property
+    def position(self) -> builtins.list[builtins.float]: ...
+    @position.setter
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def orientation(self) -> typing.Any: ...
+    @orientation.setter
+    def orientation(
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def __new__(
+        cls,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        current_density: numpy.typing.ArrayLike | None = None,
+        vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
+    ) -> typing.Self: ...
+    def __getstate__(self) -> dict: ...
+    def __setstate__(self, state: dict) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
+    def rotate(
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def rotate_anchor(
+        self,
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
+    ) -> None: ...
+    def compute_B(
+        self, points: numpy.typing.ArrayLike
+    ) -> numpy.typing.NDArray[numpy.float64]: ...
+
+class TriangleMagnet:
+    @property
+    def vertices(self) -> builtins.list[builtins.list[builtins.float]]: ...
+    @vertices.setter
+    def vertices(self, value: builtins.list[builtins.list[builtins.float]]) -> None: ...
+    @property
+    def polarization(self) -> builtins.list[builtins.float]: ...
+    @polarization.setter
+    def polarization(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def position(self) -> builtins.list[builtins.float]: ...
+    @position.setter
+    def position(self, value: numpy.typing.ArrayLike) -> None: ...
+    @property
+    def orientation(self) -> typing.Any: ...
+    @orientation.setter
+    def orientation(
+        self, value: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def __new__(
+        cls,
+        position: numpy.typing.ArrayLike | None = None,
+        orientation: scipy.spatial.transform.Rotation
+        | numpy.typing.ArrayLike
+        | None = None,
+        polarization: numpy.typing.ArrayLike | None = None,
+        vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
+    ) -> typing.Self: ...
+    def __getstate__(self) -> dict: ...
+    def __setstate__(self, state: dict) -> None: ...
+    def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
+    def rotate(
+        self, rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike
+    ) -> None: ...
+    def rotate_anchor(
+        self,
+        rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
+        anchor: numpy.typing.ArrayLike,
+    ) -> None: ...
+    def compute_B(
+        self, points: numpy.typing.ArrayLike
     ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 def circular_B(
-    points: typing.Sequence[typing.Sequence[float]],
-    position: typing.Sequence[float] | None = None,
-    orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
     diameter: builtins.float = 1.0,
     current: builtins.float = 1.0,
 ) -> numpy.typing.NDArray[numpy.float64]:
@@ -474,11 +762,13 @@ def circular_B(
     """
 
 def cuboid_B(
-    points: typing.Sequence[typing.Sequence[float]],
-    position: typing.Sequence[float] | None = None,
-    orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
-    dimensions: typing.Sequence[float] | None = None,
-    polarization: typing.Sequence[float] | None = None,
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    dimensions: numpy.typing.ArrayLike | None = None,
+    polarization: numpy.typing.ArrayLike | None = None,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Calculates the magnetic field of a cuboid magnet.
@@ -500,12 +790,14 @@ def cuboid_B(
     """
 
 def cylinder_B(
-    points: typing.Sequence[typing.Sequence[float]],
-    position: typing.Sequence[float] | None = None,
-    orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
     diameter: builtins.float = 1.0,
     height: builtins.float = 1.0,
-    polarization: typing.Sequence[float] | None = None,
+    polarization: numpy.typing.ArrayLike | None = None,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Calculates the magnetic field of a cylindrical magnet.
@@ -529,10 +821,12 @@ def cylinder_B(
     """
 
 def dipole_B(
-    points: typing.Sequence[typing.Sequence[float]],
-    position: typing.Sequence[float] | None = None,
-    orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
-    moment: typing.Sequence[float] | None = None,
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    moment: numpy.typing.ArrayLike | None = None,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Calculates the magnetic field of a magnetic dipole source.
@@ -551,12 +845,43 @@ def dipole_B(
         numpy.ndarray: Magnetic field (N, 3) in Tesla.
     """
 
+def mesh_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    polarization: numpy.typing.ArrayLike | None = None,
+    vertices: numpy.typing.ArrayLike | None = None,
+    faces: numpy.typing.ArrayLike | None = None,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Calculates the magnetic field of a mesh magnet.
+
+    Args:
+        points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
+            Can be a single point or an (N, 3) array of points.
+        position (ArrayLike3, optional): Position [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation.
+            Defaults to identity.
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
+        vertices (PointsLike, optional): List of vertices.
+        faces (FacesLike, optional): List of faces.
+
+    Returns:
+        numpy.ndarray: Magnetic field (N, 3) in Tesla.
+    """
+
 def sphere_B(
-    points: typing.Sequence[typing.Sequence[float]],
-    position: typing.Sequence[float] | None = None,
-    orientation: scipy.spatial.transform.Rotation | typing.Sequence[float] | None = None,
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
     diameter: builtins.float = 1.0,
-    polarization: typing.Sequence[float] | None = None,
+    polarization: numpy.typing.ArrayLike | None = None,
 ) -> numpy.typing.NDArray[numpy.float64]:
     r"""
     Calculates the magnetic field of a spherical magnet.
@@ -576,3 +901,88 @@ def sphere_B(
     Returns:
         numpy.ndarray: Magnetic field (N, 3) in Tesla.
     """
+
+def tetrahedron_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    polarization: numpy.typing.ArrayLike | None = None,
+    vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Calculates the magnetic field of a tetrahedron magnet.
+
+    Args:
+        points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
+            Can be a single point or an (N, 3) array of points.
+        position (ArrayLike3, optional): Position [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation.
+            Defaults to identity.
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
+        vertices (list, optional): List of 4 vertices, each a list of 3 floats, in meters.
+
+    Returns:
+        numpy.ndarray: Magnetic field (N, 3) in Tesla.
+    """
+
+def triangle_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    polarization: numpy.typing.ArrayLike | None = None,
+    vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
+) -> numpy.typing.NDArray[numpy.float64]:
+    r"""
+    Calculates the magnetic field of a triangular surface magnet.
+
+    Args:
+        points (PointsLike): Points [x, y, z] in meters at which to calculate the field.
+            Can be a single point or an (N, 3) array of points.
+        position (ArrayLike3, optional): Position [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation.
+            Defaults to identity.
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
+        vertices (list, optional): List of 3 vertices, each a list of 3 floats, in meters.
+
+    Returns:
+        numpy.ndarray: Magnetic field (N, 3) in Tesla.
+    """
+
+def path_current_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    current: builtins.float = 1.0,
+    vertices: numpy.typing.ArrayLike | None = None,
+) -> numpy.typing.NDArray[numpy.float64]: ...
+
+def triangle_current_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    current_density: numpy.typing.ArrayLike | None = None,
+    vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
+) -> numpy.typing.NDArray[numpy.float64]: ...
+
+def sheet_current_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    current_densities: numpy.typing.ArrayLike | None = None,
+    vertices: numpy.typing.ArrayLike | None = None,
+    faces: numpy.typing.ArrayLike | None = None,
+) -> numpy.typing.NDArray[numpy.float64]: ...

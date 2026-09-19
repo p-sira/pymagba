@@ -31,3 +31,23 @@ SourceCollection
 ~~~~~~~~~~~~~~~~
 .. autoclass:: pymagba.magnets.SourceCollection
    :members:
+
+SphereMagnet
+~~~~~~~~~~~~
+.. autoclass:: pymagba.magnets.SphereMagnet
+   :members:
+
+TriangleMagnet
+~~~~~~~~~~~~~~
+.. autoclass:: pymagba.magnets.TriangleMagnet
+   :members:
+
+TetrahedronMagnet
+~~~~~~~~~~~~~~~~~
+.. autoclass:: pymagba.magnets.TetrahedronMagnet
+   :members:
+
+MeshMagnet
+~~~~~~~~~~
+.. autoclass:: pymagba.magnets.MeshMagnet
+   :members:

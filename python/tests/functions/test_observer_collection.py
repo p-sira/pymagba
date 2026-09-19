@@ -58,11 +58,11 @@ def test_observer_collection_pose_application():
         diameter=0.01, height=0.01, polarization=[0, 0, 1], position=[0, 0, 0]
     )
 
-    # Reading should be same as sensor at [0,0,0.01]
+    # Reading should be same as sensor at [0,0,0]
     res_coll = coll.read_all(magnet)[0]
 
-    s_direct = LinearHallSensor(position=[0, 0, 0.01], sensitive_axis=[0, 0, 1])
-    res_direct = s_direct.read(magnet)
+    s_direct = LinearHallSensor(position=[0, 0, 0], sensitive_axis=[0, 0, 1])
+    res_direct = s_direct.read_voltage(magnet)
 
     assert np.allclose(res_coll, res_direct)
 
@@ -89,7 +89,7 @@ def test_observer_collection_read_source_collection():
     assert len(results) == 1
 
     # Compare with direct reading
-    res_direct = s1.read(sources)
+    res_direct = s1.read_voltage(sources)
     assert np.allclose(results[0], res_direct)
 
 

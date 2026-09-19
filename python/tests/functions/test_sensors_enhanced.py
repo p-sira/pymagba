@@ -31,11 +31,12 @@ def test_sensor_unified_read_all_sources():
     for sensor in sensors:
         for source in sources:
             # Check unified read
-            val = sensor.read(source)
             if isinstance(sensor, LinearHallSensor):
+                val = sensor.read_voltage(source)
                 assert isinstance(val, (float, np.float64))
                 assert val > 2.5  # Should be > quiescent
             else:
+                val = sensor.read_state(source)
                 assert isinstance(val, bool)
                 assert val is True
 

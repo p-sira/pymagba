@@ -9,12 +9,13 @@ use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, So
 use numpy::PyArray1;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PyTuple};
+use pyo3::types::{PyDict, PyList};
 use pyo3::IntoPyObject;
 
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
+use crate::base::{extract_states, try_into_quat, try_into_slice};
 use crate::{
     base::{ObserverRef, SourceRef},
     macros::{impl_compute_B, impl_pypose},
@@ -32,8 +33,13 @@ pub struct SourceCollection {
 #[pymethods]
 impl SourceCollection {
     #[new]
-    #[pyo3(signature = (sources=None))]
-    fn new(sources: Option<Vec<Py<PyAny>>>, py: Python<'_>) -> PyResult<Self> {
+    #[pyo3(signature = (sources=None, position=None, orientation=None))]
+    fn new(
+        sources: Option<Vec<Py<PyAny>>>,
+        position: Option<crate::base::ArrayLike3>,
+        orientation: Option<crate::base::PyRotation>,
+        py: Python<'_>,
+    ) -> PyResult<Self> {
         let srcs = sources.unwrap_or_default();
         let mut components = Vec::with_capacity(srcs.len());
 
@@ -42,8 +48,11 @@ impl SourceCollection {
             components.push(s_ref.into_component());
         }
 
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
+
         Ok(Self {
-            inner: SourceAssembly::from(components),
+            inner: SourceAssembly::new(pos.into(), rot, components),
             sources: Arc::new(srcs),
         })
     }
@@ -84,20 +93,8 @@ impl SourceCollection {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
-        let sources_bound = state
-            .get_item("sources")?
-            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("sources missing from state"))?;
-        let sources: Vec<Py<PyAny>> = sources_bound.extract()?;
-
-        let pos_bound = state
-            .get_item("position")?
-            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("position missing from state"))?;
-        let position: [f64; 3] = pos_bound.extract()?;
-
-        let rot_bound = state.get_item("orientation")?.ok_or_else(|| {
-            pyo3::exceptions::PyKeyError::new_err("orientation missing from state")
-        })?;
-        let orientation: [f64; 4] = rot_bound.extract()?;
+        let sources: Vec<Py<PyAny>> = state.get_item("sources")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4]);
 
         let mut components: Vec<SourceComponent<f64>> = Vec::with_capacity(sources.len());
         for src in sources.iter() {
@@ -106,31 +103,16 @@ impl SourceCollection {
             }
         }
 
+        // Build the assembly first, then set the pose, since the components are saved in local frame.
         let mut inner = SourceAssembly::from(components);
         inner.set_position(position);
         inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
-            nalgebra::Quaternion::from_vector(orientation.into()),
+            orientation.into(),
         ));
 
         self.inner = inner;
         self.sources = Arc::new(sources);
         Ok(())
-    }
-
-    fn __reduce__(&self, py: Python<'_>) -> PyResult<Py<PyTuple>> {
-        let cls = py.get_type::<Self>();
-        let sources_list = PyList::new(py, self.sources.as_ref())?;
-        let args = PyTuple::new(py, [sources_list.into_any()])?;
-        let state = self.__getstate__(py)?;
-        Ok(PyTuple::new(
-            py,
-            [
-                cls.into_any(),
-                args.into_any(),
-                state.into_bound(py).into_any(),
-            ],
-        )?
-        .unbind())
     }
 }
 
@@ -164,19 +146,11 @@ impl ObserverCollection {
             components.push(o_ref.into_component());
         }
 
-        let pos: nalgebra::Point3<f64> = position
-            .map(|p| p.0.into())
-            .unwrap_or_else(|| [0.0, 0.0, 0.0].into());
-        let rot: nalgebra::UnitQuaternion<f64> = orientation
-            .map(|rot| rot.0)
-            .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-
-        let mut inner = ObserverAssembly::from(components);
-        inner.set_position(pos);
-        inner.set_orientation(rot);
+        let pos = try_into_slice!(position);
+        let rot = try_into_quat!(orientation);
 
         Ok(Self {
-            inner,
+            inner: ObserverAssembly::new(pos.into(), rot, components),
             sensors: Arc::new(sens),
         })
     }
@@ -217,20 +191,8 @@ impl ObserverCollection {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
-        let sensors_bound = state
-            .get_item("sensors")?
-            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("sensors missing from state"))?;
-        let sensors: Vec<Py<PyAny>> = sensors_bound.extract()?;
-
-        let pos_bound = state
-            .get_item("position")?
-            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("position missing from state"))?;
-        let position: [f64; 3] = pos_bound.extract()?;
-
-        let rot_bound = state.get_item("orientation")?.ok_or_else(|| {
-            pyo3::exceptions::PyKeyError::new_err("orientation missing from state")
-        })?;
-        let orientation: [f64; 4] = rot_bound.extract()?;
+        let sensors: Vec<Py<PyAny>> = state.get_item("sensors")?.unwrap().extract()?;
+        extract_states!(state, [position;3, orientation;4]);
 
         let mut components: Vec<ObserverComponent<f64>> = Vec::with_capacity(sensors.len());
         for s in &sensors {
@@ -239,31 +201,16 @@ impl ObserverCollection {
             }
         }
 
+        // Build the assembly first, then set the pose, since the components are saved in local frame.
         let mut inner = ObserverAssembly::from(components);
         inner.set_position(nalgebra::Point3::from(position));
         inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
-            nalgebra::Quaternion::from_vector(orientation.into()),
+            orientation.into(),
         ));
 
         self.inner = inner;
         self.sensors = Arc::new(sensors);
         Ok(())
-    }
-
-    fn __reduce__(&self, py: Python<'_>) -> PyResult<Py<PyTuple>> {
-        let cls = py.get_type::<Self>();
-        let sensors_list = PyList::new(py, self.sensors.as_ref())?;
-        let args = PyTuple::new(py, [sensors_list.into_any()])?;
-        let state = self.__getstate__(py)?;
-        Ok(PyTuple::new(
-            py,
-            [
-                cls.into_any(),
-                args.into_any(),
-                state.into_bound(py).into_any(),
-            ],
-        )?
-        .unbind())
     }
 
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {

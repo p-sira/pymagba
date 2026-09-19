@@ -26,6 +26,7 @@ pub fn vec3_to_pyarray2<'py>(
 }
 
 /// Runs a closure and catches any panics, converting them to a Python `ValueError`.
+#[inline]
 pub fn catch_unwind_to_pyerr<F, R>(f: F) -> PyResult<R>
 where
     F: FnOnce() -> R + std::panic::UnwindSafe,
