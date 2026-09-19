@@ -24,3 +24,8 @@ HallLatch
 ~~~~~~~~~
 .. autoclass:: pymagba.sensors.HallLatch
    :members:
+
+ObserverCollection
+~~~~~~~~~~~~~~~~~~
+.. autoclass:: pymagba.sensors.ObserverCollection
+   :members:

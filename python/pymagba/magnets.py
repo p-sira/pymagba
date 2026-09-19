@@ -43,8 +43,6 @@ __all__ = [
 class CylinderMagnet(_CylinderMagnet):
     """Uniformly magnetized cylindrical magnet.
 
-    All dimensions are in SI units (meters, Tesla).
-
     Args:
 
         position (ArrayLike3, optional): Center of the cylinder [x, y, z] in meters.
@@ -86,8 +84,6 @@ class CylinderMagnet(_CylinderMagnet):
 
 class CuboidMagnet(_CuboidMagnet):
     """Uniformly magnetized cuboid magnet.
-
-    All dimensions are in SI units (meters, Tesla).
 
     Args:
 
@@ -156,8 +152,6 @@ class Dipole(_Dipole):
 
 class SphereMagnet(_SphereMagnet):
     """Uniformly magnetized spherical magnet.
-
-    All dimensions are in SI units (meters, Tesla).
 
     Args:
 
@@ -230,12 +224,74 @@ class SourceCollection(_SourceCollection):
 
 
 class TriangleMagnet(_TriangleMagnet):
-    """Uniformly magnetized triangular magnet."""
+    """Uniformly magnetized triangular magnet.
+
+    Args:
+
+        position (ArrayLike3, optional): Base position of the triangle [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
+            or a scipy.spatial.transform.Rotation object. Defaults to identity.
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
+        vertices (list, optional): List of 3 vertices, each a list of 3 floats, in meters.
+            Defaults to [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]].
+
+    Examples:
+
+        .. code-block:: python
+
+            from pymagba.magnets import TriangleMagnet
+
+            magnet = TriangleMagnet(
+                position=[0.0, 0.0, 0.0],
+                polarization=[0.0, 0.0, 1.0],
+                vertices=[[0.01, 0.0, 0.0], [0.0, 0.01, 0.0], [0.0, 0.0, 0.0]],
+            )
+    """
 
 
 class TetrahedronMagnet(_TetrahedronMagnet):
-    """Uniformly magnetized tetrahedral magnet."""
+    """Uniformly magnetized tetrahedral magnet.
+
+    Args:
+
+        position (ArrayLike3, optional): Base position of the tetrahedron [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
+            or a scipy.spatial.transform.Rotation object. Defaults to identity.
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
+        vertices (list, optional): List of 4 vertices, each a list of 3 floats, in meters.
+            Defaults to [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]].
+
+    Examples:
+
+        .. code-block:: python
+
+            from pymagba.magnets import TetrahedronMagnet
+
+            magnet = TetrahedronMagnet(
+                position=[0.0, 0.0, 0.0],
+                polarization=[0.0, 0.0, 1.0],
+                vertices=[[0.0, 0.0, 0.0], [0.01, 0.0, 0.0], [0.0, 0.01, 0.0], [0.0, 0.0, 0.01]],
+            )
+    """
 
 
 class MeshMagnet(_MeshMagnet):
-    """Uniformly magnetized mesh magnet."""
+    """Uniformly magnetized mesh magnet.
+
+    Args:
+
+        position (ArrayLike3, optional): Base position of the mesh [x, y, z] in meters.
+            Defaults to [0.0, 0.0, 0.0].
+        orientation (PyRotation, optional): Orientation as a unit quaternion [x, y, z, w]
+            or a scipy.spatial.transform.Rotation object. Defaults to identity.
+        polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
+        vertices (ArrayLike3, optional): The vertices of the mesh as an Nx3 array.
+            Defaults to empty.
+        faces (ArrayLike3, optional): The faces of the mesh as an Mx3 array of indices.
+            Defaults to empty.
+    """
