@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.6.0
+
+This version corresponds to Magba v0.6.2.
+
+### New Features
+
+- Implement pure functions `path_current_B`, `sheet_current_B`, and `triangle_current_B`.
+
 ## 0.5.1
 
 ### Documentation
