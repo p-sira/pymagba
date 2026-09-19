@@ -222,6 +222,10 @@ def main():
                 geom = name.split("Magnet")[1].split(".")[0]
                 if len(res) >= 2 and res[0] and res[1]:
                     speedups[geom] = {"py": res[0], "ma": res[1]}
+            elif "Current" in name and "time_compute_B" in name:
+                geom = name.split("Current")[1].split(".")[0]
+                if len(res) >= 2 and res[0] and res[1]:
+                    speedups[geom] = {"py": res[0], "ma": res[1]}
 
             # Object Creation
             if "ObjectCreation" in name and len(res) == 6:
