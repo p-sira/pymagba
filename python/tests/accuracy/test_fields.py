@@ -3,10 +3,20 @@
 
 import numpy as np
 from pymagba.fields import (
-    cylinder_B, dipole_B, cuboid_B, triangle_B, tetrahedron_B, mesh_B
+    cuboid_B,
+    cylinder_B,
+    dipole_B,
+    mesh_B,
+    tetrahedron_B,
+    triangle_B,
 )
 from pymagba.magnets import (
-    CylinderMagnet, Dipole, CuboidMagnet, TriangleMagnet, TetrahedronMagnet, MeshMagnet
+    CuboidMagnet,
+    CylinderMagnet,
+    Dipole,
+    MeshMagnet,
+    TetrahedronMagnet,
+    TriangleMagnet,
 )
 
 
@@ -106,7 +116,9 @@ def test_mesh_B():
     b_class = mag.compute_B(points)
 
     # Using field function
-    b_func = mesh_B(points, vertices=vertices, faces=faces, polarization=pol, position=pos)
+    b_func = mesh_B(
+        points, vertices=vertices, faces=faces, polarization=pol, position=pos
+    )
 
     np.testing.assert_allclose(b_class, b_func)
 

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.5.1
+
+### Documentation
+
+- Add `Currents`, `TriangleMagnet`, `TetrahedronMagnet`, `MeshMagnet`, and `ObserverCollection` documentation.
+
 ## 0.5.0
 
 This version corresponds to Magba v0.6.2.

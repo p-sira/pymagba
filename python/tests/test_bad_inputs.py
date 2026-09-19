@@ -1,14 +1,14 @@
 import numpy as np
 import pytest
+from pymagba.currents import CircularCurrent, PathCurrent, SheetCurrent, TriangleCurrent
 from pymagba.magnets import (
-    SphereMagnet,
     CuboidMagnet,
     CylinderMagnet,
     Dipole,
     SourceCollection,
+    SphereMagnet,
 )
-from pymagba.currents import CircularCurrent, PathCurrent, TriangleCurrent, SheetCurrent
-from pymagba.sensors import LinearHallSensor, HallSwitch, HallLatch, ObserverCollection
+from pymagba.sensors import HallLatch, HallSwitch, LinearHallSensor, ObserverCollection
 
 
 def test_arraylike3_invalid():
@@ -74,11 +74,13 @@ def test_circular_current_validation():
     with pytest.raises(ValueError, match="Diameter must be positive"):
         cur.diameter = 0
 
+
 def test_path_current_validation():
     with pytest.raises(TypeError, match="Expected a NumPy array of shape"):
         PathCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
     with pytest.raises(TypeError, match="Expected a NumPy array of shape"):
         PathCurrent(vertices=[[0, 0, 0]]).vertices = [[1.0, 2.0], [3.0, 4.0]]
+
 
 def test_triangle_current_validation():
     with pytest.raises(ValueError):
@@ -96,8 +98,9 @@ def test_sheet_current_validation():
         SheetCurrent(
             current_densities=[[1.0, 2.0, 3.0]],
             vertices=[[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1]],
-            faces=[[0, 2, 4]], # Out of bounds
+            faces=[[0, 2, 4]],  # Out of bounds
         )
+
 
 def test_linear_hall_sensor_validation():
     with pytest.raises(ValueError, match="Supply voltage must be positive"):

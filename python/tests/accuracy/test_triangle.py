@@ -3,6 +3,7 @@
 
 import numpy as np
 from pymagba.magnets import TriangleMagnet
+
 from tests.testing_util import run_test_general
 
 

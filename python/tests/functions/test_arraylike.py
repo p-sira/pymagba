@@ -1,8 +1,6 @@
 import numpy as np
-import pytest
-from pymagba.magnets import Dipole, CuboidMagnet, CylinderMagnet
-from pymagba.sensors import HallSwitch, HallLatch, LinearHallSensor
-from scipy.spatial.transform import Rotation
+from pymagba.magnets import CuboidMagnet, CylinderMagnet, Dipole
+from pymagba.sensors import HallLatch, HallSwitch, LinearHallSensor
 
 
 def test_array_like():

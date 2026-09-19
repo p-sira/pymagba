@@ -3,6 +3,24 @@
 
 """Magnetic field calculation functions."""
 
-from .pymagba_binding import cylinder_B, dipole_B, cuboid_B, sphere_B, circular_B, triangle_B, tetrahedron_B, mesh_B
+from .pymagba_binding import (
+    circular_B,
+    cuboid_B,
+    cylinder_B,
+    dipole_B,
+    mesh_B,
+    sphere_B,
+    tetrahedron_B,
+    triangle_B,
+)
 
-__all__ = ["cylinder_B", "dipole_B", "cuboid_B", "sphere_B", "circular_B", "triangle_B", "tetrahedron_B", "mesh_B"]
+__all__ = [
+    "circular_B",
+    "cuboid_B",
+    "cylinder_B",
+    "dipole_B",
+    "mesh_B",
+    "sphere_B",
+    "tetrahedron_B",
+    "triangle_B",
+]

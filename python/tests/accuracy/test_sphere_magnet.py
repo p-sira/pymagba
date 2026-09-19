@@ -3,7 +3,9 @@
 
 import numpy as np
 from pymagba.magnets import SphereMagnet
+
 from tests.testing_util import run_test_general
+
 
 def test_sphere_magnet():
     kwargs = {

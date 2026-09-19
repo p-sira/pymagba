@@ -975,6 +975,20 @@ wheels = [
 ]
 
 [[package]]
+name = "numpy-stl"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "python-utils" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/15/14/0242990083251bdf748706a5043816f5adee6a12109fb6c8b5279ee2312b/numpy_stl-4.0.1.tar.gz", hash = "sha256:1e15e32d7de01fec66706a54c40b234f357c877c07d3add0fbe247aa9151a583", size = 30152, upload-time = "2026-09-07T09:42:27.489Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/98/37/0700f20f963c381ae7dde97b6036a2acfd92c2656a2581fb292a573fc63f/numpy_stl-4.0.1-py3-none-any.whl", hash = "sha256:c5f59a996d30c6e6948f9f855d5a7dd853b8faa466846b8b2d3cf553e5526489", size = 32788, upload-time = "2026-09-07T09:42:26.034Z" },
+]
+
+[[package]]
 name = "numpy-typing-compat"
 version = "20251206.2.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1278,6 +1292,7 @@ dev = [
     { name = "magpylib" },
     { name = "maturin" },
     { name = "mypy" },
+    { name = "numpy-stl" },
     { name = "patchelf" },
     { name = "pip-tools" },
     { name = "pytest" },
@@ -1305,6 +1320,7 @@ dev = [
     { name = "magpylib", specifier = ">=5.1.1" },
     { name = "maturin", specifier = ">=1.12.6" },
     { name = "mypy", specifier = ">=1.11.2" },
+    { name = "numpy-stl", specifier = ">=4.0.1" },
     { name = "patchelf", specifier = ">=0.17.2.4" },
     { name = "pip-tools", specifier = ">=7.5.3" },
     { name = "pytest", specifier = ">=9.0.2" },
@@ -1388,6 +1404,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7a/16/6f3f5e9258f0733aaca19aa18e298cb3a629ae49363573e78d241abeef59/python_discovery-1.1.2.tar.gz", hash = "sha256:c500bd2153e3afc5f48a61d33ff570b6f3e710d36ceaaf882fa9bbe5cc2cec49", size = 56928, upload-time = "2026-03-09T20:02:28.402Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/03/48/8bdfaec240edb1a79b79201eff38b737fc3c29ce59e2e71271bdd8bafdda/python_discovery-1.1.2-py3-none-any.whl", hash = "sha256:d18edd61b382d62f8bcd004a71ebaabc87df31dbefb30aeed59f4fc6afa005be", size = 31486, upload-time = "2026-03-09T20:02:27.277Z" },
+]
+
+[[package]]
+name = "python-utils"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5d/71/ec6665d4ce42ee5a59fffd31a4d5164f92da15ccb8c758dba13d2419ea53/python_utils-4.0.1.tar.gz", hash = "sha256:4e8e8ecaba3862f843a60c1982c99cda23b522f417006a807996a876c18beb8d", size = 43765, upload-time = "2026-08-30T19:26:04.591Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/4d/df2b7b53f759af128123afc73ce7094a29286ef4293dfeb2341f8469018e/python_utils-4.0.1-py3-none-any.whl", hash = "sha256:6017bb56498a58656ecf48e66fb1f1632c7b33f9f2968548a021563e85be1aed", size = 39920, upload-time = "2026-08-30T19:26:03.101Z" },
 ]
 
 [[package]]

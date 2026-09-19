@@ -1,8 +1,8 @@
 import pickle
+
 import numpy as np
-import pytest
-from pymagba.magnets import CylinderMagnet, CuboidMagnet, Dipole, SourceCollection
-from pymagba.currents import PathCurrent, TriangleCurrent, SheetCurrent
+from pymagba.currents import PathCurrent, SheetCurrent, TriangleCurrent
+from pymagba.magnets import CuboidMagnet, CylinderMagnet, Dipole, SourceCollection
 from pymagba.sensors import LinearHallSensor, ObserverCollection
 
 
@@ -54,11 +54,12 @@ def test_pickle_path_current():
     )
     b = pickle.dumps(m)
     m2 = pickle.loads(b)
-    
+
     np.testing.assert_array_equal(m.position, m2.position)
     np.testing.assert_array_equal(m.orientation.as_quat(), m2.orientation.as_quat())
     assert m.current == m2.current
     np.testing.assert_array_equal(m.vertices, m2.vertices)
+
 
 def test_pickle_triangle_current():
     m = TriangleCurrent(
@@ -69,28 +70,40 @@ def test_pickle_triangle_current():
     )
     b = pickle.dumps(m)
     m2 = pickle.loads(b)
-    
+
     np.testing.assert_array_equal(m.position, m2.position)
     np.testing.assert_array_equal(m.orientation.as_quat(), m2.orientation.as_quat())
     np.testing.assert_array_equal(m.current_density, m2.current_density)
     np.testing.assert_array_equal(m.vertices, m2.vertices)
 
+
 def test_pickle_sheet_current():
     m = SheetCurrent(
         position=[0.1, 0.2, 0.3],
         orientation=[0.1, 0.2, 0.3, 0.4],
-        current_densities=[[1.0, 2.0, 3.0], [1.0, 2.0, 3.0], [1.0, 2.0, 3.0], [1.0, 2.0, 3.0]],
-        vertices=[[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1], [0.0, 0.0, 0.1]],
+        current_densities=[
+            [1.0, 2.0, 3.0],
+            [1.0, 2.0, 3.0],
+            [1.0, 2.0, 3.0],
+            [1.0, 2.0, 3.0],
+        ],
+        vertices=[
+            [-0.1, -0.1, -0.1],
+            [0.1, -0.1, -0.1],
+            [0.0, 0.1, -0.1],
+            [0.0, 0.0, 0.1],
+        ],
         faces=[[0, 2, 1], [0, 1, 3], [1, 2, 3], [0, 3, 2]],
     )
     b = pickle.dumps(m)
     m2 = pickle.loads(b)
-    
+
     np.testing.assert_array_equal(m.position, m2.position)
     np.testing.assert_array_equal(m.orientation.as_quat(), m2.orientation.as_quat())
     np.testing.assert_array_equal(m.current_densities, m2.current_densities)
     np.testing.assert_array_equal(m.vertices, m2.vertices)
     np.testing.assert_array_equal(m.faces, m2.faces)
+
 
 def test_pickle_source_collection_empty():
     col = SourceCollection([])
