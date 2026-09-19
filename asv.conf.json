@@ -24,7 +24,7 @@
     },
     "build_command": [
         "python -m pip install maturin",
-        "maturin build --release --strip --out {build_cache_dir}"
+        "python -m maturin build --release --strip --out {build_cache_dir}"
     ],
     "install_command": [
         "python -m pip install {wheel_file}"

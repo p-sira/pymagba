@@ -12,7 +12,10 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["scipy>=1.16.2"]
+dependencies = [
+    "magpylib>=5.2.2",
+    "scipy>=1.16.2",
+]
 
 
 [tool.maturin]
