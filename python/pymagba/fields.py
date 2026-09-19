@@ -9,9 +9,12 @@ from .pymagba_binding import (
     cylinder_B,
     dipole_B,
     mesh_B,
+    path_current_B,
+    sheet_current_B,
     sphere_B,
     tetrahedron_B,
     triangle_B,
+    triangle_current_B,
 )
 
 __all__ = [
@@ -20,7 +23,10 @@ __all__ = [
     "cylinder_B",
     "dipole_B",
     "mesh_B",
+    "path_current_B",
+    "sheet_current_B",
     "sphere_B",
     "tetrahedron_B",
     "triangle_B",
+    "triangle_current_B",
 ]
