@@ -38,7 +38,7 @@ class FieldCylinder:
             )
 
     def time_field(self, library):
-        self.func(*self.args)
+        self.func(*self.args)  # type: ignore
 
 
 class FieldSphere:
@@ -66,7 +66,7 @@ class FieldSphere:
             )
 
     def time_field(self, library):
-        self.func(*self.args)
+        self.func(*self.args)  # type: ignore
 
 
 class FieldCuboid:
@@ -94,7 +94,7 @@ class FieldCuboid:
             )
 
     def time_field(self, library):
-        self.func(*self.args)
+        self.func(*self.args)  # type: ignore
 
 
 class FieldDipole:
@@ -115,7 +115,7 @@ class FieldDipole:
             )
 
     def time_field(self, library):
-        self.func(*self.args)
+        self.func(*self.args)  # type: ignore
 
 
 class FieldCircular:
@@ -137,7 +137,8 @@ class FieldCircular:
             )
 
     def time_field(self, library):
-        self.func(*self.args)
+        self.func(*self.args)  # type: ignore
+
 
 class FieldTetrahedron:
     params = ("PyMagba", "MagpyLib")
@@ -157,7 +158,10 @@ class FieldTetrahedron:
             )
         else:
             import magpylib._src.fields.field_BH_tetrahedron
-            self.func = magpylib._src.fields.field_BH_tetrahedron._BHJM_magnet_tetrahedron
+
+            self.func = (
+                magpylib._src.fields.field_BH_tetrahedron._BHJM_magnet_tetrahedron
+            )
             self.args = (
                 "B",
                 self.observers,
@@ -166,7 +170,7 @@ class FieldTetrahedron:
             )
 
     def time_field(self, library):
-        self.func(*self.args)
+        self.func(*self.args)  # type: ignore
 
 
 class FieldMesh:
@@ -189,7 +193,10 @@ class FieldMesh:
             )
         else:
             import magpylib._src.fields.field_BH_triangularmesh
-            self.func = magpylib._src.fields.field_BH_triangularmesh._BHJM_magnet_trimesh
+
+            self.func = (
+                magpylib._src.fields.field_BH_triangularmesh._BHJM_magnet_trimesh
+            )
             v = np.array(vertices)
             mesh = v[faces]
             self.args = (
@@ -200,4 +207,4 @@ class FieldMesh:
             )
 
     def time_field(self, library):
-        self.func(*self.args)
+        self.func(*self.args)  # type: ignore

@@ -4,7 +4,6 @@
 import pymagba.magnets
 from magpylib import Collection as MagpyCollection
 from magpylib.magnet import Cuboid, Cylinder
-from magpylib.misc import Dipole as MagpyDipole
 from scipy.spatial.transform import Rotation
 
 from .common import get_standard_rotation
@@ -28,10 +27,15 @@ class ObjectCreation:
             elif geometry == "Collection":
                 for _ in range(10000):
                     m1 = pymagba.magnets.CylinderMagnet(
-                        position=(0.005, 0.0, 0.0), diameter=0.01, height=0.02, polarization=(0.0, 0.0, 1.0)
+                        position=(0.005, 0.0, 0.0),
+                        diameter=0.01,
+                        height=0.02,
+                        polarization=(0.0, 0.0, 1.0),
                     )
                     m2 = pymagba.magnets.CuboidMagnet(
-                        position=(-0.005, 0.0, 0.0), dimensions=(0.01, 0.01, 0.01), polarization=(0.0, 0.0, -1.0)
+                        position=(-0.005, 0.0, 0.0),
+                        dimensions=(0.01, 0.01, 0.01),
+                        polarization=(0.0, 0.0, -1.0),
                     )
                     pymagba.magnets.SourceCollection([m1, m2])
         else:
@@ -46,10 +50,14 @@ class ObjectCreation:
             elif geometry == "Collection":
                 for _ in range(10000):
                     m1 = Cylinder(
-                        position=(0.005, 0.0, 0.0), dimension=(0.01, 0.02), polarization=(0.0, 0.0, 1.0)
+                        position=(0.005, 0.0, 0.0),
+                        dimension=(0.01, 0.02),
+                        polarization=(0.0, 0.0, 1.0),
                     )
                     m2 = Cuboid(
-                        position=(-0.005, 0.0, 0.0), dimension=(0.01, 0.01, 0.01), polarization=(0.0, 0.0, -1.0)
+                        position=(-0.005, 0.0, 0.0),
+                        dimension=(0.01, 0.01, 0.01),
+                        polarization=(0.0, 0.0, -1.0),
                     )
                     MagpyCollection(m1, m2)
 
@@ -75,14 +83,19 @@ class ObjectManipulation:
                 )
             elif geometry == "Collection":
                 m1 = pymagba.magnets.CylinderMagnet(
-                    position=(0.005, 0.0, 0.0), diameter=0.01, height=0.02, polarization=(0.0, 0.0, 1.0)
+                    position=(0.005, 0.0, 0.0),
+                    diameter=0.01,
+                    height=0.02,
+                    polarization=(0.0, 0.0, 1.0),
                 )
                 m2 = pymagba.magnets.CuboidMagnet(
-                    position=(-0.005, 0.0, 0.0), dimensions=(0.01, 0.01, 0.01), polarization=(0.0, 0.0, -1.0)
+                    position=(-0.005, 0.0, 0.0),
+                    dimensions=(0.01, 0.01, 0.01),
+                    polarization=(0.0, 0.0, -1.0),
                 )
                 self.magnet = pymagba.magnets.SourceCollection([m1, m2])
 
-            self.move_by = self.magnet.translate
+            self.move_by = self.magnet.translate  # type: ignore
             self.rotate_by = self.magnet.rotate
         else:
             if geometry == "Cylinder":
@@ -105,7 +118,7 @@ class ObjectManipulation:
                 )
                 self.magnet = MagpyCollection(m1, m2)
 
-            self.move_by = self.magnet.move
+            self.move_by = self.magnet.move  # type: ignore
             self.rotate_by = self.magnet.rotate
 
     def time_manipulation(self, library, geometry, operation):
