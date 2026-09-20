@@ -126,5 +126,10 @@ class ObjectManipulation:
             for _ in range(10000):
                 self.move_by((0.001, 0.002, 0.003))
         elif operation == "Rotate":
-            for _ in range(10000):
-                self.rotate_by(self.rot)
+            if library == "PyMagba":
+                rot_quat = self.rot.as_quat()
+                for _ in range(10000):
+                    self.rotate_by(rot_quat)
+            else:
+                for _ in range(10000):
+                    self.rotate_by(self.rot)

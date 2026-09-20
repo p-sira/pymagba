@@ -4,22 +4,19 @@ import os
 
 import magpylib as magpy
 import numpy as np
-from magpylib.current import Circle
+from magpylib.current import Circle, Polyline
 from magpylib.magnet import Cuboid, Cylinder, Sphere, Tetrahedron, TriangularMesh
-from magpylib.current import Polyline
 from magpylib.misc import Dipole as MagpyDipole
-from pymagba.currents import CircularCurrent
+from pymagba.currents import CircularCurrent, PathCurrent
 from pymagba.magnets import (
     CuboidMagnet,
     CylinderMagnet,
     Dipole,
+    MeshMagnet,
     SourceCollection,
     SphereMagnet,
     TetrahedronMagnet,
-    MeshMagnet,
 )
-from pymagba.currents import PathCurrent
-
 from scipy.spatial.transform import Rotation
 
 
@@ -252,8 +249,8 @@ def main():
     accuracy = calc_accuracy()
 
     import jinja2
-    import pymagba
     import magpylib
+    import pymagba
 
     pymagba_version = getattr(pymagba, "__version__", "Unknown")
     magpylib_version = getattr(magpylib, "__version__", "Unknown")
@@ -271,6 +268,7 @@ def main():
         "Mesh",
         "Circular",
         "Polyline",
+        "Collection",
     ]:
         sp = speedups.get(geom, {})
         acc = accuracy.get(geom)
@@ -287,22 +285,7 @@ def main():
             }
         )
 
-    collection_rows = []
-    for geom in ["Collection"]:
-        sp = speedups.get(geom, {})
-        acc = accuracy.get(geom)
-        collection_rows.append(
-            {
-                "geom": geom,
-                "py_t": f"{sp.get('py', 0) * 1000:.2f} ms" if sp else "*TBD*",
-                "ma_t": f"{sp.get('ma', 0) * 1000:.2f} ms" if sp else "*TBD*",
-                "speed": f"{sp['ma'] / sp['py']:.1f}x"
-                if sp and sp.get("py")
-                else "*TBD*",
-                "max_e": f"{acc[0]:.2e}" if acc else "*TBD*",
-                "p95_e": f"{acc[1]:.2e}" if acc else "*TBD*",
-            }
-        )
+
 
     create_rows = []
     for op, label in [
@@ -342,7 +325,6 @@ def main():
 
     content = template.render(
         field_rows=field_rows,
-        collection_rows=collection_rows,
         create_rows=create_rows,
         man_rows=man_rows,
         env=env,

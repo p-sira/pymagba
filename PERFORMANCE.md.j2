@@ -2,45 +2,25 @@
 
 This document provides a comprehensive performance comparison between `pymagba` v{{ pymagba_version }} and `magpylib` v{{ magpylib_version }}.
 
-We evaluate the libraries across several key metrics:
-1. **Pure Field Function Performance** (Raw mathematical field computation)
-2. **Collection Performance** (Aggregated object field computation)
-3. **Object Creation** (Instantiating magnet and current objects)
-4. **Object Manipulation** (Translation, rotation, and spatial transformations)
+## 1. Field Computation Performance
 
-## 1. Pure Field Function Performance
+The pure field computation is the core bottleneck in most magnetic simulations. `pymagba` leverages Rust's performance and aggressive optimizations to significantly accelerate these calculations. 
 
-The pure field computation is the core bottleneck in most magnetic simulations. `pymagba` leverages Rust's performance and aggressive optimizations to significantly accelerate these calculations compared to `magpylib`. 
-
-Below is a comparison of computation times for various source geometries, calculated over 1,000,000 observer positions:
+Below is a comparison of computation times for various source geometries, calculated over 1,000,000 observer positions. `Collection` consists of 3 magnets, a cylinder, cuboid, and a dipole.
 
 | Geometry Type | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
 |---------------|--------------|---------------|---------|----------------|----------------|
 {% for row in field_rows -%}
 | **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
-{% endfor -%}
-
-## 2. Collection Performance
-
-Evaluating the performance of field computation for a collection of objects over 1,000,000 observer positions:
-
-| Operation | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
-|-----------|--------------|---------------|---------|----------------|----------------|
-{% for row in collection_rows -%}
-| **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
-{% endfor -%}
-
-## 3. Object Creation
-
-Creating objects in bulk or iteratively can introduce overhead. Here we compare the time taken to instantiate 10,000 objects such as `Cuboid`, `Cylinder`, etc.
+{% endfor %}
+## 2. Object Creation
 
 | Operation | PyMagba Time | Magpylib Time | Speedup |
 |-----------|--------------|---------------|---------|
 {% for row in create_rows -%}
 | {{ row.label }} | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} |
-{% endfor -%}
-
-## 4. Object Manipulation
+{% endfor %}
+## 3. Object Manipulation
 
 Simulations often require dynamic movement of sources. This benchmark measures the overhead of translating and rotating objects in 3D space (10,000 operations).
 
@@ -48,8 +28,7 @@ Simulations often require dynamic movement of sources. This benchmark measures t
 |-----------|--------------|---------------|---------|
 {% for row in man_rows -%}
 | {{ row.label }} | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} |
-{% endfor -%}
-
+{% endfor %}
 ---
 
 ## Reproducing these Benchmarks
@@ -65,3 +44,5 @@ To reproduce these benchmarks on your local machine, run the `asv` suite provide
 ```bash
 asv run
 ```
+
+This report is generated using `scripts/collate_benchmarks.py`.

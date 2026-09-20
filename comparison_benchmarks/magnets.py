@@ -190,6 +190,7 @@ class MagnetCollection:
     def time_compute_B(self, library):
         self.func(self.observers)
 
+
 class MagnetTetrahedron:
     params = ("PyMagba", "MagpyLib")
     param_names = ("library",)
@@ -207,6 +208,7 @@ class MagnetTetrahedron:
             self.func = magnet.compute_B
         else:
             from magpylib.magnet import Tetrahedron
+
             magnet = Tetrahedron(
                 position=(0, 0, 0),
                 orientation=get_standard_rotation(),
@@ -238,6 +240,7 @@ class MagnetMesh:
             self.func = magnet.compute_B
         else:
             from magpylib.magnet import TriangularMesh
+
             magnet = TriangularMesh(
                 position=(0, 0, 0),
                 orientation=get_standard_rotation(),
