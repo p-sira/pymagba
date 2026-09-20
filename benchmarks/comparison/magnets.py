@@ -252,3 +252,40 @@ class MagnetMesh:
 
     def time_compute_B(self, library):
         self.func(self.observers)
+
+
+class MagnetTriangle:
+    params = ("PyMagba", "MagpyLib")
+    param_names = ("library",)
+
+    def setup(self, library):
+        self.observers = get_observer_grid(1000000)
+        vertices = [[-0.1, -0.1, -0.1], [0.1, -0.1, 0.1], [0.0, 0.2, 0.0]]
+        if library == "PyMagba":
+            magnet = pymagba.magnets.TriangleMagnet(
+                position=(0, 0, 0),
+                orientation=get_standard_rotation(),
+                vertices=vertices,
+                polarization=(1, 2, 3),
+            )
+            self.func = magnet.compute_B
+        else:
+            import numpy as np
+
+            # Magpylib's TriangularMesh models a solid volume and erroneously adds polarization
+            # to the field due to broken inside-outside checks on open meshes (single triangles).
+            # To compare mathematically equivalent surface fields, we must use the core field function.
+            def getB_wrapper(observers):
+                rot = get_standard_rotation()
+                # Localize observers
+                obs_local = rot.inv().apply(observers)
+                # Expand vertices and polarization for vectorized core function
+                v_arr = np.tile(vertices, (len(observers), 1, 1))
+                p_arr = np.tile((1.0, 2.0, 3.0), (len(observers), 1))
+                B_local = magpy.core.triangle_Bfield(obs_local, v_arr, p_arr)
+                return rot.apply(B_local)
+
+            self.func = getB_wrapper
+
+    def time_compute_B(self, library):
+        self.func(self.observers)

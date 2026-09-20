@@ -2,21 +2,7 @@ import glob
 import json
 import os
 
-import magpylib as magpy
 import numpy as np
-from magpylib.current import Circle, Polyline
-from magpylib.magnet import Cuboid, Cylinder, Sphere, Tetrahedron, TriangularMesh
-from magpylib.misc import Dipole as MagpyDipole
-from pymagba.currents import CircularCurrent, PathCurrent
-from pymagba.magnets import (
-    CuboidMagnet,
-    CylinderMagnet,
-    Dipole,
-    MeshMagnet,
-    SourceCollection,
-    SphereMagnet,
-    TetrahedronMagnet,
-)
 from scipy.spatial.transform import Rotation
 
 
@@ -45,131 +31,46 @@ def relative_error(B_pymagba, B_magpylib):
 
 
 def calc_accuracy():
+    import inspect
+    import sys
+    import warnings
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    
+    from benchmarks.comparison import currents as bench_currents
+    from benchmarks.comparison import magnets as bench_magnets
+
     observers = get_observer_grid(100000)
-    rot = get_standard_rotation()
     acc = {}
 
-    # Cylinder
-    m_py = CylinderMagnet(
-        position=(0, 0, 0),
-        orientation=rot,
-        diameter=0.1,
-        height=0.2,
-        polarization=(1, 2, 3),
-    )
-    m_ma = Cylinder(
-        position=(0, 0, 0),
-        orientation=rot,
-        dimension=(0.1, 0.2),
-        polarization=(1, 2, 3),
-    )
-    acc["Cylinder"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+    modules = [bench_magnets, bench_currents]
 
-    # Sphere
-    m_py = SphereMagnet(
-        position=(0, 0, 0), orientation=rot, diameter=0.1, polarization=(1, 2, 3)
-    )
-    m_ma = Sphere(
-        position=(0, 0, 0), orientation=rot, diameter=0.1, polarization=(1, 2, 3)
-    )
-    acc["Sphere"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+    for mod in modules:
+        for name, cls in inspect.getmembers(mod, inspect.isclass):
+            if not name.startswith(("Magnet", "Current", "Composite")):
+                continue
 
-    # Cuboid
-    m_py = CuboidMagnet(
-        position=(0, 0, 0),
-        orientation=rot,
-        dimensions=(0.1, 0.2, 0.3),
-        polarization=(1, 2, 3),
-    )
-    m_ma = Cuboid(
-        position=(0, 0, 0),
-        orientation=rot,
-        dimension=(0.1, 0.2, 0.3),
-        polarization=(1, 2, 3),
-    )
-    acc["Cuboid"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+            geom_name = name
+            for prefix in ["Magnet", "Current", "Composite"]:
+                if name.startswith(prefix):
+                    geom_name = name[len(prefix) :]
+                    break
 
-    # Dipole
-    m_py = Dipole(position=(0, 0, 0), orientation=rot, moment=(1, 2, 3))
-    m_ma = MagpyDipole(position=(0, 0, 0), orientation=rot, moment=(1, 2, 3))
-    acc["Dipole"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+            try:
+                obj_py = cls()
+                obj_py.setup("PyMagba")
+                func_py = obj_py.func
 
-    # Circular
-    m_py = CircularCurrent(
-        position=(0, 0, 0), orientation=rot, diameter=0.01, current=1.0
-    )
-    m_ma = Circle(position=(0, 0, 0), orientation=rot, diameter=0.01, current=1.0)
-    acc["Circular"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+                obj_ma = cls()
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    obj_ma.setup("MagpyLib")
+                func_ma = obj_ma.func
 
-    # Collection
-    m1_py = CylinderMagnet(
-        position=(0.005, 0, 0), diameter=0.01, height=0.02, polarization=(0, 0, 1)
-    )
-    m2_py = CuboidMagnet(
-        position=(-0.005, 0, 0), dimensions=(0.01, 0.01, 0.01), polarization=(0, 0, -1)
-    )
-    m3_py = Dipole(position=(0.0, 0.005, 0.0), moment=(0.0, 1.0, 0.0))
-    col_py = SourceCollection([m1_py, m2_py, m3_py])
-
-    m1_ma = Cylinder(
-        position=(0.005, 0, 0), dimension=(0.01, 0.02), polarization=(0, 0, 1)
-    )
-    m2_ma = Cuboid(
-        position=(-0.005, 0, 0), dimension=(0.01, 0.01, 0.01), polarization=(0, 0, -1)
-    )
-    m3_ma = MagpyDipole(position=(0.0, 0.005, 0.0), moment=(0.0, 1.0, 0.0))
-    col_ma = magpy.Collection(m1_ma, m2_ma, m3_ma)
-    acc["Collection"] = relative_error(
-        col_py.compute_B(observers),
-        col_ma.getB(observers),  # type: ignore
-    )
-
-    # Tetrahedron
-    m_py = TetrahedronMagnet(
-        position=(0, 0, 0),
-        orientation=rot,
-        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
-        polarization=(1, 2, 3),
-    )
-    m_ma = Tetrahedron(
-        position=(0, 0, 0),
-        orientation=rot,
-        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
-        polarization=(1, 2, 3),
-    )
-    acc["Tetrahedron"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
-
-    # Mesh
-    m_py = MeshMagnet(
-        position=(0, 0, 0),
-        orientation=rot,
-        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
-        faces=[[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]],
-        polarization=(1, 2, 3),
-    )
-    m_ma = TriangularMesh(
-        position=(0, 0, 0),
-        orientation=rot,
-        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
-        faces=[[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]],
-        polarization=(1, 2, 3),
-    )
-    acc["Mesh"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
-
-    # Polyline
-    m_py = PathCurrent(
-        position=(0, 0, 0),
-        orientation=rot,
-        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
-        current=1.5,
-    )
-    m_ma = Polyline(
-        position=(0, 0, 0),
-        orientation=rot,
-        vertices=[[0, 0, 0], [0.1, 0, 0], [0, 0.1, 0], [0, 0, 0.1]],
-        current=1.5,
-    )
-    acc["Polyline"] = relative_error(m_py.compute_B(observers), m_ma.getB(observers))  # type: ignore
+                B_py = func_py(observers)
+                B_ma = func_ma(observers)
+                acc[geom_name] = relative_error(B_py, B_ma)
+            except Exception as e:  # noqa: BLE001
+                print(f"Skipping {geom_name}: {e}")
 
     return acc
 
@@ -216,11 +117,15 @@ def main():
                 if len(res) >= 2 and res[0] and res[1]:
                     speedups[geom] = {"py": res[0], "ma": res[1]}
             elif "Magnet" in name and "time_compute_B" in name:
-                geom = name.split("Magnet")[1].split(".")[0]
+                # name is like comparison.magnets.MagnetCuboid.time_compute_B
+                class_name = name.split(".")[-2]
+                geom = class_name.removeprefix("Magnet")
                 if len(res) >= 2 and res[0] and res[1]:
                     speedups[geom] = {"py": res[0], "ma": res[1]}
             elif "Current" in name and "time_compute_B" in name:
-                geom = name.split("Current")[1].split(".")[0]
+                # name is like comparison.currents.CurrentPolyline.time_compute_B
+                class_name = name.split(".")[-2]
+                geom = class_name.removeprefix("Current")
                 if len(res) >= 2 and res[0] and res[1]:
                     speedups[geom] = {"py": res[0], "ma": res[1]}
 
@@ -258,7 +163,22 @@ def main():
     with open("PERFORMANCE.md.j2", "r") as f:
         template = jinja2.Template(f.read())
 
-    field_rows = []
+    magnet_rows = []
+    current_rows = []
+    composite_rows = []
+
+    def format_row(geom, dict_speedups, dict_acc):
+        sp = dict_speedups.get(geom, {})
+        acc_data = dict_acc.get(geom)
+        return {
+            "geom": geom,
+            "py_t": f"{sp.get('py', 0) * 1000:.2f} ms" if sp else "*TBD*",
+            "ma_t": f"{sp.get('ma', 0) * 1000:.2f} ms" if sp else "*TBD*",
+            "speed": f"{sp['ma'] / sp['py']:.1f}x" if sp and sp.get("py") else "*TBD*",
+            "max_e": f"{acc_data[0]:.2e}" if acc_data else "*TBD*",
+            "p95_e": f"{acc_data[1]:.2e}" if acc_data else "*TBD*",
+        }
+
     for geom in [
         "Cylinder",
         "Sphere",
@@ -266,26 +186,15 @@ def main():
         "Dipole",
         "Tetrahedron",
         "Mesh",
-        "Circular",
-        "Polyline",
-        "Collection",
+        "Triangle",
     ]:
-        sp = speedups.get(geom, {})
-        acc = accuracy.get(geom)
-        field_rows.append(
-            {
-                "geom": geom,
-                "py_t": f"{sp.get('py', 0) * 1000:.2f} ms" if sp else "*TBD*",
-                "ma_t": f"{sp.get('ma', 0) * 1000:.2f} ms" if sp else "*TBD*",
-                "speed": f"{sp['ma'] / sp['py']:.1f}x"
-                if sp and sp.get("py")
-                else "*TBD*",
-                "max_e": f"{acc[0]:.2e}" if acc else "*TBD*",
-                "p95_e": f"{acc[1]:.2e}" if acc else "*TBD*",
-            }
-        )
+        magnet_rows.append(format_row(geom, speedups, accuracy))
 
+    for geom in ["Circular", "Polyline", "TriangleCurrent", "SheetCurrent"]:
+        current_rows.append(format_row(geom, speedups, accuracy))
 
+    for geom in ["Collection"]:
+        composite_rows.append(format_row(geom, speedups, accuracy))
 
     create_rows = []
     for op, label in [
@@ -324,7 +233,9 @@ def main():
         )
 
     content = template.render(
-        field_rows=field_rows,
+        magnet_rows=magnet_rows,
+        current_rows=current_rows,
+        composite_rows=composite_rows,
         create_rows=create_rows,
         man_rows=man_rows,
         env=env,
