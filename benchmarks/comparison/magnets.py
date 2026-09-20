@@ -253,6 +253,7 @@ class MagnetMesh:
     def time_compute_B(self, library):
         self.func(self.observers)
 
+
 class MagnetTriangle:
     params = ("PyMagba", "MagpyLib")
     param_names = ("library",)
@@ -270,6 +271,7 @@ class MagnetTriangle:
             self.func = magnet.compute_B
         else:
             from magpylib.magnet import TriangularMesh
+
             magnet = TriangularMesh(
                 position=(0, 0, 0),
                 orientation=get_standard_rotation(),

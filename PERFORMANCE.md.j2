@@ -8,9 +8,25 @@ The pure field computation is the core bottleneck in most magnetic simulations. 
 
 Below is a comparison of computation times for various source geometries, calculated over 1,000,000 observer positions. `Collection` consists of 3 magnets, a cylinder, cuboid, and a dipole.
 
+### Magnets
+
 | Geometry Type | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
 |---------------|--------------|---------------|---------|----------------|----------------|
-{% for row in field_rows -%}
+{% for row in magnet_rows -%}
+| **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
+{% endfor %}
+### Currents
+
+| Geometry Type | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
+|---------------|--------------|---------------|---------|----------------|----------------|
+{% for row in current_rows -%}
+| **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
+{% endfor %}
+### Composite
+
+| Geometry Type | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
+|---------------|--------------|---------------|---------|----------------|----------------|
+{% for row in composite_rows -%}
 | **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
 {% endfor %}
 ## 2. Object Creation

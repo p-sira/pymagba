@@ -52,6 +52,7 @@ class CurrentTriangleCurrent:
             self.func = current_obj.compute_B
         else:
             from magpylib.current import TriangleSheet
+
             current_obj = TriangleSheet(
                 position=(0, 0, 0),
                 orientation=get_standard_rotation(),
@@ -71,7 +72,12 @@ class CurrentSheetCurrent:
 
     def setup(self, library):
         self.observers = get_observer_grid(1000000)
-        vertices = [[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1], [0.0, 0.0, 0.1]]
+        vertices = [
+            [-0.1, -0.1, -0.1],
+            [0.1, -0.1, -0.1],
+            [0.0, 0.1, -0.1],
+            [0.0, 0.0, 0.1],
+        ]
         faces = [[0, 2, 1], [0, 1, 3], [1, 2, 3], [0, 3, 2]]
         current_densities = [(1, 2, 3)] * 4
         if library == "PyMagba":
@@ -85,6 +91,7 @@ class CurrentSheetCurrent:
             self.func = current_obj.compute_B
         else:
             from magpylib.current import TriangleSheet
+
             current_obj = TriangleSheet(
                 position=(0, 0, 0),
                 orientation=get_standard_rotation(),
