@@ -11,20 +11,12 @@ from .common import get_standard_rotation
 
 
 class ObjectCreation:
-    params = (["PyMagba", "MagpyLib"], ["Cuboid", "Cylinder", "Dipole", "Collection"])
+    params = (["PyMagba", "MagpyLib"], ["Cylinder", "Collection"])
     param_names = ("library", "geometry")
 
     def time_creation(self, library, geometry):
         if library == "PyMagba":
-            if geometry == "Cuboid":
-                for _ in range(10000):
-                    pymagba.magnets.CuboidMagnet(
-                        position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
-                        dimensions=(0.1, 0.2, 0.3),
-                        polarization=(1, 2, 3),
-                    )
-            elif geometry == "Cylinder":
+            if geometry == "Cylinder":
                 for _ in range(10000):
                     pymagba.magnets.CylinderMagnet(
                         position=(0, 0, 0),
@@ -33,47 +25,17 @@ class ObjectCreation:
                         height=0.2,
                         polarization=(1, 2, 3),
                     )
-            elif geometry == "Dipole":
-                for _ in range(10000):
-                    pymagba.magnets.Dipole(
-                        position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
-                        moment=(1, 2, 3),
-                    )
-            elif geometry == "Dipole":
-                for _ in range(10000):
-                    MagpyDipole(
-                        position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
-                        moment=(1, 2, 3),
-                    )
             elif geometry == "Collection":
                 for _ in range(10000):
                     m1 = pymagba.magnets.CylinderMagnet(
-                        position=(0.005, 0.0, 0.0),
-                        diameter=0.01,
-                        height=0.02,
-                        polarization=(0.0, 0.0, 1.0),
+                        position=(0.005, 0.0, 0.0), diameter=0.01, height=0.02, polarization=(0.0, 0.0, 1.0)
                     )
                     m2 = pymagba.magnets.CuboidMagnet(
-                        position=(-0.005, 0.0, 0.0),
-                        dimensions=(0.01, 0.01, 0.01),
-                        polarization=(0.0, 0.0, -1.0),
+                        position=(-0.005, 0.0, 0.0), dimensions=(0.01, 0.01, 0.01), polarization=(0.0, 0.0, -1.0)
                     )
-                    m3 = pymagba.magnets.Dipole(
-                        position=(0.0, 0.005, 0.0), moment=(0.0, 1.0, 0.0)
-                    )
-                    pymagba.magnets.SourceCollection([m1, m2, m3])
+                    pymagba.magnets.SourceCollection([m1, m2])
         else:
-            if geometry == "Cuboid":
-                for _ in range(10000):
-                    Cuboid(
-                        position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
-                        dimension=(0.1, 0.2, 0.3),
-                        polarization=(1, 2, 3),
-                    )
-            elif geometry == "Cylinder":
+            if geometry == "Cylinder":
                 for _ in range(10000):
                     Cylinder(
                         position=(0, 0, 0),
@@ -81,33 +43,21 @@ class ObjectCreation:
                         dimension=(0.1, 0.2),
                         polarization=(1, 2, 3),
                     )
-            elif geometry == "Dipole":
-                for _ in range(10000):
-                    MagpyDipole(
-                        position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
-                        moment=(1, 2, 3),
-                    )
             elif geometry == "Collection":
                 for _ in range(10000):
                     m1 = Cylinder(
-                        position=(0.005, 0.0, 0.0),
-                        dimension=(0.01, 0.02),
-                        polarization=(0.0, 0.0, 1.0),
+                        position=(0.005, 0.0, 0.0), dimension=(0.01, 0.02), polarization=(0.0, 0.0, 1.0)
                     )
                     m2 = Cuboid(
-                        position=(-0.005, 0.0, 0.0),
-                        dimension=(0.01, 0.01, 0.01),
-                        polarization=(0.0, 0.0, -1.0),
+                        position=(-0.005, 0.0, 0.0), dimension=(0.01, 0.01, 0.01), polarization=(0.0, 0.0, -1.0)
                     )
-                    m3 = MagpyDipole(position=(0.0, 0.005, 0.0), moment=(0.0, 1.0, 0.0))
-                    MagpyCollection(m1, m2, m3)
+                    MagpyCollection(m1, m2)
 
 
 class ObjectManipulation:
     params = (
         ["PyMagba", "MagpyLib"],
-        ["Cuboid", "Cylinder", "Dipole", "Collection"],
+        ["Cylinder", "Collection"],
         ["Translate", "Rotate"],
     )
     param_names = ("library", "geometry", "operation")
@@ -115,14 +65,7 @@ class ObjectManipulation:
     def setup(self, library, geometry, operation):
         self.rot = Rotation.from_euler("xyz", [10, 20, 30], degrees=True)
         if library == "PyMagba":
-            if geometry == "Cuboid":
-                self.magnet = pymagba.magnets.CuboidMagnet(
-                    position=(0, 0, 0),
-                    orientation=get_standard_rotation(),
-                    dimensions=(0.1, 0.2, 0.3),
-                    polarization=(1, 2, 3),
-                )
-            elif geometry == "Cylinder":
+            if geometry == "Cylinder":
                 self.magnet = pymagba.magnets.CylinderMagnet(
                     position=(0, 0, 0),
                     orientation=get_standard_rotation(),
@@ -130,51 +73,24 @@ class ObjectManipulation:
                     height=0.2,
                     polarization=(1, 2, 3),
                 )
-            elif geometry == "Dipole":
-                self.magnet = pymagba.magnets.Dipole(
-                    position=(0, 0, 0),
-                    orientation=get_standard_rotation(),
-                    moment=(1, 2, 3),
-                )
             elif geometry == "Collection":
                 m1 = pymagba.magnets.CylinderMagnet(
-                    position=(0.005, 0.0, 0.0),
-                    diameter=0.01,
-                    height=0.02,
-                    polarization=(0.0, 0.0, 1.0),
+                    position=(0.005, 0.0, 0.0), diameter=0.01, height=0.02, polarization=(0.0, 0.0, 1.0)
                 )
                 m2 = pymagba.magnets.CuboidMagnet(
-                    position=(-0.005, 0.0, 0.0),
-                    dimensions=(0.01, 0.01, 0.01),
-                    polarization=(0.0, 0.0, -1.0),
+                    position=(-0.005, 0.0, 0.0), dimensions=(0.01, 0.01, 0.01), polarization=(0.0, 0.0, -1.0)
                 )
-                m3 = pymagba.magnets.Dipole(
-                    position=(0.0, 0.005, 0.0), moment=(0.0, 1.0, 0.0)
-                )
-                self.magnet = pymagba.magnets.SourceCollection([m1, m2, m3])
+                self.magnet = pymagba.magnets.SourceCollection([m1, m2])
 
             self.move_by = self.magnet.translate
             self.rotate_by = self.magnet.rotate
         else:
-            if geometry == "Cuboid":
-                self.magnet = Cuboid(
-                    position=(0, 0, 0),
-                    orientation=get_standard_rotation(),
-                    dimension=(0.1, 0.2, 0.3),
-                    polarization=(1, 2, 3),
-                )
-            elif geometry == "Cylinder":
+            if geometry == "Cylinder":
                 self.magnet = Cylinder(
                     position=(0, 0, 0),
                     orientation=get_standard_rotation(),
                     dimension=(0.1, 0.2),
                     polarization=(1, 2, 3),
-                )
-            elif geometry == "Dipole":
-                self.magnet = MagpyDipole(
-                    position=(0, 0, 0),
-                    orientation=get_standard_rotation(),
-                    moment=(1, 2, 3),
                 )
             elif geometry == "Collection":
                 m1 = Cylinder(
@@ -187,8 +103,7 @@ class ObjectManipulation:
                     dimension=(0.01, 0.01, 0.01),
                     polarization=(0.0, 0.0, -1.0),
                 )
-                m3 = MagpyDipole(position=(0.0, 0.005, 0.0), moment=(0.0, 1.0, 0.0))
-                self.magnet = MagpyCollection(m1, m2, m3)
+                self.magnet = MagpyCollection(m1, m2)
 
             self.move_by = self.magnet.move
             self.rotate_by = self.magnet.rotate
