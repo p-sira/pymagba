@@ -12,35 +12,35 @@ Below is a comparison of computation times for various source geometries, calcul
 
 | Geometry Type | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
 |---------------|--------------|---------------|---------|----------------|----------------|
-| **Cylinder** | 69.94 ms | 1346.61 ms | 19.3x | 2.16e-09 | 2.28e-12 |
-| **Sphere** | 24.35 ms | 363.80 ms | 14.9x | 2.65e-15 | 1.02e-15 |
-| **Cuboid** | 82.73 ms | 1233.30 ms | 14.9x | 1.36e-12 | 2.64e-13 |
-| **Dipole** | 24.16 ms | 270.91 ms | 11.2x | 2.81e-15 | 9.93e-16 |
-| **Tetrahedron** | 74.27 ms | 5303.20 ms | 71.4x | 6.07e-08 | 2.76e-11 |
-| **Mesh** | 74.19 ms | 8443.25 ms | 113.8x | 6.07e-08 | 2.76e-11 |
-| **Triangle** | 33.36 ms | 4650.80 ms | 139.4x | 1.78e-10 | 5.64e-14 |
+| **Cylinder** | 61.00 ms | 1318.89 ms | 21.6x | 2.16e-09 | 2.28e-12 |
+| **Sphere** | 20.30 ms | 347.37 ms | 17.1x | 2.65e-15 | 1.02e-15 |
+| **Cuboid** | 76.75 ms | 1213.42 ms | 15.8x | 1.36e-12 | 2.64e-13 |
+| **Dipole** | 20.47 ms | 247.42 ms | 12.1x | 2.81e-15 | 9.93e-16 |
+| **Tetrahedron** | 66.39 ms | 3485.68 ms | 52.5x | 6.07e-08 | 2.76e-11 |
+| **Mesh** | 65.71 ms | 6871.90 ms | 104.6x | 6.07e-08 | 2.76e-11 |
+| **Triangle** | 29.63 ms | 690.72 ms | 23.3x | 1.78e-10 | 5.64e-14 |
 
 ### Currents
 
 | Geometry Type | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
 |---------------|--------------|---------------|---------|----------------|----------------|
-| **Circular** | 36.26 ms | 525.72 ms | 14.5x | 3.68e-15 | 1.10e-15 |
-| **Polyline** | 45.94 ms | 2146.41 ms | 46.7x | 2.34e-12 | 1.06e-14 |
-| **TriangleCurrent** | 45.61 ms | 11509.41 ms | 252.4x | 5.00e-10 | 1.65e-13 |
-| **SheetCurrent** | 109.97 ms | 23074.28 ms | 209.8x | 1.28e-09 | 3.83e-13 |
+| **Circular** | 30.29 ms | 500.75 ms | 16.5x | 3.68e-15 | 1.10e-15 |
+| **Polyline** | 34.31 ms | 2088.60 ms | 60.9x | 2.34e-12 | 1.06e-14 |
+| **TriangleCurrent** | 38.33 ms | 11536.54 ms | 301.0x | 5.00e-10 | 1.65e-13 |
+| **SheetCurrent** | 99.56 ms | 22281.83 ms | 223.8x | 1.28e-09 | 3.83e-13 |
 
 ### Composite
 
 | Geometry Type | PyMagba Time | Magpylib Time | Speedup | Max Rel. Error | P95 Rel. Error |
 |---------------|--------------|---------------|---------|----------------|----------------|
-| **Collection** | 136.60 ms | 2161.66 ms | 15.8x | 3.37e-12 | 4.68e-16 |
+| **Collection** | 122.92 ms | 2115.00 ms | 17.2x | 3.37e-12 | 4.68e-16 |
 
 ## 2. Object Creation
 
 | Operation | PyMagba Time | Magpylib Time | Speedup |
 |-----------|--------------|---------------|---------|
-| Cylinder | 323.49 ms | 769.31 ms | 2.4x |
-| Collection | 36.48 ms | 1777.74 ms | 48.7x |
+| Cylinder | 326.66 ms | 771.01 ms | 2.4x |
+| Collection | 34.93 ms | 1819.90 ms | 52.1x |
 
 ## 3. Object Manipulation
 
@@ -48,10 +48,10 @@ Simulations often require dynamic movement of sources. This benchmark measures t
 
 | Operation | PyMagba Time | Magpylib Time | Speedup |
 |-----------|--------------|---------------|---------|
-| Translate Cylinder | 2.25 ms | 82.56 ms | 36.8x |
-| Rotate Cylinder | 14.67 ms | 504.82 ms | 34.4x |
-| Translate Collection | 2.46 ms | 250.85 ms | 102.2x |
-| Rotate Collection | 11.29 ms | 2040.27 ms | 180.8x |
+| Translate Cylinder | 2.10 ms | 83.81 ms | 39.9x |
+| Rotate Cylinder | 10.59 ms | 510.22 ms | 48.2x |
+| Translate Collection | 2.30 ms | 253.39 ms | 110.3x |
+| Rotate Collection | 10.74 ms | 2142.18 ms | 199.5x |
 
 ---
 
