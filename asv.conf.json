@@ -18,12 +18,13 @@
     "matrix": {
         "req": {
             "numpy": "",
-            "scipy": ""
+            "scipy": "",
+            "magpylib": ""
         }
     },
     "build_command": [
         "python -m pip install maturin",
-        "maturin build --release --strip --out {build_cache_dir} --interpreter python"
+        "python -m maturin build --release --strip --out {build_cache_dir} --interpreter python"
     ],
     "install_command": [
         "python -m pip install {wheel_file}"

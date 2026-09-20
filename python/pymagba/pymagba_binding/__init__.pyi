@@ -955,3 +955,32 @@ def triangle_B(
     Returns:
         numpy.ndarray: Magnetic field (N, 3) in Tesla.
     """
+
+def path_current_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    current: builtins.float = 1.0,
+    vertices: numpy.typing.ArrayLike | None = None,
+) -> numpy.typing.NDArray[numpy.float64]: ...
+def triangle_current_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    current_density: numpy.typing.ArrayLike | None = None,
+    vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
+) -> numpy.typing.NDArray[numpy.float64]: ...
+def sheet_current_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    current_densities: numpy.typing.ArrayLike | None = None,
+    vertices: numpy.typing.ArrayLike | None = None,
+    faces: numpy.typing.ArrayLike | None = None,
+) -> numpy.typing.NDArray[numpy.float64]: ...

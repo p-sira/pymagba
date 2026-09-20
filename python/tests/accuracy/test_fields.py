@@ -2,13 +2,21 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 import numpy as np
+from pymagba.currents import (
+    PathCurrent,
+    SheetCurrent,
+    TriangleCurrent,
+)
 from pymagba.fields import (
     cuboid_B,
     cylinder_B,
     dipole_B,
     mesh_B,
+    path_current_B,
+    sheet_current_B,
     tetrahedron_B,
     triangle_B,
+    triangle_current_B,
 )
 from pymagba.magnets import (
     CuboidMagnet,
@@ -123,6 +131,70 @@ def test_mesh_B():
     np.testing.assert_allclose(b_class, b_func)
 
 
+def test_path_current_B():
+    vertices = [[0, 0, 0], [1e-3, 0, 0], [0, 1e-3, 0]]
+    current = 1.0
+    pos = [0, 0, 0]
+    points = [[0, 0, 10e-3], [10e-3, 0, 0]]
+
+    # Using Magnet class
+    mag = PathCurrent(vertices=vertices, current=current, position=pos)
+    b_class = mag.compute_B(points)
+
+    # Using field function
+    b_func = path_current_B(points, vertices=vertices, current=current, position=pos)
+
+    np.testing.assert_allclose(b_class, b_func)
+
+
+def test_triangle_current_B():
+    vertices = [[0, 0, 0], [1e-3, 0, 0], [0, 1e-3, 0]]
+    current_density = [1.0, 0, 0]
+    pos = [0, 0, 0]
+    points = [[0, 0, 10e-3], [10e-3, 0, 0]]
+
+    # Using Magnet class
+    mag = TriangleCurrent(
+        vertices=vertices, current_density=current_density, position=pos
+    )
+    b_class = mag.compute_B(points)
+
+    # Using field function
+    b_func = triangle_current_B(
+        points, vertices=vertices, current_density=current_density, position=pos
+    )
+
+    np.testing.assert_allclose(b_class, b_func)
+
+
+def test_sheet_current_B():
+    vertices = [[0, 0, 0], [1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]]
+    faces = [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]]
+    current_densities = [[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0], [1.0, 1.0, 1.0]]
+    pos = [0, 0, 0]
+    points = [[0, 0, 10e-3], [10e-3, 0, 0]]
+
+    # Using Magnet class
+    mag = SheetCurrent(
+        vertices=vertices,
+        faces=faces,
+        current_densities=current_densities,
+        position=pos,
+    )
+    b_class = mag.compute_B(points)
+
+    # Using field function
+    b_func = sheet_current_B(
+        points,
+        vertices=vertices,
+        faces=faces,
+        current_densities=current_densities,
+        position=pos,
+    )
+
+    np.testing.assert_allclose(b_class, b_func)
+
+
 if __name__ == "__main__":
     test_cylinder_B()
     test_dipole_B()
@@ -130,4 +202,7 @@ if __name__ == "__main__":
     test_triangle_B()
     test_tetrahedron_B()
     test_mesh_B()
+    test_path_current_B()
+    test_triangle_current_B()
+    test_sheet_current_B()
     print("All tests passed!")

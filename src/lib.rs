@@ -82,6 +82,9 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fields::triangle_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::tetrahedron_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::mesh_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::path_current_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::triangle_current_B, &m)?)?;
+    m.add_function(wrap_pyfunction!(fields::sheet_current_B, &m)?)?;
 
     let fields_mod = PyModule::new(m.py(), "fields")?;
     fields::fields(&fields_mod)?;

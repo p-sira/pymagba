@@ -24,6 +24,9 @@ pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(triangle_B, m)?)?;
     m.add_function(wrap_pyfunction!(tetrahedron_B, m)?)?;
     m.add_function(wrap_pyfunction!(mesh_B, m)?)?;
+    m.add_function(wrap_pyfunction!(path_current_B, m)?)?;
+    m.add_function(wrap_pyfunction!(triangle_current_B, m)?)?;
+    m.add_function(wrap_pyfunction!(sheet_current_B, m)?)?;
     Ok(())
 }
 
@@ -463,6 +466,151 @@ pub fn mesh_B<'py>(
             pos.into(),
             rot,
             pol.into(),
+            &trimesh,
+            results.as_mut_slice(),
+        );
+    });
+
+    Ok(vec3_to_pyarray2(py, results))
+}
+
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
+#[pyfunction]
+#[pyo3(signature = (points, position=None, orientation=None, current=1.0, vertices=None))]
+pub fn path_current_B<'py>(
+    py: Python<'py>,
+    points: PointsLike,
+    position: Option<ArrayLike3>,
+    orientation: Option<PyRotation>,
+    current: f64,
+    vertices: Option<PointsLike>,
+) -> Bound<'py, numpy::PyArray2<f64>> {
+    let points = points.0;
+    let n = points.len();
+
+    let pos = try_into_slice!(position);
+    let rot = orientation
+        .map(|rot| rot.0)
+        .unwrap_or_else(nalgebra::UnitQuaternion::identity);
+        
+    let verts = vertices
+        .map(|pts| {
+            pts.0
+                .into_iter()
+                .map(|p| Vector3::new(p.x, p.y, p.z))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
+
+    py.detach(|| {
+        magba::fields::path_current_B_batch(
+            &points,
+            pos.into(),
+            rot,
+            current,
+            &verts,
+            results.as_mut_slice(),
+        );
+    });
+
+    vec3_to_pyarray2(py, results)
+}
+
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
+#[pyfunction]
+#[pyo3(signature = (points, position=None, orientation=None, current_density=None, vertices=None))]
+pub fn triangle_current_B<'py>(
+    py: Python<'py>,
+    points: PointsLike,
+    position: Option<ArrayLike3>,
+    orientation: Option<PyRotation>,
+    current_density: Option<ArrayLike3>,
+    vertices: Option<[[f64; 3]; 3]>,
+) -> Bound<'py, numpy::PyArray2<f64>> {
+    let points = points.0;
+    let n = points.len();
+
+    let pos = try_into_slice!(position);
+    let rot = orientation
+        .map(|rot| rot.0)
+        .unwrap_or_else(nalgebra::UnitQuaternion::identity);
+    let j = try_into_slice_or!(current_density, [0.0, 0.0, 0.0]);
+    let verts = vertices.unwrap_or([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]]);
+    let v = [
+        Vector3::new(verts[0][0], verts[0][1], verts[0][2]),
+        Vector3::new(verts[1][0], verts[1][1], verts[1][2]),
+        Vector3::new(verts[2][0], verts[2][1], verts[2][2]),
+    ];
+
+    let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
+
+    py.detach(|| {
+        magba::fields::triangle_current_B_batch(
+            &points,
+            pos.into(),
+            rot,
+            j.into(),
+            v,
+            results.as_mut_slice(),
+        );
+    });
+
+    vec3_to_pyarray2(py, results)
+}
+
+#[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
+#[pyfunction]
+#[pyo3(signature = (points, position=None, orientation=None, current_densities=None, vertices=None, faces=None))]
+pub fn sheet_current_B<'py>(
+    py: Python<'py>,
+    points: PointsLike,
+    position: Option<ArrayLike3>,
+    orientation: Option<PyRotation>,
+    current_densities: Option<PointsLike>,
+    vertices: Option<PointsLike>,
+    faces: Option<FacesLike>,
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    let points = points.0;
+    let n = points.len();
+
+    let pos = try_into_slice!(position);
+    let rot = orientation
+        .map(|rot| rot.0)
+        .unwrap_or_else(nalgebra::UnitQuaternion::identity);
+
+    let j = current_densities
+        .map(|pts| {
+            pts.0
+                .into_iter()
+                .map(|p| Vector3::new(p.x, p.y, p.z))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    let verts = vertices
+        .map(|pts| {
+            pts.0
+                .into_iter()
+                .map(|p| Vector3::new(p.x, p.y, p.z))
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    let f = faces.map(|fs| fs.0).unwrap_or_default();
+
+    let trimesh = magba::base::mesh::TriMesh::new(verts, f)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+
+    let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
+
+    py.detach(|| {
+        magba::fields::sheet_current_B_batch(
+            &points,
+            pos.into(),
+            rot,
+            &j,
             &trimesh,
             results.as_mut_slice(),
         );
