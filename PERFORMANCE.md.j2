@@ -1,6 +1,6 @@
 # Performance Comparison: PyMagba vs Magpylib
 
-This document provides a comprehensive performance comparison between `pymagba` (v{{ pymagba_version }}) and `magpylib` (v{{ magpylib_version }}).
+This document provides a comprehensive performance comparison between `pymagba` v{{ pymagba_version }} and `magpylib` v{{ magpylib_version }}.
 
 We evaluate the libraries across several key metrics:
 1. **Pure Field Function Performance** (Raw mathematical field computation)
@@ -19,8 +19,6 @@ Below is a comparison of computation times for various source geometries, calcul
 {% for row in field_rows -%}
 | **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
 {% endfor -%}
-
-*(Note: The above benchmarks are executed using `asv` via our `benchmarks/` suite).*
 
 ## 2. Collection Performance
 
