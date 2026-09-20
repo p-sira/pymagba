@@ -8,6 +8,10 @@ This version corresponds to Magba v0.6.2.
 
 - Implement pure functions `path_current_B`, `sheet_current_B`, and `triangle_current_B`.
 
+## Benchmarks
+
+- Add performance comparison against MagpyLib.
+
 ## 0.5.1
 
 ### Documentation
