@@ -965,7 +965,6 @@ def path_current_B(
     current: builtins.float = 1.0,
     vertices: numpy.typing.ArrayLike | None = None,
 ) -> numpy.typing.NDArray[numpy.float64]: ...
-
 def triangle_current_B(
     points: numpy.typing.ArrayLike,
     position: numpy.typing.ArrayLike | None = None,
@@ -975,7 +974,6 @@ def triangle_current_B(
     current_density: numpy.typing.ArrayLike | None = None,
     vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
 ) -> numpy.typing.NDArray[numpy.float64]: ...
-
 def sheet_current_B(
     points: numpy.typing.ArrayLike,
     position: numpy.typing.ArrayLike | None = None,
