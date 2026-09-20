@@ -228,19 +228,30 @@ def main():
                     speedups[geom] = {"py": res[0], "ma": res[1]}
 
             # Object Creation
-            if "ObjectCreation" in name and len(res) == 6:
+            if "ObjectCreation" in name and len(res) == 8:
+                speedups["Create Cuboid"] = {"py": res[0], "ma": res[4]}
+                speedups["Create Cylinder"] = {"py": res[1], "ma": res[5]}
+                speedups["Create Dipole"] = {"py": res[2], "ma": res[6]}
+                speedups["Create Collection"] = {"py": res[3], "ma": res[7]}
+            elif "ObjectCreation" in name and len(res) == 6:
                 speedups["Create Cuboid"] = {"py": res[0], "ma": res[3]}
                 speedups["Create Cylinder"] = {"py": res[1], "ma": res[4]}
                 speedups["Create Collection"] = {"py": res[2], "ma": res[5]}
-            elif "ObjectCreation" in name and len(res) == 4:
-                # Fallback for old json data
-                speedups["Create Cuboid"] = {"py": res[0], "ma": res[2]}
-                speedups["Create Cylinder"] = {"py": res[1], "ma": res[3]}
 
             # Object Manipulation
-            if "ObjectManipulation" in name and len(res) == 4:
-                speedups["Translate"] = {"py": res[0], "ma": res[2]}
-                speedups["Rotate"] = {"py": res[1], "ma": res[3]}
+            if "ObjectManipulation" in name and len(res) == 16:
+                speedups["Translate Cuboid"] = {"py": res[0], "ma": res[8]}
+                speedups["Rotate Cuboid"] = {"py": res[1], "ma": res[9]}
+                speedups["Translate Cylinder"] = {"py": res[2], "ma": res[10]}
+                speedups["Rotate Cylinder"] = {"py": res[3], "ma": res[11]}
+                speedups["Translate Dipole"] = {"py": res[4], "ma": res[12]}
+                speedups["Rotate Dipole"] = {"py": res[5], "ma": res[13]}
+                speedups["Translate Collection"] = {"py": res[6], "ma": res[14]}
+                speedups["Rotate Collection"] = {"py": res[7], "ma": res[15]}
+            elif "ObjectManipulation" in name and len(res) == 4:
+                # Fallback for old
+                speedups["Translate Collection"] = {"py": res[0], "ma": res[2]}
+                speedups["Rotate Collection"] = {"py": res[1], "ma": res[3]}
 
     accuracy = calc_accuracy()
 
@@ -301,6 +312,7 @@ def main():
     for op, label in [
         ("Create Cuboid", "Cuboid"),
         ("Create Cylinder", "Cylinder"),
+        ("Create Dipole", "Dipole"),
         ("Create Collection", "Collection"),
     ]:
         sp = speedups.get(op, {})
