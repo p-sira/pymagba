@@ -101,6 +101,10 @@ jobs:
           git reset HEAD results/ || true
           rm -rf results/
           
+          # Ensure main and dev branches exist locally for asv publish
+          git branch main origin/main || true
+          git branch dev origin/dev || true
+          
           # 2. Publish HTML (we do this on main to use the correct asv.conf.json)
           uv run asv publish
           
