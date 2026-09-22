@@ -29,21 +29,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v10.1.0
         with:
           version: "latest"
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Cache Rust dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -53,7 +53,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
       - name: Cache Python dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/uv
@@ -90,34 +90,34 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git fetch origin asv
-          
+
           # 1. Bring in historical results from the asv branch
           git checkout origin/asv -- results/ || true
           cp -a results/* .asv/results/ 2>/dev/null || true
-          
+
           # Clean up the working directory before checkout
           git reset HEAD results/ || true
           rm -rf results/
-          
+
           # Ensure main and dev branches exist locally for asv publish
           git branch main origin/main || true
           git branch dev origin/dev || true
-          
+
           # 2. Publish HTML (we do this on main to use the correct asv.conf.json)
           uv run asv publish
-          
+
           # 3. Checkout asv branch
           git checkout asv || git checkout -b asv
-          
+
           # 4. Copy generated files into the branch's tracked folders
           mkdir -p results build/html
           cp -a .asv/results/* results/
-          
+
           find build/html -mindepth 1 ! -name 'wrangler.jsonc' -delete || true
           cp -a .asv/html/* build/html/
-          
+
           # 5. Commit and push
           git add results/ build/html/
           git commit -m "Update benchmark results and HTML: ${GITHUB_SHA::8}" || true
