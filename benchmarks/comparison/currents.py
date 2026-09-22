@@ -103,3 +103,10 @@ class CurrentSheetCurrent:
 
     def time_compute_B(self, library):
         self.func(self.observers)
+
+
+def setup_cache():
+    import os
+
+    if os.environ.get("CI") == "true":
+        raise NotImplementedError("Comparison skipped in CI")

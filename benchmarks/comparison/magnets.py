@@ -289,3 +289,22 @@ class MagnetTriangle:
 
     def time_compute_B(self, library):
         self.func(self.observers)
+
+
+def setup_cache():
+    import os
+
+    if os.environ.get("CI") == "true":
+        raise NotImplementedError("Comparison skipped in CI")
+
+
+# Restore historical benchmark names for ASV dashboard continuity
+for name, obj in list(globals().items()):
+    if isinstance(obj, type) and not name.startswith("_"):
+        for attr_name in dir(obj):
+            if (
+                attr_name.startswith(("time_", "peakmem_", "track_"))
+            ):
+                attr = getattr(obj, attr_name)
+                if callable(attr):
+                    attr.benchmark_name = f"magnets.{name}.{attr_name}"

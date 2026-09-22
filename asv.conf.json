@@ -8,6 +8,9 @@
         "dev"
     ],
     "environment_type": "virtualenv",
+    "env_vars": {
+        "CI": "default"
+    },
     "env_dir": ".asv/env",
     "results_dir": ".asv/results",
     "html_dir": ".asv/html",
