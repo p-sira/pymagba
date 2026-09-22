@@ -210,13 +210,6 @@ class FieldMesh:
         self.func(*self.args)  # type: ignore
 
 
-def setup_cache():
-    import os
-
-    if os.environ.get("CI") == "true":
-        raise NotImplementedError("Comparison skipped in CI")
-
-
 # Restore historical benchmark names for ASV dashboard continuity
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and not name.startswith("_"):

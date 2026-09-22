@@ -133,10 +133,3 @@ class ObjectManipulation:
             else:
                 for _ in range(10000):
                     self.rotate_by(self.rot)
-
-
-def setup_cache():
-    import os
-
-    if os.environ.get("CI") == "true":
-        raise NotImplementedError("Comparison skipped in CI")

@@ -85,7 +85,7 @@ jobs:
       - name: Run benchmark
         run: |
           uv run asv machine --machine github-runner --yes
-          uv run asv run origin/main~1..origin/main
+          uv run asv run --bench "^benchmarks_" origin/main~1..origin/main
       - name: Push results to asv branch
         run: |
           git config --global user.name "github-actions[bot]"
