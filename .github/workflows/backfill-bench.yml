@@ -46,8 +46,8 @@ jobs:
       - name: Backfill benchmarks for v0.5.0 and v0.5.1
         run: |
           uv run asv machine --machine github-runner --yes
-          uv run asv run --bench "^benchmarks_" v0.5.0 --steps 1 || true
-          uv run asv run --bench "^benchmarks_" v0.5.1 --steps 1 || true
+          uv run asv run --bench "^benchmarks_|^fields\.|^magnets\.|^operations\." v0.5.0 --steps 1 || true
+          uv run asv run --bench "^benchmarks_|^fields\.|^magnets\.|^operations\." v0.5.1 --steps 1 || true
       - name: Push results to asv branch
         run: |
           git config --global user.name "github-actions[bot]"

@@ -51,4 +51,4 @@ jobs:
       - name: Test performance regressions
         run: |
           uv run asv machine --yes
-          uv run asv continuous --bench "^benchmarks_" origin/main HEAD --factor 1.2 --split -a repeat="(3, 30, 30.0)"
+          uv run asv continuous --bench "^benchmarks_|^fields\.|^magnets\.|^operations\." origin/main HEAD --factor 1.2 --split -a repeat="(3, 30, 30.0)"
