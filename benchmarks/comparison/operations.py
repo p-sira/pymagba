@@ -129,7 +129,7 @@ class ObjectManipulation:
             if library == "PyMagba":
                 rot_quat = self.rot.as_quat()
                 for _ in range(10000):
-                    self.rotate_by(rot_quat)
+                    self.rotate_by(rot_quat)  # type: ignore[arg-type]
             else:
                 for _ in range(10000):
                     self.rotate_by(self.rot)

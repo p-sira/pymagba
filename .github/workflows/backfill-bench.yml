@@ -1,0 +1,79 @@
+name: Backfill Benchmark Results
+on:
+  workflow_dispatch:
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: "latest"
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Rust dependencies
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Cache Python dependencies
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-python-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+      - name: Install dependencies
+        run: uv sync --group dev
+      - name: Build package
+        uses: PyO3/maturin-action@v1
+        with:
+          command: develop
+          args: --release
+      - name: Backfill benchmarks for v0.5.0 and v0.5.1
+        run: |
+          uv run asv machine --machine github-runner --yes
+          uv run asv run --bench "^benchmarks_" v0.5.0 --steps 1 || true
+          uv run asv run --bench "^benchmarks_" v0.5.1 --steps 1 || true
+      - name: Push results to asv branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin asv
+
+          # Bring in historical results from the asv branch
+          git checkout origin/asv -- results/ || true
+          cp -a results/* .asv/results/ 2>/dev/null || true
+          git reset HEAD results/ || true
+          rm -rf results/
+
+          # Ensure main and dev branches exist locally for asv publish
+          git branch main origin/main || true
+          git branch dev origin/dev || true
+
+          uv run asv publish
+
+          # Checkout asv branch and commit
+          git checkout asv || git checkout -b asv
+          mkdir -p results build/html
+          cp -a .asv/results/* results/
+          find build/html -mindepth 1 ! -name 'wrangler.jsonc' -delete || true
+          cp -a .asv/html/* build/html/
+
+          git add results/ build/html/
+          git commit -m "Backfill benchmark results for v0.5.0 and v0.5.1" || true
+          git push origin asv

@@ -295,9 +295,7 @@ class MagnetTriangle:
 for name, obj in list(globals().items()):
     if isinstance(obj, type) and not name.startswith("_"):
         for attr_name in dir(obj):
-            if (
-                attr_name.startswith(("time_", "peakmem_", "track_"))
-            ):
+            if attr_name.startswith(("time_", "peakmem_", "track_")):
                 attr = getattr(obj, attr_name)
                 if callable(attr):
-                    attr.benchmark_name = f"magnets.{name}.{attr_name}"
+                    setattr(attr, "benchmark_name", f"magnets.{name}.{attr_name}")

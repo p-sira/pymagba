@@ -53,7 +53,7 @@ class MagnetCircular:
         self.magnet.compute_B(self.observers)
 
 
-MagnetCircular.time_compute_B.benchmark_name = "magnets.MagnetCircular.time_compute_B"  # type: ignore[attr-defined]
+setattr(MagnetCircular.time_compute_B, "benchmark_name", "magnets.MagnetCircular.time_compute_B")
 
 
 class MagnetCollection:
@@ -80,7 +80,11 @@ class MagnetCollection:
         self.magnet.compute_B(self.observers)
 
 
-MagnetCollection.time_compute_B.benchmark_name = "magnets.MagnetCollection.time_compute_B"  # type: ignore[attr-defined]
+setattr(
+    MagnetCollection.time_compute_B,
+    "benchmark_name",
+    "magnets.MagnetCollection.time_compute_B",
+)
 
 
 class MagnetCuboid:
@@ -97,7 +101,7 @@ class MagnetCuboid:
         self.magnet.compute_B(self.observers)
 
 
-MagnetCuboid.time_compute_B.benchmark_name = "magnets.MagnetCuboid.time_compute_B"  # type: ignore[attr-defined]
+setattr(MagnetCuboid.time_compute_B, "benchmark_name", "magnets.MagnetCuboid.time_compute_B")
 
 
 class MagnetCylinder:
@@ -115,7 +119,7 @@ class MagnetCylinder:
         self.magnet.compute_B(self.observers)
 
 
-MagnetCylinder.time_compute_B.benchmark_name = "magnets.MagnetCylinder.time_compute_B"  # type: ignore[attr-defined]
+setattr(MagnetCylinder.time_compute_B, "benchmark_name", "magnets.MagnetCylinder.time_compute_B")
 
 
 class MagnetDipole:
@@ -131,7 +135,7 @@ class MagnetDipole:
         self.magnet.compute_B(self.observers)
 
 
-MagnetDipole.time_compute_B.benchmark_name = "magnets.MagnetDipole.time_compute_B"  # type: ignore[attr-defined]
+setattr(MagnetDipole.time_compute_B, "benchmark_name", "magnets.MagnetDipole.time_compute_B")
 
 
 class MagnetMesh:
@@ -151,7 +155,7 @@ class MagnetMesh:
         self.magnet.compute_B(self.observers)
 
 
-MagnetMesh.time_compute_B.benchmark_name = "magnets.MagnetMesh.time_compute_B"  # type: ignore[attr-defined]
+setattr(MagnetMesh.time_compute_B, "benchmark_name", "magnets.MagnetMesh.time_compute_B")
 
 
 class MagnetSphere:
@@ -168,7 +172,7 @@ class MagnetSphere:
         self.magnet.compute_B(self.observers)
 
 
-MagnetSphere.time_compute_B.benchmark_name = "magnets.MagnetSphere.time_compute_B"  # type: ignore[attr-defined]
+setattr(MagnetSphere.time_compute_B, "benchmark_name", "magnets.MagnetSphere.time_compute_B")
 
 
 class MagnetTetrahedron:
@@ -185,7 +189,11 @@ class MagnetTetrahedron:
         self.magnet.compute_B(self.observers)
 
 
-MagnetTetrahedron.time_compute_B.benchmark_name = "magnets.MagnetTetrahedron.time_compute_B"  # type: ignore[attr-defined]
+setattr(
+    MagnetTetrahedron.time_compute_B,
+    "benchmark_name",
+    "magnets.MagnetTetrahedron.time_compute_B",
+)
 
 
 class MagnetTriangle:
@@ -202,7 +210,7 @@ class MagnetTriangle:
         self.magnet.compute_B(self.observers)
 
 
-MagnetTriangle.time_compute_B.benchmark_name = "magnets.MagnetTriangle.time_compute_B"  # type: ignore[attr-defined]
+setattr(MagnetTriangle.time_compute_B, "benchmark_name", "magnets.MagnetTriangle.time_compute_B")
 
 
 # ---------------------------------------------------------------------------
@@ -240,7 +248,7 @@ class ObjectCreation:
                 pymagba.magnets.SourceCollection([m1, m2])
 
 
-ObjectCreation.time_creation.benchmark_name = "operations.ObjectCreation.time_creation"  # type: ignore[attr-defined]
+setattr(ObjectCreation.time_creation, "benchmark_name", "operations.ObjectCreation.time_creation")
 
 
 class ObjectManipulation:
@@ -281,4 +289,8 @@ class ObjectManipulation:
                 self.magnet.rotate(rot_quat)
 
 
-ObjectManipulation.time_manipulation.benchmark_name = "operations.ObjectManipulation.time_manipulation"  # type: ignore[attr-defined]
+setattr(
+    ObjectManipulation.time_manipulation,
+    "benchmark_name",
+    "operations.ObjectManipulation.time_manipulation",
+)
