@@ -1,41 +1,16 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
-
+name: Backfill Benchmark Results
 on:
-  # Runs on publish
-  release:
-    types: [published]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  backfill:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.13"
       - name: Install uv
         uses: astral-sh/setup-uv@v10.1.0
         with:
@@ -62,30 +37,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-python-
       - name: Install dependencies
-        run: uv sync --group docs
+        run: uv sync --group dev
       - name: Build package
         uses: PyO3/maturin-action@v1
         with:
           command: develop
           args: --release
-      - name: Build documentation
-        run: |
-          cd docs
-          uv run make html
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: "./docs/build/html/"
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Run benchmark
+      - name: Backfill benchmarks for v0.5.0 and v0.5.1
         run: |
           uv run asv machine --machine github-runner --yes
-          uv run asv run --bench "^benchmarks_|^fields\.|^magnets\.|^operations\." origin/main~1..origin/main
+          uv run asv run --bench "^benchmarks_|^fields\.|^magnets\.|^operations\." v0.5.0 --steps 1 || true
+          uv run asv run --bench "^benchmarks_|^fields\.|^magnets\.|^operations\." v0.5.1 --steps 1 || true
       - name: Push results to asv branch
         run: |
           git config --global user.name "github-actions[bot]"
@@ -93,11 +55,9 @@ jobs:
 
           git fetch origin asv
 
-          # 1. Bring in historical results from the asv branch
+          # Bring in historical results from the asv branch
           git checkout origin/asv -- results/ || true
           cp -a results/* .asv/results/ 2>/dev/null || true
-
-          # Clean up the working directory before checkout
           git reset HEAD results/ || true
           rm -rf results/
 
@@ -105,20 +65,15 @@ jobs:
           git branch main origin/main || true
           git branch dev origin/dev || true
 
-          # 2. Publish HTML (we do this on main to use the correct asv.conf.json)
           uv run asv publish
 
-          # 3. Checkout asv branch
+          # Checkout asv branch and commit
           git checkout asv || git checkout -b asv
-
-          # 4. Copy generated files into the branch's tracked folders
           mkdir -p results build/html
           cp -a .asv/results/* results/
-
           find build/html -mindepth 1 ! -name 'wrangler.jsonc' -delete || true
           cp -a .asv/html/* build/html/
 
-          # 5. Commit and push
           git add results/ build/html/
-          git commit -m "Update benchmark results and HTML: ${GITHUB_SHA::8}" || true
+          git commit -m "Backfill benchmark results for v0.5.0 and v0.5.1" || true
           git push origin asv

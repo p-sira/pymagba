@@ -19,7 +19,7 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
@@ -32,7 +32,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Cache Python dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/uv
@@ -51,4 +51,4 @@ jobs:
       - name: Test performance regressions
         run: |
           uv run asv machine --yes
-          uv run asv continuous origin/main HEAD --factor 1.2 --split -a repeat="(3, 30, 30.0)" --bench "^benchmarks_"
+          uv run asv continuous --bench "^benchmarks_|^fields\.|^magnets\.|^operations\." origin/main HEAD --factor 1.2 --split -a repeat="(3, 30, 30.0)"
