@@ -53,7 +53,7 @@ class MagnetCircular:
         self.magnet.compute_B(self.observers)
 
 
-setattr(MagnetCircular.time_compute_B, "benchmark_name", "magnets.MagnetCircular.time_compute_B")
+MagnetCircular.time_compute_B.benchmark_name = "magnets.MagnetCircular.time_compute_B"
 
 
 class MagnetCollection:
@@ -80,11 +80,7 @@ class MagnetCollection:
         self.magnet.compute_B(self.observers)
 
 
-setattr(
-    MagnetCollection.time_compute_B,
-    "benchmark_name",
-    "magnets.MagnetCollection.time_compute_B",
-)
+MagnetCollection.time_compute_B.benchmark_name = "magnets.MagnetCollection.time_compute_B"
 
 
 class MagnetCuboid:
@@ -101,7 +97,7 @@ class MagnetCuboid:
         self.magnet.compute_B(self.observers)
 
 
-setattr(MagnetCuboid.time_compute_B, "benchmark_name", "magnets.MagnetCuboid.time_compute_B")
+MagnetCuboid.time_compute_B.benchmark_name = "magnets.MagnetCuboid.time_compute_B"
 
 
 class MagnetCylinder:
@@ -119,7 +115,7 @@ class MagnetCylinder:
         self.magnet.compute_B(self.observers)
 
 
-setattr(MagnetCylinder.time_compute_B, "benchmark_name", "magnets.MagnetCylinder.time_compute_B")
+MagnetCylinder.time_compute_B.benchmark_name = "magnets.MagnetCylinder.time_compute_B"
 
 
 class MagnetDipole:
@@ -135,7 +131,7 @@ class MagnetDipole:
         self.magnet.compute_B(self.observers)
 
 
-setattr(MagnetDipole.time_compute_B, "benchmark_name", "magnets.MagnetDipole.time_compute_B")
+MagnetDipole.time_compute_B.benchmark_name = "magnets.MagnetDipole.time_compute_B"
 
 
 class MagnetMesh:
@@ -155,7 +151,7 @@ class MagnetMesh:
         self.magnet.compute_B(self.observers)
 
 
-setattr(MagnetMesh.time_compute_B, "benchmark_name", "magnets.MagnetMesh.time_compute_B")
+MagnetMesh.time_compute_B.benchmark_name = "magnets.MagnetMesh.time_compute_B"
 
 
 class MagnetSphere:
@@ -172,7 +168,7 @@ class MagnetSphere:
         self.magnet.compute_B(self.observers)
 
 
-setattr(MagnetSphere.time_compute_B, "benchmark_name", "magnets.MagnetSphere.time_compute_B")
+MagnetSphere.time_compute_B.benchmark_name = "magnets.MagnetSphere.time_compute_B"
 
 
 class MagnetTetrahedron:
@@ -189,11 +185,7 @@ class MagnetTetrahedron:
         self.magnet.compute_B(self.observers)
 
 
-setattr(
-    MagnetTetrahedron.time_compute_B,
-    "benchmark_name",
-    "magnets.MagnetTetrahedron.time_compute_B",
-)
+MagnetTetrahedron.time_compute_B.benchmark_name = "magnets.MagnetTetrahedron.time_compute_B"
 
 
 class MagnetTriangle:
@@ -210,7 +202,7 @@ class MagnetTriangle:
         self.magnet.compute_B(self.observers)
 
 
-setattr(MagnetTriangle.time_compute_B, "benchmark_name", "magnets.MagnetTriangle.time_compute_B")
+MagnetTriangle.time_compute_B.benchmark_name = "magnets.MagnetTriangle.time_compute_B"
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +240,7 @@ class ObjectCreation:
                 pymagba.magnets.SourceCollection([m1, m2])
 
 
-setattr(ObjectCreation.time_creation, "benchmark_name", "operations.ObjectCreation.time_creation")
+ObjectCreation.time_creation.benchmark_name = "operations.ObjectCreation.time_creation"
 
 
 class ObjectManipulation:
@@ -289,8 +281,4 @@ class ObjectManipulation:
                 self.magnet.rotate(rot_quat)
 
 
-setattr(
-    ObjectManipulation.time_manipulation,
-    "benchmark_name",
-    "operations.ObjectManipulation.time_manipulation",
-)
+ObjectManipulation.time_manipulation.benchmark_name = "operations.ObjectManipulation.time_manipulation"
