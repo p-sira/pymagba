@@ -45,6 +45,16 @@ jobs:
       - name: Build and install package
         run: |
           uv run maturin develop
+      - name: Verify type stubs are up-to-date
+        run: |
+          cargo run --bin stub_gen --no-default-features --features stub-gen
+          git diff --exit-code python/pymagba/pymagba_binding/__init__.pyi || {
+            echo "::error::Python type stubs are out of date! Run 'cargo stub-gen' and commit the updated stub file."
+            exit 1
+          }
+      - name: Run mypy typing check
+        run: |
+          uv run mypy python/pymagba
       - name: Run tests
         run: |
           uv run pytest python/tests/

@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Git pre-commit hook to ensure type stubs are up to date when Rust sources change
+set -e
+
+# Check if any Rust sources, Cargo configuration, or stub definitions are staged
+STAGED_RUST_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^src/|^Cargo\.(toml|lock)|\.rs$' || true)
+
+if [ -n "$STAGED_RUST_FILES" ]; then
+    echo "==> Rust source changes detected in staged files."
+    echo "==> Verifying Python type stubs with 'cargo stub-gen'..."
+
+    if command -v cargo >/dev/null 2>&1; then
+        cargo stub-gen >/dev/null 2>&1 || cargo run --bin stub_gen --no-default-features --features stub-gen >/dev/null
+    else
+        echo "Warning: cargo not found in PATH; skipping stub generation check."
+        exit 0
+    fi
+
+    # Check if python/pymagba/pymagba_binding/__init__.pyi has changes
+    if ! git diff --exit-code python/pymagba/pymagba_binding/__init__.pyi >/dev/null 2>&1; then
+        echo ""
+        echo "=========================================================================="
+        echo " ERROR: Python type stubs are out of date!"
+        echo " Changes were detected in python/pymagba/pymagba_binding/__init__.pyi"
+        echo " after running 'cargo stub-gen'."
+        echo ""
+        echo " Please review and stage the updated stub file before committing:"
+        echo "   git add python/pymagba/pymagba_binding/__init__.pyi"
+        echo "=========================================================================="
+        echo ""
+        exit 1
+    fi
+    echo "==> Type stubs are up to date."
+fi
+
+exit 0
