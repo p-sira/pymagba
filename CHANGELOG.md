@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.7.0
+
+This version corresponds to Magba v0.7.0.
+
 ## 0.6.0
 
 This version corresponds to Magba v0.6.2.
