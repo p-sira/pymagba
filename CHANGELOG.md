@@ -25,6 +25,7 @@ This version corresponds to Magba v0.7.0.
 - Implement scalar fast-path: bypass GIL detachment overhead when evaluating single observation points ($N \le 1$) across all 11 free field functions, magnet classes, and collections.
 - Implement zero-copy buffer conversion in `vec3_to_pyarray2`: construct single-point 2D arrays directly, and convert contiguous `Vec<Vector3<f64>>` to `PyArray2` without redundant intermediate heap buffer re-allocations (saving 24 MB per 1M points).
 - Implement bulk `float32` extraction in `PointsLike` and `ArrayLike3`: vectorize contiguous 2D float32 slice conversion using `as_chunks::<3>()`, eliminating the 17x element-by-element Python iteration penalty.
+- Optimize rotation extraction in `PyRotation`: prioritize direct 1D NumPy array and sequence extraction, eliminate `AttributeError` exceptions on array inputs, and extract SciPy quaternion buffers directly, achieving up to 4.3x speedup on rotate operations.
 
 ### Tooling & Typing
 
