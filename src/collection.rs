@@ -3,9 +3,7 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-use std::sync::Arc;
-
-use magba::collections::{ObserverAssembly, ObserverComponent, SourceAssembly, SourceComponent};
+use magba::collections::SourceAssembly;
 use numpy::PyArray1;
 use pyo3::exceptions::PyIndexError;
 use pyo3::prelude::*;
@@ -15,18 +13,37 @@ use pyo3::IntoPyObject;
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::base::{extract_states, try_into_quat, try_into_slice};
+use crate::base::{try_into_quat, try_into_slice};
 use crate::{
     base::{ObserverRef, SourceRef},
-    macros::{impl_compute_B, impl_pypose},
+    macros::impl_pypose,
 };
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
-#[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
-#[derive(Clone)]
+#[pyclass(module = "pymagba.pymagba_binding", subclass)]
 pub struct SourceCollection {
-    pub(crate) inner: SourceAssembly<f64>,
-    pub(crate) sources: Arc<Vec<Py<PyAny>>>,
+    pub(crate) inner: magba::base::Pose<f64>,
+    pub(crate) sources: Vec<Py<PyAny>>,
+    pub(crate) local_offsets: Vec<nalgebra::Isometry3<f64>>,
+}
+
+impl SourceCollection {
+    pub(crate) fn sync_assembly(&self, py: Python<'_>) -> PyResult<SourceAssembly<f64>> {
+        use magba::base::Transform;
+        let mut components = Vec::with_capacity(self.sources.len());
+        for (src, local_offset) in self.sources.iter().zip(&self.local_offsets) {
+            let s_ref = SourceRef::try_extract_with_py(src, py)?;
+            let mut comp = s_ref.into_component();
+            let eff_iso = self.inner.as_isometry() * local_offset;
+            comp.set_pose(eff_iso.into());
+            components.push(comp);
+        }
+        Ok(SourceAssembly::new(
+            self.inner.position(),
+            self.inner.orientation(),
+            components,
+        ))
+    }
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
@@ -41,19 +58,23 @@ impl SourceCollection {
         py: Python<'_>,
     ) -> PyResult<Self> {
         let srcs = sources.unwrap_or_default();
-        let mut components = Vec::with_capacity(srcs.len());
-
-        for src in &srcs {
-            let s_ref = SourceRef::try_extract_with_py(src, py)?;
-            components.push(s_ref.into_component());
-        }
-
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
+        let pose = magba::base::Pose::new(pos, rot);
+        let parent_inv = pose.as_isometry().inverse();
+
+        let mut local_offsets = Vec::with_capacity(srcs.len());
+        for src in &srcs {
+            let s_ref = SourceRef::try_extract_with_py(src, py)?;
+            let child_pose = s_ref.pose();
+            let local_offset = parent_inv * child_pose.as_isometry();
+            local_offsets.push(local_offset);
+        }
 
         Ok(Self {
-            inner: SourceAssembly::new(pos.into(), rot, components),
-            sources: Arc::new(srcs),
+            inner: pose,
+            sources: srcs,
+            local_offsets,
         })
     }
 
@@ -72,59 +93,110 @@ impl SourceCollection {
 
     fn append(&mut self, source: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
         let s_ref = SourceRef::try_extract_with_py(&source, py)?;
-        self.inner.push(s_ref.into_component());
-
-        let mut new_sources: Vec<Py<PyAny>> =
-            self.sources.iter().map(|s| s.clone_ref(py)).collect();
-        new_sources.push(source);
-        self.sources = Arc::new(new_sources);
+        let child_pose = s_ref.pose();
+        let local_offset = self.inner.as_isometry().inverse() * child_pose.as_isometry();
+        self.local_offsets.push(local_offset);
+        self.sources.push(source);
         Ok(())
+    }
+
+    #[pyo3(name = "compute_B")]
+    fn compute_B<'py>(
+        &self,
+        py: pyo3::Python<'py>,
+        points: crate::base::PointsLike,
+    ) -> PyResult<pyo3::Bound<'py, numpy::PyArray2<f64>>> {
+        use magba::base::Source;
+        let assembly = self.sync_assembly(py)?;
+        let pts = points.0;
+        let b_field = assembly.compute_B_batch(&pts);
+        Ok(crate::util::vec3_to_pyarray2(py, b_field))
     }
 
     fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
         let dict = PyDict::new(py);
-        dict.set_item("sources", self.sources.as_ref())?;
+        dict.set_item("_schema_version", 1)?;
+        dict.set_item("sources", self.sources.as_slice())?;
         dict.set_item("position", <[f64; 3]>::from(self.inner.position().coords))?;
         dict.set_item(
             "orientation",
             <[f64; 4]>::from(self.inner.orientation().into_inner().coords),
         )?;
+        let offsets: Vec<([f64; 3], [f64; 4])> = self
+            .local_offsets
+            .iter()
+            .map(|iso| {
+                (
+                    <[f64; 3]>::from(iso.translation.vector),
+                    <[f64; 4]>::from(iso.rotation.into_inner().coords),
+                )
+            })
+            .collect();
+        dict.set_item("local_offsets", offsets)?;
         Ok(dict.unbind())
     }
 
     fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
-        let sources: Vec<Py<PyAny>> = state.get_item("sources")?.unwrap().extract()?;
-        extract_states!(state, [position;3, orientation;4]);
+        let sources_item = state.get_item("sources")?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err("missing 'sources' in state")
+        })?;
+        let sources: Vec<Py<PyAny>> = sources_item.extract()?;
 
-        let mut components: Vec<SourceComponent<f64>> = Vec::with_capacity(sources.len());
-        for src in sources.iter() {
-            if let Ok(s_ref) = src.extract::<SourceRef>(py) {
-                components.push(s_ref.into_component());
+        let pos_item = state.get_item("position")?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err("missing 'position' in state")
+        })?;
+        let position: [f64; 3] = pos_item.extract()?;
+
+        let ori_item = state.get_item("orientation")?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err("missing 'orientation' in state")
+        })?;
+        let orientation: [f64; 4] = ori_item.extract()?;
+
+        let pose = magba::base::Pose::new(
+            position,
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
+        );
+
+        let local_offsets: Vec<nalgebra::Isometry3<f64>> = if let Ok(Some(offsets_item)) =
+            state.get_item("local_offsets")
+        {
+            let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
+            raw.into_iter()
+                .map(|(t, r)| {
+                    nalgebra::Isometry3::from_parts(
+                        nalgebra::Translation3::from(t),
+                        nalgebra::UnitQuaternion::from_quaternion(r.into()),
+                    )
+                })
+                .collect()
+        } else {
+            // Legacy unversioned state compatibility:
+            let mut offsets = Vec::with_capacity(sources.len());
+            for s in &sources {
+                if let Ok(s_ref) = SourceRef::try_extract_with_py(s, py) {
+                    offsets.push(*s_ref.pose().as_isometry());
+                } else {
+                    offsets.push(nalgebra::Isometry3::identity());
+                }
             }
-        }
+            offsets
+        };
 
-        // Build the assembly first, then set the pose, since the components are saved in local frame.
-        let mut inner = SourceAssembly::from(components);
-        inner.set_position(position);
-        inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
-            orientation.into(),
-        ));
-
-        self.inner = inner;
-        self.sources = Arc::new(sources);
+        self.inner = pose;
+        self.sources = sources;
+        self.local_offsets = local_offsets;
         Ok(())
     }
 }
 
 impl_pypose!(SourceCollection);
-impl_compute_B!(SourceCollection);
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
-#[pyclass(module = "pymagba.pymagba_binding", subclass, from_py_object)]
-#[derive(Clone)]
+#[pyclass(module = "pymagba.pymagba_binding", subclass)]
 pub struct ObserverCollection {
-    pub(crate) inner: ObserverAssembly<f64>,
-    pub(crate) sensors: Arc<Vec<Py<PyAny>>>,
+    pub(crate) inner: magba::base::Pose<f64>,
+    pub(crate) sensors: Vec<Py<PyAny>>,
+    pub(crate) local_offsets: Vec<nalgebra::Isometry3<f64>>,
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
@@ -139,19 +211,23 @@ impl ObserverCollection {
         py: Python<'_>,
     ) -> PyResult<Self> {
         let sens = sensors.unwrap_or_default();
-        let mut components = Vec::with_capacity(sens.len());
-
-        for s in &sens {
-            let o_ref = ObserverRef::try_extract_with_py(s, py)?;
-            components.push(o_ref.into_component());
-        }
-
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
+        let pose = magba::base::Pose::new(pos, rot);
+        let parent_inv = pose.as_isometry().inverse();
+
+        let mut local_offsets = Vec::with_capacity(sens.len());
+        for s in &sens {
+            let o_ref = ObserverRef::try_extract_with_py(s, py)?;
+            let child_pose = o_ref.pose();
+            let local_offset = parent_inv * child_pose.as_isometry();
+            local_offsets.push(local_offset);
+        }
 
         Ok(Self {
-            inner: ObserverAssembly::new(pos.into(), rot, components),
-            sensors: Arc::new(sens),
+            inner: pose,
+            sensors: sens,
+            local_offsets,
         })
     }
 
@@ -170,56 +246,96 @@ impl ObserverCollection {
 
     fn append(&mut self, sensor: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
         let o_ref = ObserverRef::try_extract_with_py(&sensor, py)?;
-        self.inner.push(o_ref.into_component());
-
-        let mut new_sensors: Vec<Py<PyAny>> =
-            self.sensors.iter().map(|s| s.clone_ref(py)).collect();
-        new_sensors.push(sensor);
-        self.sensors = Arc::new(new_sensors);
+        let child_pose = o_ref.pose();
+        let local_offset = self.inner.as_isometry().inverse() * child_pose.as_isometry();
+        self.local_offsets.push(local_offset);
+        self.sensors.push(sensor);
         Ok(())
     }
 
     fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<PyDict>> {
         let dict = PyDict::new(py);
-        dict.set_item("sensors", self.sensors.as_ref())?;
+        dict.set_item("_schema_version", 1)?;
+        dict.set_item("sensors", self.sensors.as_slice())?;
         dict.set_item("position", <[f64; 3]>::from(self.inner.position().coords))?;
         dict.set_item(
             "orientation",
             <[f64; 4]>::from(self.inner.orientation().into_inner().coords),
         )?;
+        let offsets: Vec<([f64; 3], [f64; 4])> = self
+            .local_offsets
+            .iter()
+            .map(|iso| {
+                (
+                    <[f64; 3]>::from(iso.translation.vector),
+                    <[f64; 4]>::from(iso.rotation.into_inner().coords),
+                )
+            })
+            .collect();
+        dict.set_item("local_offsets", offsets)?;
         Ok(dict.unbind())
     }
 
     fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
-        let sensors: Vec<Py<PyAny>> = state.get_item("sensors")?.unwrap().extract()?;
-        extract_states!(state, [position;3, orientation;4]);
+        let sensors_item = state.get_item("sensors")?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err("missing 'sensors' in state")
+        })?;
+        let sensors: Vec<Py<PyAny>> = sensors_item.extract()?;
 
-        let mut components: Vec<ObserverComponent<f64>> = Vec::with_capacity(sensors.len());
-        for s in &sensors {
-            if let Ok(o_ref) = s.extract::<ObserverRef>(py) {
-                components.push(o_ref.into_component());
+        let pos_item = state.get_item("position")?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err("missing 'position' in state")
+        })?;
+        let position: [f64; 3] = pos_item.extract()?;
+
+        let ori_item = state.get_item("orientation")?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err("missing 'orientation' in state")
+        })?;
+        let orientation: [f64; 4] = ori_item.extract()?;
+
+        let pose = magba::base::Pose::new(
+            position,
+            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
+        );
+
+        let local_offsets: Vec<nalgebra::Isometry3<f64>> = if let Ok(Some(offsets_item)) =
+            state.get_item("local_offsets")
+        {
+            let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
+            raw.into_iter()
+                .map(|(t, r)| {
+                    nalgebra::Isometry3::from_parts(
+                        nalgebra::Translation3::from(t),
+                        nalgebra::UnitQuaternion::from_quaternion(r.into()),
+                    )
+                })
+                .collect()
+        } else {
+            // Legacy unversioned state compatibility:
+            let mut offsets = Vec::with_capacity(sensors.len());
+            for s in &sensors {
+                if let Ok(o_ref) = ObserverRef::try_extract_with_py(s, py) {
+                    offsets.push(*o_ref.pose().as_isometry());
+                } else {
+                    offsets.push(nalgebra::Isometry3::identity());
+                }
             }
-        }
+            offsets
+        };
 
-        // Build the assembly first, then set the pose, since the components are saved in local frame.
-        let mut inner = ObserverAssembly::from(components);
-        inner.set_position(nalgebra::Point3::from(position));
-        inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
-            orientation.into(),
-        ));
-
-        self.inner = inner;
-        self.sensors = Arc::new(sensors);
+        self.inner = pose;
+        self.sensors = sensors;
+        self.local_offsets = local_offsets;
         Ok(())
     }
 
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let s_ref = SourceRef::try_extract(&source)?;
-        let results = self.inner.read_all(s_ref.as_source());
-
         let list = PyList::empty(py);
-        for o in results {
-            list.append(sensor_output_to_py(py, o))?;
+        for (sensor_py, local_offset) in self.sensors.iter().zip(&self.local_offsets) {
+            let o_ref = ObserverRef::try_extract_with_py(sensor_py, py)?;
+            let eff_isometry = self.inner.as_isometry() * local_offset;
+            let output = o_ref.read_at_isometry(&eff_isometry, s_ref.as_source());
+            list.append(sensor_output_to_py(py, output)?)?;
         }
         Ok(list.into_any().unbind())
     }
@@ -227,17 +343,22 @@ impl ObserverCollection {
 
 impl_pypose!(ObserverCollection);
 
-fn sensor_output_to_py(py: Python<'_>, output: magba::base::SensorOutput<f64>) -> Py<PyAny> {
+fn sensor_output_to_py(
+    py: Python<'_>,
+    output: magba::base::SensorOutput<f64>,
+) -> PyResult<Py<PyAny>> {
     match output {
         magba::base::SensorOutput::Scalar(val) => {
-            val.into_pyobject(py).unwrap().into_any().unbind()
+            Ok(val.into_pyobject(py)?.into_any().unbind())
         }
-        magba::base::SensorOutput::Vector(vec) => PyArray1::from_slice(py, &[vec.x, vec.y, vec.z])
-            .into_any()
-            .unbind(),
+        magba::base::SensorOutput::Vector(vec) => {
+            Ok(PyArray1::from_slice(py, &[vec.x, vec.y, vec.z])
+                .into_any()
+                .unbind())
+        }
         magba::base::SensorOutput::Digital(val) => {
             let b = val != 0;
-            b.into_pyobject(py).unwrap().to_owned().into_any().into()
+            Ok(b.into_pyobject(py)?.to_owned().into_any().into())
         }
     }
 }

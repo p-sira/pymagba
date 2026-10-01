@@ -170,10 +170,90 @@ def test_child_indexing_methods():
     np.testing.assert_allclose(o_child.read_voltage(m1), s_ref.read_voltage(m1))
 
 
-if __name__ == "__main__":
-    test_source_collection_methods()
-    test_observer_collection_methods()
-    test_source_collection_spatial_manipulation()
-    test_observer_collection_spatial_manipulation()
-    test_child_indexing_methods()
-    print("All tests passed!")
+def test_source_child_mutation():
+    # Mutating indexed child must reflect in collection compute_B
+    from pymagba.magnets import Dipole
+
+    point = [0, 0, 2]
+    magnet = Dipole(moment=[0, 0, 1])
+    collection = SourceCollection([magnet])
+
+    b_initial = collection.compute_B(point)
+    magnet.moment = [0, 0, 2]
+
+    b_mutated = collection.compute_B(point)
+    np.testing.assert_allclose(b_mutated, 2 * b_initial, atol=0)
+    np.testing.assert_allclose(
+        collection.compute_B(point), collection[0].compute_B(point), atol=0
+    )
+
+
+def test_source_child_shared_between_collections():
+    # Child used by multiple parents
+    from pymagba.magnets import Dipole
+
+    m = Dipole(moment=[0, 0, 1])
+    col = SourceCollection([m], position=[0, 0, 0])
+    _ = SourceCollection([m], position=[0, 0, 1])
+
+    m.moment = [0, 0, 3]
+    np.testing.assert_allclose(
+        col.compute_B([0, 0, 2]), m.compute_B([0, 0, 2]), atol=0
+    )
+
+
+def test_nested_collection_child_mutation():
+    # Nested collection child mutation
+    from pymagba.magnets import Dipole
+
+    m = Dipole(moment=[0, 0, 1])
+    inner = SourceCollection([m])
+    outer = SourceCollection([inner])
+
+    m.moment = [0, 0, 4]
+    np.testing.assert_allclose(
+        outer.compute_B([0, 0, 2]), inner.compute_B([0, 0, 2]), atol=0
+    )
+
+
+def test_nested_collection_transformation_propagation():
+    # Transformation propagation through nested collections
+    from pymagba.magnets import CylinderMagnet, Dipole
+
+    child_pos = [0.1, 0.2, 0.3]
+    m = CylinderMagnet(position=child_pos, polarization=[0, 0, 1])
+    inner = SourceCollection([m], position=[0, 0, 1])
+    outer = SourceCollection([inner], position=[0, 0, 2])
+
+    ref = CylinderMagnet(position=child_pos, polarization=[0, 0, 1])
+
+    # 1. Translate outer collection
+    delta_trans = [1.0, 2.0, 3.0]
+    outer.translate(delta_trans)
+    ref.translate(delta_trans)
+
+    pt = [2.0, 3.0, 5.0]
+    np.testing.assert_allclose(outer.compute_B(pt), ref.compute_B(pt), atol=0)
+
+    # 2. Rotate outer collection around anchor
+    quat_x_90 = [0.70710678, 0.0, 0.0, 0.70710678]
+    outer.rotate_anchor(quat_x_90, anchor=outer.position)
+    ref.rotate_anchor(quat_x_90, anchor=outer.position)
+
+    np.testing.assert_allclose(outer.compute_B(pt), ref.compute_B(pt), atol=0)
+
+    # 3. Multi-level nesting (depth 3)
+    d = Dipole(moment=[0, 0, 1], position=[0, 0, 0])
+    level1 = SourceCollection([d])
+    level2 = SourceCollection([level1])
+    level3 = SourceCollection([level2])
+
+    d_ref = Dipole(moment=[0, 0, 1], position=[0, 0, 0])
+
+    level3.translate([0, 1, 2])
+    d_ref.translate([0, 1, 2])
+
+    level3.rotate(quat_x_90)
+    d_ref.rotate(quat_x_90)
+
+    np.testing.assert_allclose(level3.compute_B(pt), d_ref.compute_B(pt), atol=0)

@@ -80,7 +80,9 @@ class MagnetCollection:
         self.magnet.compute_B(self.observers)
 
 
-MagnetCollection.time_compute_B.benchmark_name = "magnets.MagnetCollection.time_compute_B"
+MagnetCollection.time_compute_B.benchmark_name = (
+    "magnets.MagnetCollection.time_compute_B"
+)
 
 
 class MagnetCuboid:
@@ -185,7 +187,9 @@ class MagnetTetrahedron:
         self.magnet.compute_B(self.observers)
 
 
-MagnetTetrahedron.time_compute_B.benchmark_name = "magnets.MagnetTetrahedron.time_compute_B"
+MagnetTetrahedron.time_compute_B.benchmark_name = (
+    "magnets.MagnetTetrahedron.time_compute_B"
+)
 
 
 class MagnetTriangle:
@@ -281,4 +285,6 @@ class ObjectManipulation:
                 self.magnet.rotate(rot_quat)
 
 
-ObjectManipulation.time_manipulation.benchmark_name = "operations.ObjectManipulation.time_manipulation"
+ObjectManipulation.time_manipulation.benchmark_name = (
+    "operations.ObjectManipulation.time_manipulation"
+)

@@ -153,3 +153,73 @@ def test_pickle_observer_collection():
     r1 = col.read_all(m)
     r2 = col2.read_all(m)
     assert np.allclose(r1, r2)
+
+
+def test_pickle_source_collection_initial_pose():
+    # SourceCollection constructed with non-origin position
+    # must preserve field calculation across pickle roundtrip
+    point = [0, 0, 2]
+    dipole = Dipole(moment=[0, 0, 1])
+    col = SourceCollection([dipole], position=[0, 0, 1])
+
+    b_before = col.compute_B(point)
+    col_restored = pickle.loads(pickle.dumps(col))
+    b_after = col_restored.compute_B(point)
+
+    np.testing.assert_allclose(b_after, b_before, atol=0)
+    assert np.allclose(col_restored.position, [0, 0, 1])
+    assert np.allclose(col_restored[0].position, [0, 0, 0])
+
+
+def test_pickle_observer_collection_initial_pose():
+    # ObserverCollection constructed with non-origin position
+    from pymagba.magnets import SphereMagnet
+
+    magnet = SphereMagnet()
+    point = [0, 0, 2]
+    sensor = LinearHallSensor(position=point)
+    observers = ObserverCollection([sensor], position=[0, 0, 1])
+
+    v_before = observers.read_all(magnet)
+    restored = pickle.loads(pickle.dumps(observers))
+    v_after = restored.read_all(magnet)
+
+    np.testing.assert_allclose(v_after, v_before, atol=0)
+    assert np.allclose(restored.position, [0, 0, 1])
+    assert np.allclose(restored[0].position, point)
+
+
+def test_pickle_hall_latch_hysteresis():
+    from pymagba.magnets import SphereMagnet
+    from pymagba.sensors import HallLatch
+
+    magnet = SphereMagnet()
+    zero = SphereMagnet(polarization=[0, 0, 0])
+    latch = HallLatch()
+    assert latch.read(magnet) is True
+    assert latch.read(zero) is True
+
+    restored = pickle.loads(pickle.dumps(latch))
+    assert restored.read(zero) is True
+
+
+def test_pickle_nested_collection_transformation():
+    # Transformation propagation through nested collections across pickle
+    from pymagba.magnets import CylinderMagnet
+
+    child_pos = [0.1, 0.2, 0.3]
+    m = CylinderMagnet(position=child_pos, polarization=[0, 0, 1])
+    inner = SourceCollection([m], position=[0, 0, 1])
+    outer = SourceCollection([inner], position=[0, 0, 2])
+
+    outer.translate([1.0, 2.0, 3.0])
+    quat_x_90 = [0.70710678, 0.0, 0.0, 0.70710678]
+    outer.rotate_anchor(quat_x_90, anchor=outer.position)
+
+    pt = [2.0, 3.0, 5.0]
+    b_before = outer.compute_B(pt)
+
+    restored = pickle.loads(pickle.dumps(outer))
+    b_after = restored.compute_B(pt)
+
+    np.testing.assert_allclose(b_after, b_before, atol=0)
