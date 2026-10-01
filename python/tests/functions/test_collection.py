@@ -350,7 +350,7 @@ def test_collection_gc_cyclic_collection():
 
     # 1. Subclass attribute reference cycle
     class SubCollection(SourceCollection):
-        pass
+        self_ref: "SubCollection"
 
     sub = SubCollection()
     sub.self_ref = sub
@@ -360,7 +360,10 @@ def test_collection_gc_cyclic_collection():
     assert sub_ref() is None, "Subclass self-reference cycle was not collected by GC"
 
     # 2. SourceCollection child backreference cycle
-    child = CylinderMagnet(diameter=0.01, height=0.01)
+    class SubMagnet(CylinderMagnet):
+        parent: SourceCollection
+
+    child = SubMagnet(diameter=0.01, height=0.01)
     scol = SourceCollection([child])
     child.parent = scol
     scol_ref = weakref.ref(scol)
@@ -371,7 +374,10 @@ def test_collection_gc_cyclic_collection():
     assert child_ref() is None, "Child magnet cycle was not collected by GC"
 
     # 3. ObserverCollection sensor backreference cycle
-    sensor = LinearHallSensor()
+    class SubSensor(LinearHallSensor):
+        parent: ObserverCollection
+
+    sensor = SubSensor()
     ocol = ObserverCollection([sensor])
     sensor.parent = ocol
     ocol_ref = weakref.ref(ocol)
