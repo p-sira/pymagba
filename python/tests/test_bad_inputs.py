@@ -181,11 +181,14 @@ def test_quaternion_validation():
         assert np.isclose(np.linalg.norm(quat), 1.0)
         assert np.isfinite(d.compute_B([0, 0, 2])).all()
 
+    def _assign_orientation(obj: Dipole, val: list[int]) -> None:
+        obj.orientation = val
+
     # Setter failure must preserve old state
     m = Dipole(moment=[0, 0, 1])
     orig_quat = m.orientation.as_quat()
     with pytest.raises(ValueError):
-        m.orientation = [0, 0, 0, 0]
+        _assign_orientation(m, [0, 0, 0, 0])
     np.testing.assert_allclose(m.orientation.as_quat(), orig_quat)
 
     with pytest.raises(ValueError):

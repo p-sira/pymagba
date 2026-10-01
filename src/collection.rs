@@ -166,7 +166,11 @@ impl SourceCollection {
         use magba::base::Source;
         let assembly = self.sync_assembly(py)?;
         let pts = points.0;
-        let b_field = assembly.compute_B_batch(&pts);
+        let b_field = if pts.len() <= 1 {
+            assembly.compute_B_batch(&pts)
+        } else {
+            py.detach(|| assembly.compute_B_batch(&pts))
+        };
         Ok(crate::util::vec3_to_pyarray2(py, b_field))
     }
 

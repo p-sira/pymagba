@@ -18,6 +18,14 @@ This version corresponds to Magba v0.7.0.
 - Integrate Python cyclic garbage collection (`__traverse__` and `__clear__`) for `SourceCollection` and `ObserverCollection` to collect reference cycles involving Python subclass attributes or child object backreferences.
 - Correct default polarization vector documentation in `CylinderMagnet`, `CuboidMagnet`, `SphereMagnet`, and corresponding free field functions (`cylinder_B`, `cuboid_B`, `sphere_B`) from `[0.0, 0.0, 0.0]` to `[0.0, 0.0, 1.0]`.
 
+### Performance Improvements
+
+- Add release compiler profile in `Cargo.toml` (`opt-level = 3`, `lto = "fat"`, `codegen-units = 1`, `strip = true`), reducing compiled library binary size by 40% (2.12 MB → 1.28 MB) and maximizing cross-crate inlining across `magba`, `openmesh`, `ellip`, and `nalgebra`.
+- Eliminate Python GIL thread contention: detach GIL during compute-intensive batch evaluations across magnet and current classes and `SourceCollection`, enabling concurrent Python worker thread progress.
+- Implement scalar fast-path: bypass GIL detachment overhead when evaluating single observation points ($N \le 1$) across all 11 free field functions, magnet classes, and collections.
+- Implement zero-copy buffer conversion in `vec3_to_pyarray2`: construct single-point 2D arrays directly, and convert contiguous `Vec<Vector3<f64>>` to `PyArray2` without redundant intermediate heap buffer re-allocations (saving 24 MB per 1M points).
+- Implement bulk `float32` extraction in `PointsLike` and `ArrayLike3`: vectorize contiguous 2D float32 slice conversion using `as_chunks::<3>()`, eliminating the 17x element-by-element Python iteration penalty.
+
 ### Tooling & Typing
 
 - Add automated Python type stub generation and enforcement system:
