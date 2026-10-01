@@ -197,9 +197,7 @@ def test_source_child_shared_between_collections():
     _ = SourceCollection([m], position=[0, 0, 1])
 
     m.moment = [0, 0, 3]
-    np.testing.assert_allclose(
-        col.compute_B([0, 0, 2]), m.compute_B([0, 0, 2]), atol=0
-    )
+    np.testing.assert_allclose(col.compute_B([0, 0, 2]), m.compute_B([0, 0, 2]), atol=0)
 
 
 def test_nested_collection_child_mutation():
