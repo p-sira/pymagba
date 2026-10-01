@@ -19,6 +19,9 @@
   <a href="https://p-sira.github.io/pymagba" style="text-decoration: none">
     <img src="https://img.shields.io/badge/Docs-github.io-blue" alt="Documentation">
   </a>
+  <a href="https://app.codspeed.io/p-sira/pymagba?utm_source=badge" style="text-decoration: none">
+    <img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed"/>
+  </a>
 </p>
 
 ---
