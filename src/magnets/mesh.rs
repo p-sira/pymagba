@@ -59,7 +59,7 @@ impl MeshMagnet {
 
         catch_unwind_to_pyerr(move || {
             let mut inner = MagbaMeshMagnet::from_vertices_and_faces(verts, f.clone(), pol)
-                .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+                .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{}", e)))?;
             inner.set_position(Vector3::from(pos));
             inner.set_orientation(rot);
             Ok(Self {
