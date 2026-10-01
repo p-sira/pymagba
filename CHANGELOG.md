@@ -14,6 +14,9 @@ This version corresponds to Magba v0.7.0.
 - Handle missing dictionary keys in `__setstate__` with `KeyError` via `get_state_item!`, propagate child validation errors during collection deserialization, and ensure state restoration failures preserve original state without leaking panics.
 - Require `SheetCurrent` and `sheet_current_B` current densities to match mesh face count (with explicit zero-density default when omitted), preventing silent data truncation.
 - Fix sensor `read()` method missing from Python type stubs (`HallLatch`, `HallSwitch`, `LinearHallSensor`).
+- Reject collection containment cycles (preventing infinite recursion and stack overflows in `SourceCollection` during initialization, append, and deserialization).
+- Integrate Python cyclic garbage collection (`__traverse__` and `__clear__`) for `SourceCollection` and `ObserverCollection` to collect reference cycles involving Python subclass attributes or child object backreferences.
+- Correct default polarization vector documentation in `CylinderMagnet`, `CuboidMagnet`, `SphereMagnet`, and corresponding free field functions (`cylinder_B`, `cuboid_B`, `sphere_B`) from `[0.0, 0.0, 0.0]` to `[0.0, 0.0, 1.0]`.
 
 ### Tooling & Typing
 

@@ -257,3 +257,151 @@ def test_nested_collection_transformation_propagation():
     d_ref.rotate(quat_x_90)
 
     np.testing.assert_allclose(level3.compute_B(pt), d_ref.compute_B(pt), atol=0)
+
+
+def test_collection_containment_cycle_rejection():
+    # 1. Direct self-append
+    a = SourceCollection()
+    with pytest.raises(ValueError, match="circular|Cannot add collection to itself"):
+        a.append(a)
+    assert len(a) == 0
+
+    # 2. Indirect cycle: a -> b, b -> a
+    b = SourceCollection([a])
+    with pytest.raises(ValueError, match="circular|Cannot add collection to itself"):
+        a.append(b)
+    assert len(a) == 0
+
+    # 3. Two empty collections, append a to b, then b to a
+    col1 = SourceCollection()
+    col2 = SourceCollection()
+    col1.append(col2)
+    with pytest.raises(ValueError, match="circular|Cannot add collection to itself"):
+        col2.append(col1)
+    assert len(col2) == 0
+
+    # 4. Multi-level indirect cycle (3 levels): c -> b -> a, then a -> c
+    l1 = SourceCollection()
+    l2 = SourceCollection([l1])
+    l3 = SourceCollection([l2])
+    with pytest.raises(ValueError, match="circular|Cannot add collection to itself"):
+        l1.append(l3)
+    assert len(l1) == 0
+
+    # Verify original collection is still valid and functional
+    m = CylinderMagnet(diameter=0.01, height=0.01)
+    l1.append(m)
+    assert len(l1) == 1
+    B = l1.compute_B([0, 0, 0.05])
+    assert B.shape == (1, 3)
+
+
+def test_collection_setstate_cycle_rejection():
+    a = SourceCollection()
+    state = a.__getstate__()
+
+    # Self-cycle via setstate
+    state["sources"] = [a]
+    with pytest.raises(ValueError, match="circular|Cannot restore collection"):
+        a.__setstate__(state)
+    assert len(a) == 0
+
+    # Indirect cycle via setstate
+    b = SourceCollection([a])
+    state["sources"] = [b]
+    with pytest.raises(ValueError, match="circular|Cannot restore collection"):
+        a.__setstate__(state)
+    assert len(a) == 0
+
+
+def test_collection_valid_dag_sharing():
+    # Diamond graph (DAG) - shared child magnet
+    leaf = CylinderMagnet(diameter=0.01, height=0.01)
+    a = SourceCollection([leaf])
+    b = SourceCollection([leaf])
+    c = SourceCollection([a, b])
+    assert len(c) == 2
+
+    pt = [0, 0, 0.05]
+    B_c = c.compute_B(pt)
+    B_leaf = leaf.compute_B(pt)
+    np.testing.assert_allclose(B_c, 2 * B_leaf, atol=0)
+
+    # Diamond graph - shared inner collection
+    inner = SourceCollection([leaf])
+    outer1 = SourceCollection([inner])
+    outer2 = SourceCollection([inner])
+    top = SourceCollection([outer1, outer2])
+    assert len(top) == 2
+    B_top = top.compute_B(pt)
+    np.testing.assert_allclose(B_top, 2 * B_leaf, atol=0)
+
+    # Appending the same inner collection twice (valid DAG)
+    multi = SourceCollection()
+    multi.append(inner)
+    multi.append(inner)
+    assert len(multi) == 2
+    np.testing.assert_allclose(multi.compute_B(pt), 2 * B_leaf, atol=0)
+
+
+def test_collection_gc_cyclic_collection():
+    import gc
+    import weakref
+
+    # 1. Subclass attribute reference cycle
+    class SubCollection(SourceCollection):
+        pass
+
+    sub = SubCollection()
+    sub.self_ref = sub
+    sub_ref = weakref.ref(sub)
+    del sub
+    gc.collect()
+    assert sub_ref() is None, "Subclass self-reference cycle was not collected by GC"
+
+    # 2. SourceCollection child backreference cycle
+    child = CylinderMagnet(diameter=0.01, height=0.01)
+    scol = SourceCollection([child])
+    child.parent = scol
+    scol_ref = weakref.ref(scol)
+    child_ref = weakref.ref(child)
+    del scol, child
+    gc.collect()
+    assert scol_ref() is None, "SourceCollection cycle was not collected by GC"
+    assert child_ref() is None, "Child magnet cycle was not collected by GC"
+
+    # 3. ObserverCollection sensor backreference cycle
+    sensor = LinearHallSensor()
+    ocol = ObserverCollection([sensor])
+    sensor.parent = ocol
+    ocol_ref = weakref.ref(ocol)
+    sensor_ref = weakref.ref(sensor)
+    del ocol, sensor
+    gc.collect()
+    assert ocol_ref() is None, "ObserverCollection cycle was not collected by GC"
+    assert sensor_ref() is None, "Sensor cycle was not collected by GC"
+
+
+def test_magnet_default_polarization_and_docstrings():
+    from pymagba import fields
+    from pymagba.magnets import SphereMagnet
+
+    # Runtime default polarization check
+    cyl = CylinderMagnet()
+    cub = CuboidMagnet()
+    sph = SphereMagnet()
+
+    np.testing.assert_allclose(cyl.polarization, [0.0, 0.0, 1.0])
+    np.testing.assert_allclose(cub.polarization, [0.0, 0.0, 1.0])
+    np.testing.assert_allclose(sph.polarization, [0.0, 0.0, 1.0])
+
+    # Docstring check for classes
+    assert "Defaults to [0.0, 0.0, 1.0]" in CylinderMagnet.__doc__
+    assert "Defaults to [0.0, 0.0, 1.0]" in CuboidMagnet.__doc__
+    assert "Defaults to [0.0, 0.0, 1.0]" in SphereMagnet.__doc__
+
+    # Docstring check for free functions
+    assert "Defaults to [0.0, 0.0, 1.0]" in fields.cylinder_B.__doc__
+    assert "Defaults to [0.0, 0.0, 1.0]" in fields.cuboid_B.__doc__
+    assert "Defaults to [0.0, 0.0, 1.0]" in fields.sphere_B.__doc__
+
