@@ -71,12 +71,26 @@ pub(crate) use extract_states;
 macro_rules! try_extract {
     ($obj:expr, $( $variant:ident : $type:ty ),* $(,)?) => {
         $(
+            if $obj.is_exact_instance_of::<$type>() {
+                if let Ok(m) = $obj.extract::<pyo3::PyRef<'_, $type>>() {
+                    return Ok(Self::$variant(m));
+                }
+            }
+        )*
+        $(
             if let Ok(m) = $obj.extract::<pyo3::PyRef<'_, $type>>() {
                 return Ok(Self::$variant(m));
             }
         )*
     };
     ($obj:expr, $( $variant:ident => $type:ty ),* $(,)?) => {
+        $(
+            if $obj.is_exact_instance_of::<$type>() {
+                if let Ok(m) = $obj.extract::<pyo3::PyRef<'_, $type>>() {
+                    return Ok(Self::$variant(m));
+                }
+            }
+        )*
         $(
             if let Ok(m) = $obj.extract::<pyo3::PyRef<'_, $type>>() {
                 return Ok(Self::$variant(m));

@@ -15,6 +15,21 @@ pub enum ObserverRef<'py> {
 
 impl<'py> ObserverRef<'py> {
     pub fn try_extract(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
+        if obj.is_exact_instance_of::<crate::sensors::LinearHallSensor>() {
+            if let Ok(s) = obj.extract::<PyRef<'py, crate::sensors::LinearHallSensor>>() {
+                return Ok(ObserverRef::Linear(s));
+            }
+        }
+        if obj.is_exact_instance_of::<crate::sensors::HallSwitch>() {
+            if let Ok(s) = obj.extract::<PyRef<'py, crate::sensors::HallSwitch>>() {
+                return Ok(ObserverRef::Switch(s));
+            }
+        }
+        if obj.is_exact_instance_of::<crate::sensors::HallLatch>() {
+            if let Ok(s) = obj.extract::<PyRef<'py, crate::sensors::HallLatch>>() {
+                return Ok(ObserverRef::Latch(s));
+            }
+        }
         obj.extract::<Self>().map_err(|_| {
             pyo3::exceptions::PyTypeError::new_err(
                 "sensors must be LinearHallSensor, HallSwitch, or HallLatch",
@@ -83,6 +98,11 @@ pub enum SourceRef<'py> {
 impl<'py> SourceRef<'py> {
     pub fn try_extract(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         let py = obj.py();
+        if obj.is_exact_instance_of::<crate::SourceCollection>() {
+            let col = obj.extract::<PyRef<'py, crate::SourceCollection>>()?;
+            let assembly = col.sync_assembly(py)?;
+            return Ok(SourceRef::Collection(col, assembly));
+        }
         super::try_extract!(
             obj,
             Cylinder: crate::magnets::CylinderMagnet,
