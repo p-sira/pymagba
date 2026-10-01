@@ -142,13 +142,10 @@ impl LinearHallSensor {
             ));
         }
 
-        self.inner = MagbaLinearHallSensor::new(
-            position,
-            rot,
-            s_axis,
-            sensitivity,
-            supply_voltage,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaLinearHallSensor::new(position, rot, s_axis, sensitivity, supply_voltage)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 

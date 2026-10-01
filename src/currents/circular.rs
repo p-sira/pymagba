@@ -84,12 +84,10 @@ impl CircularCurrent {
             ));
         }
 
-        self.inner = MagbaCircularCurrent::new(
-            position,
-            rot,
-            diameter,
-            current,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaCircularCurrent::new(position, rot, diameter, current)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }

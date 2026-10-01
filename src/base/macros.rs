@@ -25,12 +25,40 @@ macro_rules! try_into_quat {
 }
 pub(crate) use try_into_quat;
 
+macro_rules! get_state_item {
+    ($state:expr, $key:literal) => {
+        $state.get_item($key)?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err(concat!(
+                "Missing required state key: '",
+                $key,
+                "'"
+            ))
+        })
+    };
+    ($state:expr, $key:ident) => {
+        $state.get_item(stringify!($key))?.ok_or_else(|| {
+            pyo3::exceptions::PyKeyError::new_err(concat!(
+                "Missing required state key: '",
+                stringify!($key),
+                "'"
+            ))
+        })
+    };
+    ($state:expr, $key:literal, $type:ty) => {
+        $crate::base::get_state_item!($state, $key)?.extract::<$type>()
+    };
+    ($state:expr, $key:ident, $type:ty) => {
+        $crate::base::get_state_item!($state, $key)?.extract::<$type>()
+    };
+}
+pub(crate) use get_state_item;
+
 macro_rules! extract_states {
     (@extract $state:expr, $arg:tt) => {
-        let $arg: f64 = $state.get_item(stringify!($arg))?.unwrap().extract()?;
+        let $arg: f64 = $crate::base::get_state_item!($state, $arg, f64)?;
     };
     (@extract $state:expr, $arg:tt, $size:expr) => {
-        let $arg: [f64; $size] = $state.get_item(stringify!($arg))?.unwrap().extract()?;
+        let $arg: [f64; $size] = $crate::base::get_state_item!($state, $arg, [f64; $size])?;
     };
     ($state:expr, [$($arg:tt $(; $size:expr)?),*]) => {
         $(

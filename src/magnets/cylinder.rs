@@ -106,13 +106,10 @@ impl CylinderMagnet {
             ));
         }
 
-        self.inner = MagbaCylinderMagnet::new(
-            position,
-            rot,
-            polarization,
-            diameter,
-            height,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaCylinderMagnet::new(position, rot, polarization, diameter, height)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }

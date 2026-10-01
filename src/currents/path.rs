@@ -10,7 +10,10 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{extract_states, try_into_quat, try_into_slice, ArrayLike3, PointsLike, PyRotation},
+    base::{
+        extract_states, get_state_item, try_into_quat, try_into_slice, ArrayLike3, PointsLike,
+        PyRotation,
+    },
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -38,8 +41,12 @@ impl PathCurrent {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
         let v = vertices
-            .map(|v| v.0.into_iter().map(|p| Vector3::new(p.x, p.y, p.z)).collect())
-            .unwrap_or_else(|| vec![]);
+            .map(|v| {
+                v.0.into_iter()
+                    .map(|p| Vector3::new(p.x, p.y, p.z))
+                    .collect()
+            })
+            .unwrap_or_default();
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaPathCurrent::new(pos, rot, current, v),
@@ -71,7 +78,11 @@ impl PathCurrent {
 
     #[setter]
     fn set_vertices(&mut self, vertices: PointsLike) -> PyResult<()> {
-        let v: Vec<Vector3<f64>> = vertices.0.into_iter().map(|p| Vector3::new(p.x, p.y, p.z)).collect();
+        let v: Vec<Vector3<f64>> = vertices
+            .0
+            .into_iter()
+            .map(|p| Vector3::new(p.x, p.y, p.z))
+            .collect();
         catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
             self.inner.set_vertices(v);
         }))
@@ -85,7 +96,7 @@ impl PathCurrent {
             <[f64; 4]>::from(self.inner.orientation().into_inner().coords),
         )?;
         dict.set_item("current", self.inner.current())?;
-        
+
         let vertices_data: Vec<[f64; 3]> = self
             .inner
             .vertices()
@@ -93,27 +104,21 @@ impl PathCurrent {
             .map(|v| [v.x, v.y, v.z])
             .collect();
         dict.set_item("vertices", vertices_data)?;
-        
+
         Ok(dict.unbind())
     }
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, current]);
-        
-        let vertices: Vec<[f64; 3]> = state
-            .get_item("vertices")?
-            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("vertices"))?
-            .extract()?;
+
+        let vertices: Vec<[f64; 3]> = get_state_item!(state, "vertices", Vec<[f64; 3]>)?;
         let vertices = vertices.into_iter().map(Vector3::from).collect();
 
         let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
 
-        self.inner = MagbaPathCurrent::new(
-            position,
-            rot,
-            current,
-            vertices,
-        );
+        let new_inner =
+            catch_unwind_to_pyerr(move || MagbaPathCurrent::new(position, rot, current, vertices))?;
+        self.inner = new_inner;
         Ok(())
     }
 }

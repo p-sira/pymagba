@@ -521,7 +521,7 @@ pub fn path_current_B<'py>(
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-        
+
     let verts = vertices
         .map(|pts| {
             pts.0
@@ -609,15 +609,6 @@ pub fn sheet_current_B<'py>(
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
 
-    let j = current_densities
-        .map(|pts| {
-            pts.0
-                .into_iter()
-                .map(|p| Vector3::new(p.x, p.y, p.z))
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-
     let verts = vertices
         .map(|pts| {
             pts.0
@@ -628,6 +619,24 @@ pub fn sheet_current_B<'py>(
         .unwrap_or_default();
 
     let f = faces.map(|fs| fs.0).unwrap_or_default();
+    let num_faces = f.len();
+
+    let j = match current_densities {
+        Some(pts) => {
+            if pts.0.len() != num_faces {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Number of current densities ({}) must match number of faces ({})",
+                    pts.0.len(),
+                    num_faces
+                )));
+            }
+            pts.0
+                .into_iter()
+                .map(|p| Vector3::new(p.x, p.y, p.z))
+                .collect::<Vec<_>>()
+        }
+        None => vec![Vector3::zeros(); num_faces],
+    };
 
     let trimesh = magba::base::mesh::TriMesh::new(verts, f)
         .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;

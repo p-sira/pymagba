@@ -104,7 +104,9 @@ impl HallSwitch {
             ));
         }
 
-        self.inner = MagbaHallSwitch::new(position, rot, s_axis, b_op);
+        let new_inner =
+            catch_unwind_to_pyerr(move || MagbaHallSwitch::new(position, rot, s_axis, b_op))?;
+        self.inner = new_inner;
         Ok(())
     }
 

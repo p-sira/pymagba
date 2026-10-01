@@ -8,6 +8,8 @@ from pymagba.magnets import (
     MeshMagnet,
     SourceCollection,
     SphereMagnet,
+    TetrahedronMagnet,
+    TriangleMagnet,
 )
 from pymagba.sensors import HallLatch, HallSwitch, LinearHallSensor, ObserverCollection
 
@@ -294,5 +296,204 @@ def test_pickle_invalid_state_rejected():
             "height": 1.0,
             "polarization": [0, 0, 1],
         })
+
+
+# https://github.com/p-sira/pymagba/pull/43
+ALL_SERIALIZABLE_CLASSES = [
+    CylinderMagnet,
+    SphereMagnet,
+    CuboidMagnet,
+    Dipole,
+    TriangleMagnet,
+    TetrahedronMagnet,
+    MeshMagnet,
+    SourceCollection,
+    CircularCurrent,
+    PathCurrent,
+    TriangleCurrent,
+    SheetCurrent,
+    HallSwitch,
+    HallLatch,
+    LinearHallSensor,
+    ObserverCollection,
+]
+
+
+@pytest.mark.parametrize("cls", ALL_SERIALIZABLE_CLASSES)
+def test_setstate_missing_keys_raises_keyerror(cls):
+    # https://github.com/p-sira/pymagba/pull/43
+    obj = cls()
+    # Missing all keys must raise KeyError (caught by except Exception, not PanicException)
+    with pytest.raises(KeyError, match="Missing required state key"):
+        obj.__setstate__({})
+
+    # Omitting any individual required key must raise KeyError
+    valid_state = obj.__getstate__()
+    for key in list(valid_state.keys()):
+        # _schema_version is internal; local_offsets and latch state are optional for legacy compatibility
+        if key.startswith("_") or key in ("local_offsets", "state"):
+            continue
+        corrupted_state = dict(valid_state)
+        del corrupted_state[key]
+        with pytest.raises(KeyError, match=f"Missing required state key: '{key}'"):
+            obj.__setstate__(corrupted_state)
+
+
+def test_setstate_failure_preserves_original_state():
+    # https://github.com/p-sira/pymagba/pull/43
+    c = CylinderMagnet(diameter=2.5, height=3.5, position=[1.0, 2.0, 3.0])
+    orig_b = c.compute_B([0, 0, 5.0])
+
+    # Failed __setstate__ with missing key
+    with pytest.raises(KeyError):
+        c.__setstate__({})
+    assert c.diameter == 2.5
+    assert c.height == 3.5
+    np.testing.assert_allclose(c.position, [1.0, 2.0, 3.0])
+    np.testing.assert_allclose(c.compute_B([0, 0, 5.0]), orig_b)
+
+    # Failed __setstate__ with invalid numerical value
+    state = c.__getstate__()
+    state["diameter"] = -1.0
+    with pytest.raises(ValueError):
+        c.__setstate__(state)
+    assert c.diameter == 2.5
+    assert c.height == 3.5
+    np.testing.assert_allclose(c.position, [1.0, 2.0, 3.0])
+    np.testing.assert_allclose(c.compute_B([0, 0, 5.0]), orig_b)
+
+
+def test_collection_setstate_invalid_children_and_offsets():
+    # https://github.com/p-sira/pymagba/pull/43
+    sc = SourceCollection([Dipole()])
+    orig_len = len(sc)
+    orig_b = sc.compute_B([0, 0, 2.0])
+
+    # Restoring collection with invalid source type must raise TypeError
+    with pytest.raises(TypeError, match="source must be a valid Magnet, Current, or SourceCollection"):
+        sc.__setstate__({
+            "sources": [123],
+            "position": [0, 0, 0],
+            "orientation": [0, 0, 0, 1],
+            "local_offsets": [([0, 0, 0], [0, 0, 0, 1])],
+        })
+    assert len(sc) == orig_len
+    np.testing.assert_allclose(sc.compute_B([0, 0, 2.0]), orig_b)
+
+    # Legacy state with invalid source type must also raise TypeError
+    with pytest.raises(TypeError, match="source must be a valid Magnet, Current, or SourceCollection"):
+        sc.__setstate__({
+            "sources": ["not_a_source"],
+            "position": [0, 0, 0],
+            "orientation": [0, 0, 0, 1],
+        })
+    assert len(sc) == orig_len
+    np.testing.assert_allclose(sc.compute_B([0, 0, 2.0]), orig_b)
+
+    # Mismatched local_offsets length
+    with pytest.raises(ValueError, match="Number of local_offsets"):
+        sc.__setstate__({
+            "sources": [Dipole()],
+            "position": [0, 0, 0],
+            "orientation": [0, 0, 0, 1],
+            "local_offsets": [([0, 0, 0], [0, 0, 0, 1]), ([0, 0, 0], [0, 0, 0, 1])],
+        })
+    assert len(sc) == orig_len
+
+    # ObserverCollection with invalid sensor
+    oc = ObserverCollection([HallSwitch()])
+    orig_oc_len = len(oc)
+    with pytest.raises(TypeError, match="sensors must be LinearHallSensor, HallSwitch, or HallLatch"):
+        oc.__setstate__({
+            "sensors": [Dipole()],
+            "position": [0, 0, 0],
+            "orientation": [0, 0, 0, 1],
+            "local_offsets": [([0, 0, 0], [0, 0, 0, 1])],
+        })
+    assert len(oc) == orig_oc_len
+
+    with pytest.raises(ValueError, match="Number of local_offsets"):
+        oc.__setstate__({
+            "sensors": [HallSwitch()],
+            "position": [0, 0, 0],
+            "orientation": [0, 0, 0, 1],
+            "local_offsets": [],
+        })
+    assert len(oc) == orig_oc_len
+
+
+def test_sheet_current_density_face_count_matching():
+    # https://github.com/p-sira/pymagba/pull/43
+    from pymagba.fields import sheet_current_B
+
+    verts = [[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1], [0.0, 0.0, 0.1]]
+    faces = [[0, 2, 1], [0, 1, 3], [1, 2, 3], [0, 3, 2]]  # 4 faces
+
+    # 1. Exact count (4) succeeds
+    s_exact = SheetCurrent(
+        vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]] * 4
+    )
+    b_exact = s_exact.compute_B([0, 0, 0.5])
+    assert not np.allclose(b_exact, 0.0)
+
+    # 2. Omitted current_densities defaults to zero densities per face
+    s_omitted = SheetCurrent(vertices=verts, faces=faces, current_densities=None)
+    b_omitted = s_omitted.compute_B([0, 0, 0.5])
+    np.testing.assert_allclose(b_omitted, 0.0)
+    assert len(s_omitted.current_densities) == 4
+    np.testing.assert_allclose(s_omitted.current_densities, [[0.0, 0.0, 0.0]] * 4)
+
+    # 3. Too few densities (1 instead of 4) raises ValueError
+    with pytest.raises(
+        ValueError, match=r"Number of current densities \(1\) must match number of faces \(4\)"
+    ):
+        SheetCurrent(
+            vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]]
+        )
+
+    # 4. Too many densities (5 instead of 4) raises ValueError
+    with pytest.raises(
+        ValueError, match=r"Number of current densities \(5\) must match number of faces \(4\)"
+    ):
+        SheetCurrent(
+            vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]] * 5
+        )
+
+    # 5. Deserialization (__setstate__) density count mismatch raises ValueError
+    state = s_exact.__getstate__()
+    state["current_densities"] = [[1.0, 0.0, 0.0]]  # 1 instead of 4
+    with pytest.raises(
+        ValueError, match=r"Number of current densities \(1\) must match number of faces \(4\)"
+    ):
+        s_exact.__setstate__(state)
+    # Verify s_exact remains intact
+    assert len(s_exact.current_densities) == 4
+    np.testing.assert_allclose(s_exact.compute_B([0, 0, 0.5]), b_exact)
+
+    # 6. Free function sheet_current_B density count matching
+    b_func_exact = sheet_current_B(
+        [[0, 0, 0.5]], vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]] * 4
+    )
+    np.testing.assert_allclose(b_exact, b_func_exact)
+
+    b_func_omitted = sheet_current_B(
+        [[0, 0, 0.5]], vertices=verts, faces=faces, current_densities=None
+    )
+    np.testing.assert_allclose(b_func_omitted, 0.0)
+
+    with pytest.raises(
+        ValueError, match=r"Number of current densities \(1\) must match number of faces \(4\)"
+    ):
+        sheet_current_B(
+            [[0, 0, 0.5]], vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]]
+        )
+
+    with pytest.raises(
+        ValueError, match=r"Number of current densities \(5\) must match number of faces \(4\)"
+    ):
+        sheet_current_B(
+            [[0, 0, 0.5]], vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]] * 5
+        )
+
 
 

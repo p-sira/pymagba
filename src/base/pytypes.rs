@@ -162,9 +162,7 @@ impl PyStubType for PyRotation {
 
 /// Validates that quaternion elements are finite and non-zero norm,
 /// and normalizes with scaling to prevent overflow/underflow.
-pub fn validate_and_normalize_quaternion(
-    arr: [f64; 4],
-) -> PyResult<nalgebra::UnitQuaternion<f64>> {
+pub fn validate_and_normalize_quaternion(arr: [f64; 4]) -> PyResult<nalgebra::UnitQuaternion<f64>> {
     let [x, y, z, w] = arr;
     if !x.is_finite() || !y.is_finite() || !z.is_finite() || !w.is_finite() {
         return Err(pyo3::exceptions::PyValueError::new_err(
