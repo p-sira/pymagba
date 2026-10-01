@@ -171,8 +171,9 @@ def test_child_indexing_methods():
 
 
 def test_source_child_mutation():
-    # https://github.com/p-sira/pymagba/pull/40: Mutating indexed child must reflect in collection compute_B
+    # Mutating indexed child must reflect in collection compute_B
     from pymagba.magnets import Dipole
+
     point = [0, 0, 2]
     magnet = Dipole(moment=[0, 0, 1])
     collection = SourceCollection([magnet])
@@ -182,33 +183,41 @@ def test_source_child_mutation():
 
     b_mutated = collection.compute_B(point)
     np.testing.assert_allclose(b_mutated, 2 * b_initial, atol=0)
-    np.testing.assert_allclose(collection.compute_B(point), collection[0].compute_B(point), atol=0)
+    np.testing.assert_allclose(
+        collection.compute_B(point), collection[0].compute_B(point), atol=0
+    )
 
 
 def test_source_child_shared_between_collections():
-    # https://github.com/p-sira/pymagba/pull/40: Child used by multiple parents
+    # Child used by multiple parents
     from pymagba.magnets import Dipole
+
     m = Dipole(moment=[0, 0, 1])
-    col1 = SourceCollection([m], position=[0, 0, 0])
-    col2 = SourceCollection([m], position=[0, 0, 1])
+    col = SourceCollection([m], position=[0, 0, 0])
+    _ = SourceCollection([m], position=[0, 0, 1])
 
     m.moment = [0, 0, 3]
-    np.testing.assert_allclose(col1.compute_B([0, 0, 2]), m.compute_B([0, 0, 2]), atol=0)
+    np.testing.assert_allclose(
+        col.compute_B([0, 0, 2]), m.compute_B([0, 0, 2]), atol=0
+    )
 
 
 def test_nested_collection_child_mutation():
-    # https://github.com/p-sira/pymagba/pull/40: Nested collection child mutation
+    # Nested collection child mutation
     from pymagba.magnets import Dipole
+
     m = Dipole(moment=[0, 0, 1])
     inner = SourceCollection([m])
     outer = SourceCollection([inner])
 
     m.moment = [0, 0, 4]
-    np.testing.assert_allclose(outer.compute_B([0, 0, 2]), inner.compute_B([0, 0, 2]), atol=0)
+    np.testing.assert_allclose(
+        outer.compute_B([0, 0, 2]), inner.compute_B([0, 0, 2]), atol=0
+    )
 
 
 def test_nested_collection_transformation_propagation():
-    # https://github.com/p-sira/pymagba/pull/40: Transformation propagation through nested collections
+    # Transformation propagation through nested collections
     from pymagba.magnets import CylinderMagnet, Dipole
 
     child_pos = [0.1, 0.2, 0.3]
@@ -248,5 +257,3 @@ def test_nested_collection_transformation_propagation():
     d_ref.rotate(quat_x_90)
 
     np.testing.assert_allclose(level3.compute_B(pt), d_ref.compute_B(pt), atol=0)
-
-

@@ -156,9 +156,8 @@ def test_pickle_observer_collection():
 
 
 def test_pickle_source_collection_initial_pose():
-    # https://github.com/p-sira/pymagba/pull/40: SourceCollection constructed with non-origin position
+    # SourceCollection constructed with non-origin position
     # must preserve field calculation across pickle roundtrip
-    from pymagba.magnets import SphereMagnet
     point = [0, 0, 2]
     dipole = Dipole(moment=[0, 0, 1])
     col = SourceCollection([dipole], position=[0, 0, 1])
@@ -173,8 +172,9 @@ def test_pickle_source_collection_initial_pose():
 
 
 def test_pickle_observer_collection_initial_pose():
-    # https://github.com/p-sira/pymagba/pull/40: ObserverCollection constructed with non-origin position
+    # ObserverCollection constructed with non-origin position
     from pymagba.magnets import SphereMagnet
+
     magnet = SphereMagnet()
     point = [0, 0, 2]
     sensor = LinearHallSensor(position=point)
@@ -190,9 +190,9 @@ def test_pickle_observer_collection_initial_pose():
 
 
 def test_pickle_hall_latch_hysteresis():
-    # https://github.com/p-sira/pymagba/pull/40: HallLatch pickle loses hysteresis
     from pymagba.magnets import SphereMagnet
     from pymagba.sensors import HallLatch
+
     magnet = SphereMagnet()
     zero = SphereMagnet(polarization=[0, 0, 0])
     latch = HallLatch()
@@ -204,8 +204,9 @@ def test_pickle_hall_latch_hysteresis():
 
 
 def test_pickle_nested_collection_transformation():
-    # https://github.com/p-sira/pymagba/pull/40: Transformation propagation through nested collections across pickle
+    # Transformation propagation through nested collections across pickle
     from pymagba.magnets import CylinderMagnet
+
     child_pos = [0.1, 0.2, 0.3]
     m = CylinderMagnet(position=child_pos, polarization=[0, 0, 1])
     inner = SourceCollection([m], position=[0, 0, 1])
@@ -222,5 +223,3 @@ def test_pickle_nested_collection_transformation():
     b_after = restored.compute_B(pt)
 
     np.testing.assert_allclose(b_after, b_before, atol=0)
-
-
