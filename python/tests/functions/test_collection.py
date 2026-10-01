@@ -170,10 +170,39 @@ def test_child_indexing_methods():
     np.testing.assert_allclose(o_child.read_voltage(m1), s_ref.read_voltage(m1))
 
 
-if __name__ == "__main__":
-    test_source_collection_methods()
-    test_observer_collection_methods()
-    test_source_collection_spatial_manipulation()
-    test_observer_collection_spatial_manipulation()
-    test_child_indexing_methods()
-    print("All tests passed!")
+def test_source_child_mutation():
+    # Audit item 2: Mutating indexed child must reflect in collection compute_B
+    from pymagba.magnets import Dipole
+    point = [0, 0, 2]
+    magnet = Dipole(moment=[0, 0, 1])
+    collection = SourceCollection([magnet])
+
+    b_initial = collection.compute_B(point)
+    magnet.moment = [0, 0, 2]
+
+    b_mutated = collection.compute_B(point)
+    np.testing.assert_allclose(b_mutated, 2 * b_initial, atol=0)
+    np.testing.assert_allclose(collection.compute_B(point), collection[0].compute_B(point), atol=0)
+
+
+def test_source_child_shared_between_collections():
+    # Audit item 2: Child used by multiple parents
+    from pymagba.magnets import Dipole
+    m = Dipole(moment=[0, 0, 1])
+    col1 = SourceCollection([m], position=[0, 0, 0])
+    col2 = SourceCollection([m], position=[0, 0, 1])
+
+    m.moment = [0, 0, 3]
+    np.testing.assert_allclose(col1.compute_B([0, 0, 2]), m.compute_B([0, 0, 2]), atol=0)
+
+
+def test_nested_collection_child_mutation():
+    # Audit item 2: Nested collection child mutation
+    from pymagba.magnets import Dipole
+    m = Dipole(moment=[0, 0, 1])
+    inner = SourceCollection([m])
+    outer = SourceCollection([inner])
+
+    m.moment = [0, 0, 4]
+    np.testing.assert_allclose(outer.compute_B([0, 0, 2]), inner.compute_B([0, 0, 2]), atol=0)
+

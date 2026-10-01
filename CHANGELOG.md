@@ -7,6 +7,9 @@ This version corresponds to Magba v0.7.0.
 ### Bug Fixes
 
 - Fix mesh error message formatting using `Display` and stabilize validation tests for Magba v0.7.0.
+- Fix `SourceCollection` and `ObserverCollection` pickle deserialization double-offsetting initial poses.
+- Fix dynamic mutation of collection children (`collection[i]`) not propagating to parent magnetic field evaluations or sensor readings.
+- Preserve `HallLatch` hysteresis state during pickle serialization and deserialization.
 
 ### Dependencies
 

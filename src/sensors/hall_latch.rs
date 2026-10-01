@@ -94,6 +94,12 @@ impl HallLatch {
         dict.set_item("sensitive_axis", [a.x, a.y, a.z])?;
         dict.set_item("b_op", *self.inner.b_op())?;
         dict.set_item("b_rp", *self.inner.b_rp())?;
+        dict.set_item(
+            "state",
+            self.inner
+                .state()
+                .load(std::sync::atomic::Ordering::SeqCst),
+        )?;
         Ok(dict.unbind())
     }
 
@@ -107,6 +113,12 @@ impl HallLatch {
             b_op,
             b_rp,
         );
+        if let Ok(Some(saved_state)) = state.get_item("state") {
+            let is_active: bool = saved_state.extract()?;
+            self.inner
+                .state()
+                .store(is_active, std::sync::atomic::Ordering::SeqCst);
+        }
         Ok(())
     }
 
