@@ -29,9 +29,12 @@ __all__ = [
     "cylinder_B",
     "dipole_B",
     "mesh_B",
+    "path_current_B",
+    "sheet_current_B",
     "sphere_B",
     "tetrahedron_B",
     "triangle_B",
+    "triangle_current_B",
 ]
 
 class CircularCurrent:
@@ -251,6 +254,7 @@ class HallLatch:
         rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
         anchor: numpy.typing.ArrayLike,
     ) -> None: ...
+    def read(self, source: typing.Any) -> builtins.bool: ...
 
 class HallSwitch:
     @property
@@ -292,6 +296,7 @@ class HallSwitch:
         rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
         anchor: numpy.typing.ArrayLike,
     ) -> None: ...
+    def read(self, source: typing.Any) -> builtins.bool: ...
 
 class LinearHallSensor:
     @property
@@ -339,6 +344,7 @@ class LinearHallSensor:
         rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
         anchor: numpy.typing.ArrayLike,
     ) -> None: ...
+    def read(self, source: typing.Any) -> builtins.float: ...
 
 class MeshMagnet:
     @property
@@ -546,6 +552,9 @@ class SourceCollection:
     def __len__(self) -> builtins.int: ...
     def __getitem__(self, idx: builtins.int) -> typing.Any: ...
     def append(self, source: typing.Any) -> None: ...
+    def compute_B(
+        self, points: numpy.typing.ArrayLike
+    ) -> numpy.typing.NDArray[numpy.float64]: ...
     def __getstate__(self) -> dict: ...
     def __setstate__(self, state: dict) -> None: ...
     def translate(self, translation: numpy.typing.ArrayLike) -> None: ...
@@ -557,9 +566,6 @@ class SourceCollection:
         rot: scipy.spatial.transform.Rotation | numpy.typing.ArrayLike,
         anchor: numpy.typing.ArrayLike,
     ) -> None: ...
-    def compute_B(
-        self, points: numpy.typing.ArrayLike
-    ) -> numpy.typing.NDArray[numpy.float64]: ...
 
 class SphereMagnet:
     @property
@@ -608,7 +614,9 @@ class TetrahedronMagnet:
     @property
     def vertices(self) -> builtins.list[builtins.list[builtins.float]]: ...
     @vertices.setter
-    def vertices(self, value: builtins.list[builtins.list[builtins.float]]) -> None: ...
+    def vertices(
+        self, value: typing.Sequence[typing.Sequence[builtins.float]]
+    ) -> None: ...
     @property
     def polarization(self) -> builtins.list[builtins.float]: ...
     @polarization.setter
@@ -655,7 +663,9 @@ class TriangleCurrent:
     @property
     def vertices(self) -> builtins.list[builtins.list[builtins.float]]: ...
     @vertices.setter
-    def vertices(self, value: builtins.list[builtins.list[builtins.float]]) -> None: ...
+    def vertices(
+        self, value: typing.Sequence[typing.Sequence[builtins.float]]
+    ) -> None: ...
     @property
     def position(self) -> builtins.list[builtins.float]: ...
     @position.setter
@@ -694,7 +704,9 @@ class TriangleMagnet:
     @property
     def vertices(self) -> builtins.list[builtins.list[builtins.float]]: ...
     @vertices.setter
-    def vertices(self, value: builtins.list[builtins.list[builtins.float]]) -> None: ...
+    def vertices(
+        self, value: typing.Sequence[typing.Sequence[builtins.float]]
+    ) -> None: ...
     @property
     def polarization(self) -> builtins.list[builtins.float]: ...
     @polarization.setter
@@ -874,6 +886,25 @@ def mesh_B(
         numpy.ndarray: Magnetic field (N, 3) in Tesla.
     """
 
+def path_current_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    current: builtins.float = 1.0,
+    vertices: numpy.typing.ArrayLike | None = None,
+) -> numpy.typing.NDArray[numpy.float64]: ...
+def sheet_current_B(
+    points: numpy.typing.ArrayLike,
+    position: numpy.typing.ArrayLike | None = None,
+    orientation: scipy.spatial.transform.Rotation
+    | numpy.typing.ArrayLike
+    | None = None,
+    current_densities: numpy.typing.ArrayLike | None = None,
+    vertices: numpy.typing.ArrayLike | None = None,
+    faces: numpy.typing.ArrayLike | None = None,
+) -> numpy.typing.NDArray[numpy.float64]: ...
 def sphere_B(
     points: numpy.typing.ArrayLike,
     position: numpy.typing.ArrayLike | None = None,
@@ -956,15 +987,6 @@ def triangle_B(
         numpy.ndarray: Magnetic field (N, 3) in Tesla.
     """
 
-def path_current_B(
-    points: numpy.typing.ArrayLike,
-    position: numpy.typing.ArrayLike | None = None,
-    orientation: scipy.spatial.transform.Rotation
-    | numpy.typing.ArrayLike
-    | None = None,
-    current: builtins.float = 1.0,
-    vertices: numpy.typing.ArrayLike | None = None,
-) -> numpy.typing.NDArray[numpy.float64]: ...
 def triangle_current_B(
     points: numpy.typing.ArrayLike,
     position: numpy.typing.ArrayLike | None = None,
@@ -973,14 +995,4 @@ def triangle_current_B(
     | None = None,
     current_density: numpy.typing.ArrayLike | None = None,
     vertices: typing.Sequence[typing.Sequence[builtins.float]] | None = None,
-) -> numpy.typing.NDArray[numpy.float64]: ...
-def sheet_current_B(
-    points: numpy.typing.ArrayLike,
-    position: numpy.typing.ArrayLike | None = None,
-    orientation: scipy.spatial.transform.Rotation
-    | numpy.typing.ArrayLike
-    | None = None,
-    current_densities: numpy.typing.ArrayLike | None = None,
-    vertices: numpy.typing.ArrayLike | None = None,
-    faces: numpy.typing.ArrayLike | None = None,
 ) -> numpy.typing.NDArray[numpy.float64]: ...

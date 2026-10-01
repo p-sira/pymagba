@@ -13,6 +13,16 @@ This version corresponds to Magba v0.7.0.
 - Validate numerical inputs (finite and non-zero quaternions with scaled normalization, valid sensitive axes for sensors, and valid geometry dimensions for free field functions) and ensure setters preserve previous state on invalid input.
 - Handle missing dictionary keys in `__setstate__` with `KeyError` via `get_state_item!`, propagate child validation errors during collection deserialization, and ensure state restoration failures preserve original state without leaking panics.
 - Require `SheetCurrent` and `sheet_current_B` current densities to match mesh face count (with explicit zero-density default when omitted), preventing silent data truncation.
+- Fix sensor `read()` method missing from Python type stubs (`HallLatch`, `HallSwitch`, `LinearHallSensor`).
+
+### Tooling & Typing
+
+- Add automated Python type stub generation and enforcement system:
+  - Add `cargo stub-gen` alias in `.cargo/config.toml` for convenient one-step stub generation.
+  - Automate ruff formatting and lint fixes on generated stubs in `src/bin/stub_gen.rs`.
+  - Add pre-commit hook in `.githooks/pre-commit` and setup script `scripts/setup_git_hooks.sh` to block commits with outdated stubs when Rust sources are modified.
+  - Add test suite in `python/tests/test_stubs.py` verifying stub symbol completeness against runtime PyO3 bindings, generator freshness, and consumer typing with `mypy`.
+  - Add CI workflow verification in GitHub Actions to ensure stubs remain synchronized and type-checked on all pull requests.
 
 ### Dependencies
 

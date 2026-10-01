@@ -78,7 +78,7 @@ To reproduce the build:
 
 ```shell
 uv sync --group dev
-cargo run --bin stub_gen --no-default-features --features=stub-gen
+cargo stub-gen
 maturin build --release
 ```
 

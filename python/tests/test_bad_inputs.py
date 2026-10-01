@@ -281,21 +281,25 @@ def test_setter_preserves_old_state_on_failure():
 def test_pickle_invalid_state_rejected():
     c = CylinderMagnet()
     with pytest.raises(ValueError):
-        c.__setstate__({
-            "position": [0, 0, 0],
-            "orientation": [0, 0, 0, 0],
-            "diameter": 1.0,
-            "height": 1.0,
-            "polarization": [0, 0, 1],
-        })
+        c.__setstate__(
+            {
+                "position": [0, 0, 0],
+                "orientation": [0, 0, 0, 0],
+                "diameter": 1.0,
+                "height": 1.0,
+                "polarization": [0, 0, 1],
+            }
+        )
     with pytest.raises(ValueError):
-        c.__setstate__({
-            "position": [0, 0, 0],
-            "orientation": [0, 0, 0, 1],
-            "diameter": -1.0,
-            "height": 1.0,
-            "polarization": [0, 0, 1],
-        })
+        c.__setstate__(
+            {
+                "position": [0, 0, 0],
+                "orientation": [0, 0, 0, 1],
+                "diameter": -1.0,
+                "height": 1.0,
+                "polarization": [0, 0, 1],
+            }
+        )
 
 
 # https://github.com/p-sira/pymagba/pull/43
@@ -370,55 +374,71 @@ def test_collection_setstate_invalid_children_and_offsets():
     orig_b = sc.compute_B([0, 0, 2.0])
 
     # Restoring collection with invalid source type must raise TypeError
-    with pytest.raises(TypeError, match="source must be a valid Magnet, Current, or SourceCollection"):
-        sc.__setstate__({
-            "sources": [123],
-            "position": [0, 0, 0],
-            "orientation": [0, 0, 0, 1],
-            "local_offsets": [([0, 0, 0], [0, 0, 0, 1])],
-        })
+    with pytest.raises(
+        TypeError, match="source must be a valid Magnet, Current, or SourceCollection"
+    ):
+        sc.__setstate__(
+            {
+                "sources": [123],
+                "position": [0, 0, 0],
+                "orientation": [0, 0, 0, 1],
+                "local_offsets": [([0, 0, 0], [0, 0, 0, 1])],
+            }
+        )
     assert len(sc) == orig_len
     np.testing.assert_allclose(sc.compute_B([0, 0, 2.0]), orig_b)
 
     # Legacy state with invalid source type must also raise TypeError
-    with pytest.raises(TypeError, match="source must be a valid Magnet, Current, or SourceCollection"):
-        sc.__setstate__({
-            "sources": ["not_a_source"],
-            "position": [0, 0, 0],
-            "orientation": [0, 0, 0, 1],
-        })
+    with pytest.raises(
+        TypeError, match="source must be a valid Magnet, Current, or SourceCollection"
+    ):
+        sc.__setstate__(
+            {
+                "sources": ["not_a_source"],
+                "position": [0, 0, 0],
+                "orientation": [0, 0, 0, 1],
+            }
+        )
     assert len(sc) == orig_len
     np.testing.assert_allclose(sc.compute_B([0, 0, 2.0]), orig_b)
 
     # Mismatched local_offsets length
     with pytest.raises(ValueError, match="Number of local_offsets"):
-        sc.__setstate__({
-            "sources": [Dipole()],
-            "position": [0, 0, 0],
-            "orientation": [0, 0, 0, 1],
-            "local_offsets": [([0, 0, 0], [0, 0, 0, 1]), ([0, 0, 0], [0, 0, 0, 1])],
-        })
+        sc.__setstate__(
+            {
+                "sources": [Dipole()],
+                "position": [0, 0, 0],
+                "orientation": [0, 0, 0, 1],
+                "local_offsets": [([0, 0, 0], [0, 0, 0, 1]), ([0, 0, 0], [0, 0, 0, 1])],
+            }
+        )
     assert len(sc) == orig_len
 
     # ObserverCollection with invalid sensor
     oc = ObserverCollection([HallSwitch()])
     orig_oc_len = len(oc)
-    with pytest.raises(TypeError, match="sensors must be LinearHallSensor, HallSwitch, or HallLatch"):
-        oc.__setstate__({
-            "sensors": [Dipole()],
-            "position": [0, 0, 0],
-            "orientation": [0, 0, 0, 1],
-            "local_offsets": [([0, 0, 0], [0, 0, 0, 1])],
-        })
+    with pytest.raises(
+        TypeError, match="sensors must be LinearHallSensor, HallSwitch, or HallLatch"
+    ):
+        oc.__setstate__(
+            {
+                "sensors": [Dipole()],
+                "position": [0, 0, 0],
+                "orientation": [0, 0, 0, 1],
+                "local_offsets": [([0, 0, 0], [0, 0, 0, 1])],
+            }
+        )
     assert len(oc) == orig_oc_len
 
     with pytest.raises(ValueError, match="Number of local_offsets"):
-        oc.__setstate__({
-            "sensors": [HallSwitch()],
-            "position": [0, 0, 0],
-            "orientation": [0, 0, 0, 1],
-            "local_offsets": [],
-        })
+        oc.__setstate__(
+            {
+                "sensors": [HallSwitch()],
+                "position": [0, 0, 0],
+                "orientation": [0, 0, 0, 1],
+                "local_offsets": [],
+            }
+        )
     assert len(oc) == orig_oc_len
 
 
@@ -445,15 +465,15 @@ def test_sheet_current_density_face_count_matching():
 
     # 3. Too few densities (1 instead of 4) raises ValueError
     with pytest.raises(
-        ValueError, match=r"Number of current densities \(1\) must match number of faces \(4\)"
+        ValueError,
+        match=r"Number of current densities \(1\) must match number of faces \(4\)",
     ):
-        SheetCurrent(
-            vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]]
-        )
+        SheetCurrent(vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]])
 
     # 4. Too many densities (5 instead of 4) raises ValueError
     with pytest.raises(
-        ValueError, match=r"Number of current densities \(5\) must match number of faces \(4\)"
+        ValueError,
+        match=r"Number of current densities \(5\) must match number of faces \(4\)",
     ):
         SheetCurrent(
             vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]] * 5
@@ -463,7 +483,8 @@ def test_sheet_current_density_face_count_matching():
     state = s_exact.__getstate__()
     state["current_densities"] = [[1.0, 0.0, 0.0]]  # 1 instead of 4
     with pytest.raises(
-        ValueError, match=r"Number of current densities \(1\) must match number of faces \(4\)"
+        ValueError,
+        match=r"Number of current densities \(1\) must match number of faces \(4\)",
     ):
         s_exact.__setstate__(state)
     # Verify s_exact remains intact
@@ -472,7 +493,10 @@ def test_sheet_current_density_face_count_matching():
 
     # 6. Free function sheet_current_B density count matching
     b_func_exact = sheet_current_B(
-        [[0, 0, 0.5]], vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]] * 4
+        [[0, 0, 0.5]],
+        vertices=verts,
+        faces=faces,
+        current_densities=[[1.0, 0.0, 0.0]] * 4,
     )
     np.testing.assert_allclose(b_exact, b_func_exact)
 
@@ -482,18 +506,23 @@ def test_sheet_current_density_face_count_matching():
     np.testing.assert_allclose(b_func_omitted, 0.0)
 
     with pytest.raises(
-        ValueError, match=r"Number of current densities \(1\) must match number of faces \(4\)"
+        ValueError,
+        match=r"Number of current densities \(1\) must match number of faces \(4\)",
     ):
         sheet_current_B(
-            [[0, 0, 0.5]], vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]]
+            [[0, 0, 0.5]],
+            vertices=verts,
+            faces=faces,
+            current_densities=[[1.0, 0.0, 0.0]],
         )
 
     with pytest.raises(
-        ValueError, match=r"Number of current densities \(5\) must match number of faces \(4\)"
+        ValueError,
+        match=r"Number of current densities \(5\) must match number of faces \(4\)",
     ):
         sheet_current_B(
-            [[0, 0, 0.5]], vertices=verts, faces=faces, current_densities=[[1.0, 0.0, 0.0]] * 5
+            [[0, 0, 0.5]],
+            vertices=verts,
+            faces=faces,
+            current_densities=[[1.0, 0.0, 0.0]] * 5,
         )
-
-
-

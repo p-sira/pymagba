@@ -1,0 +1,2 @@
+[alias]
+stub-gen = "run --bin stub_gen --no-default-features --features stub-gen"

@@ -5,6 +5,7 @@
 
 macro_rules! impl_unified_read {
     ($struct:ty, $output_type:ty, $variant:ident) => {
+        #[cfg_attr(feature = "stub-gen", pyo3_stub_gen::derive::gen_stub_pymethods)]
         #[pyo3::pymethods]
         impl $struct {
             fn read(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<$output_type> {

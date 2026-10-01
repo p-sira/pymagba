@@ -37,6 +37,7 @@ dev = [
     "jinja2>=3.1.2",
     "scipy-stubs>=1.17.1.5",
     "numpy-stl>=4.0.1",
+    "ruff>=0.16.8",
 ]
 docs = [
     "sphinx>=8.2.3",
