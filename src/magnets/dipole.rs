@@ -63,10 +63,11 @@ impl Dipole {
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, moment;3]);
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
 
         self.inner = MagbaDipole::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
+            rot,
             moment,
         );
         Ok(())

@@ -160,6 +160,64 @@ impl PyStubType for PyRotation {
     }
 }
 
+/// Validates that quaternion elements are finite and non-zero norm,
+/// and normalizes with scaling to prevent overflow/underflow.
+pub fn validate_and_normalize_quaternion(
+    arr: [f64; 4],
+) -> PyResult<nalgebra::UnitQuaternion<f64>> {
+    let [x, y, z, w] = arr;
+    if !x.is_finite() || !y.is_finite() || !z.is_finite() || !w.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Quaternion elements must be finite numbers.",
+        ));
+    }
+    let max_val = x.abs().max(y.abs()).max(z.abs()).max(w.abs());
+    if max_val == 0.0 || !max_val.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Quaternion norm must be non-zero and finite.",
+        ));
+    }
+    let x_s = x / max_val;
+    let y_s = y / max_val;
+    let z_s = z / max_val;
+    let w_s = w / max_val;
+    let norm = (x_s * x_s + y_s * y_s + z_s * z_s + w_s * w_s).sqrt();
+    if norm == 0.0 || !norm.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Quaternion norm must be non-zero and finite.",
+        ));
+    }
+    let q = nalgebra::Quaternion::new(w_s / norm, x_s / norm, y_s / norm, z_s / norm);
+    Ok(nalgebra::UnitQuaternion::from_quaternion(q))
+}
+
+/// Validates that axis elements are finite and non-zero norm,
+/// and normalizes with scaling to prevent overflow/underflow.
+pub fn validate_and_normalize_axis(axis: [f64; 3]) -> PyResult<nalgebra::Vector3<f64>> {
+    let [x, y, z] = axis;
+    if !x.is_finite() || !y.is_finite() || !z.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Sensitive axis must be finite numbers.",
+        ));
+    }
+    let max_val = x.abs().max(y.abs()).max(z.abs());
+    if max_val == 0.0 || !max_val.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Sensitive axis must be finite and non-zero.",
+        ));
+    }
+    let x_s = x / max_val;
+    let y_s = y / max_val;
+    let z_s = z / max_val;
+    let norm = (x_s * x_s + y_s * y_s + z_s * z_s).sqrt();
+    if norm == 0.0 || !norm.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Sensitive axis must be finite and non-zero.",
+        ));
+    }
+    Ok(nalgebra::Vector3::new(x_s / norm, y_s / norm, z_s / norm))
+}
+
 impl<'a, 'py> FromPyObject<'a, 'py> for PyRotation {
     type Error = PyErr;
 
@@ -168,9 +226,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PyRotation {
         if let Ok(as_quat) = ob.call_method0("as_quat") {
             // Extract directly into a fixed-size stack array [f64; 4]
             if let Ok(arr) = as_quat.extract::<[f64; 4]>() {
-                return Ok(PyRotation(nalgebra::UnitQuaternion::from_quaternion(
-                    nalgebra::Quaternion::new(arr[3], arr[0], arr[1], arr[2]),
-                )));
+                return validate_and_normalize_quaternion(arr).map(PyRotation);
             }
         }
 
@@ -178,17 +234,14 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PyRotation {
         if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f64>>() {
             let view = arr1.as_array();
             if view.shape()[0] == 4 {
-                return Ok(PyRotation(nalgebra::UnitQuaternion::from_quaternion(
-                    nalgebra::Quaternion::new(view[3], view[0], view[1], view[2]),
-                )));
+                return validate_and_normalize_quaternion([view[0], view[1], view[2], view[3]])
+                    .map(PyRotation);
             }
         }
 
         // 3. Fast path: Native Python list or tuple (e.g., [x, y, z, w])
         if let Ok(arr) = ob.extract::<[f64; 4]>() {
-            return Ok(PyRotation(nalgebra::UnitQuaternion::from_quaternion(
-                nalgebra::Quaternion::new(arr[3], arr[0], arr[1], arr[2]),
-            )));
+            return validate_and_normalize_quaternion(arr).map(PyRotation);
         }
 
         Err(pyo3::exceptions::PyTypeError::new_err(

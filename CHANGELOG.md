@@ -10,6 +10,7 @@ This version corresponds to Magba v0.7.0.
 - Fix `SourceCollection` and `ObserverCollection` pickle deserialization double-offsetting initial poses.
 - Fix dynamic mutation of collection children (`collection[i]`) not propagating to parent magnetic field evaluations or sensor readings.
 - Preserve `HallLatch` hysteresis state during pickle serialization and deserialization.
+- Validate numerical inputs (finite and non-zero quaternions with scaled normalization, valid sensitive axes for sensors, and valid geometry dimensions for free field functions) and ensure setters preserve previous state on invalid input.
 
 ### Dependencies
 

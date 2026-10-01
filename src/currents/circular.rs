@@ -77,10 +77,16 @@ impl CircularCurrent {
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, diameter, current]);
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        if !diameter.is_finite() || diameter <= 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Diameter must be positive.",
+            ));
+        }
 
         self.inner = MagbaCircularCurrent::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
+            rot,
             diameter,
             current,
         );

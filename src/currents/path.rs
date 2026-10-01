@@ -106,9 +106,11 @@ impl PathCurrent {
             .extract()?;
         let vertices = vertices.into_iter().map(Vector3::from).collect();
 
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+
         self.inner = MagbaPathCurrent::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
+            rot,
             current,
             vertices,
         );

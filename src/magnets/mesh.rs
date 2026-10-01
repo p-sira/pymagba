@@ -155,12 +155,11 @@ impl MeshMagnet {
         let f: FacesLike = faces_obj.extract()?;
 
         let f_clone = f.0.clone();
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
         let mut inner = MagbaMeshMagnet::from_vertices_and_faces(v.clone(), f.0, polarization)
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
         inner.set_position(Vector3::from(position));
-        inner.set_orientation(nalgebra::UnitQuaternion::from_quaternion(
-            orientation.into(),
-        ));
+        inner.set_orientation(rot);
 
         self.inner = inner;
         self._vertices = v.iter().map(|p| [p.x, p.y, p.z]).collect();
