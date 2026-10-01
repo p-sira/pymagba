@@ -85,12 +85,10 @@ impl SphereMagnet {
             ));
         }
 
-        self.inner = MagbaSphereMagnet::new(
-            position,
-            rot,
-            polarization,
-            diameter,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaSphereMagnet::new(position, rot, polarization, diameter)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }

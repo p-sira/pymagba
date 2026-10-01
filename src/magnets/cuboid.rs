@@ -88,12 +88,10 @@ impl CuboidMagnet {
             ));
         }
 
-        self.inner = MagbaCuboidMagnet::new(
-            position,
-            rot,
-            polarization,
-            dimensions,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaCuboidMagnet::new(position, rot, polarization, dimensions)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }

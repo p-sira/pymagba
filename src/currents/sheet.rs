@@ -12,8 +12,8 @@ use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
     base::{
-        extract_states, try_into_quat, try_into_slice, ArrayLike3, FacesLike, PointsLike,
-        PyRotation,
+        extract_states, get_state_item, try_into_quat, try_into_slice, ArrayLike3, FacesLike,
+        PointsLike, PyRotation,
     },
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
@@ -43,15 +43,6 @@ impl SheetCurrent {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
 
-        let cd = current_densities
-            .map(|pts| {
-                pts.0
-                    .into_iter()
-                    .map(|p| Vector3::new(p.x, p.y, p.z))
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
-
         let verts = vertices
             .map(|pts| {
                 pts.0
@@ -64,6 +55,24 @@ impl SheetCurrent {
         let vertices_arr = verts.iter().map(|v| [v.x, v.y, v.z]).collect::<Vec<_>>();
 
         let f = faces.map(|fs| fs.0).unwrap_or_default();
+        let num_faces = f.len();
+
+        let cd = match current_densities {
+            Some(pts) => {
+                if pts.0.len() != num_faces {
+                    return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                        "Number of current densities ({}) must match number of faces ({})",
+                        pts.0.len(),
+                        num_faces
+                    )));
+                }
+                pts.0
+                    .into_iter()
+                    .map(|p| Vector3::new(p.x, p.y, p.z))
+                    .collect::<Vec<_>>()
+            }
+            None => vec![Vector3::zeros(); num_faces],
+        };
 
         catch_unwind_to_pyerr(move || {
             let mut inner = MagbaSheetCurrent::from_vertices_and_faces(verts, f.clone(), cd)
@@ -105,6 +114,16 @@ impl SheetCurrent {
             .iter()
             .map(|f| [f.vertices[0], f.vertices[1], f.vertices[2]])
             .collect::<Vec<_>>();
+
+        if let Some(ref pts) = current_densities {
+            if pts.0.len() != faces.len() {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Number of current densities ({}) must match number of faces ({})",
+                    pts.0.len(),
+                    faces.len()
+                )));
+            }
+        }
 
         let pos_py = position.map(|p| p.0);
         let ori_py = orientation.map(|o| <[f64; 4]>::from(o.0.into_inner().coords));
@@ -155,35 +174,45 @@ impl SheetCurrent {
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4]);
 
-        let cd_obj = state.get_item("current_densities")?.unwrap();
-        let current_densities: PointsLike = cd_obj.extract()?;
+        let current_densities: PointsLike =
+            get_state_item!(state, "current_densities", PointsLike)?;
         let cd = current_densities
             .0
             .into_iter()
             .map(|p| Vector3::new(p.x, p.y, p.z))
             .collect::<Vec<_>>();
 
-        let vertices_obj = state.get_item("vertices")?.unwrap();
-        let verts: PointsLike = vertices_obj.extract()?;
+        let verts: PointsLike = get_state_item!(state, "vertices", PointsLike)?;
         let v = verts
             .0
             .into_iter()
             .map(|p| Vector3::new(p.x, p.y, p.z))
             .collect::<Vec<_>>();
 
-        let faces_obj = state.get_item("faces")?.unwrap();
-        let f: FacesLike = faces_obj.extract()?;
+        let f: FacesLike = get_state_item!(state, "faces", FacesLike)?;
+        if cd.len() != f.0.len() {
+            return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "Number of current densities ({}) must match number of faces ({})",
+                cd.len(),
+                f.0.len()
+            )));
+        }
 
         let f_clone = f.0.clone();
         let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
-        let mut inner = MagbaSheetCurrent::from_vertices_and_faces(v.clone(), f.0, cd)
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
-        inner.set_position(Vector3::from(position));
-        inner.set_orientation(rot);
+        let (new_inner, vertices_arr, faces_arr) =
+            catch_unwind_to_pyerr(move || -> PyResult<_> {
+                let mut inner = MagbaSheetCurrent::from_vertices_and_faces(v.clone(), f.0, cd)
+                    .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+                inner.set_position(Vector3::from(position));
+                inner.set_orientation(rot);
+                let vertices_arr = v.iter().map(|p| [p.x, p.y, p.z]).collect();
+                Ok((inner, vertices_arr, f_clone))
+            })??;
 
-        self.inner = inner;
-        self._vertices = v.iter().map(|p| [p.x, p.y, p.z]).collect();
-        self._faces = f_clone;
+        self.inner = new_inner;
+        self._vertices = vertices_arr;
+        self._faces = faces_arr;
         Ok(())
     }
 }

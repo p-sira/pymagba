@@ -111,9 +111,7 @@ impl HallLatch {
         dict.set_item("b_rp", *self.inner.b_rp())?;
         dict.set_item(
             "state",
-            self.inner
-                .state()
-                .load(std::sync::atomic::Ordering::SeqCst),
+            self.inner.state().load(std::sync::atomic::Ordering::SeqCst),
         )?;
         Ok(dict.unbind())
     }
@@ -128,19 +126,15 @@ impl HallLatch {
             ));
         }
 
-        self.inner = MagbaHallLatch::new(
-            position,
-            rot,
-            s_axis,
-            b_op,
-            b_rp,
-        );
+        let new_inner =
+            catch_unwind_to_pyerr(move || MagbaHallLatch::new(position, rot, s_axis, b_op, b_rp))?;
         if let Ok(Some(saved_state)) = state.get_item("state") {
             let is_active: bool = saved_state.extract()?;
-            self.inner
+            new_inner
                 .state()
                 .store(is_active, std::sync::atomic::Ordering::SeqCst);
         }
+        self.inner = new_inner;
         Ok(())
     }
 

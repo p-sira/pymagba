@@ -12,7 +12,8 @@ use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
     base::{
-        extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, PyRotation,
+        extract_states, get_state_item, try_into_quat, try_into_slice, try_into_slice_or,
+        ArrayLike3, PyRotation,
     },
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
@@ -99,7 +100,7 @@ impl TriangleMagnet {
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, polarization;3]);
         let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
-        let vertices: [[f64; 3]; 3] = state.get_item("vertices")?.unwrap().extract()?;
+        let vertices: [[f64; 3]; 3] = get_state_item!(state, "vertices", [[f64; 3]; 3])?;
 
         let v = [
             Vector3::new(vertices[0][0], vertices[0][1], vertices[0][2]),
@@ -107,12 +108,10 @@ impl TriangleMagnet {
             Vector3::new(vertices[2][0], vertices[2][1], vertices[2][2]),
         ];
 
-        self.inner = MagbaTriangleMagnet::new(
-            position,
-            rot,
-            polarization,
-            v,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaTriangleMagnet::new(position, rot, polarization, v)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }

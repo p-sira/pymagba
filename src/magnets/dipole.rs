@@ -12,6 +12,7 @@ use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 use crate::{
     base::{extract_states, try_into_quat, try_into_slice, ArrayLike3, PyRotation},
     macros::{impl_compute_B, impl_pypose},
+    util::catch_unwind_to_pyerr,
 };
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
@@ -65,11 +66,8 @@ impl Dipole {
         extract_states!(state, [position;3, orientation;4, moment;3]);
         let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
 
-        self.inner = MagbaDipole::new(
-            position,
-            rot,
-            moment,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || MagbaDipole::new(position, rot, moment))?;
+        self.inner = new_inner;
         Ok(())
     }
 }

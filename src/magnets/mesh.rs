@@ -12,8 +12,8 @@ use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
     base::{
-        extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, FacesLike,
-        PointsLike, PyRotation,
+        extract_states, get_state_item, try_into_quat, try_into_slice, try_into_slice_or,
+        ArrayLike3, FacesLike, PointsLike, PyRotation,
     },
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
@@ -143,27 +143,31 @@ impl MeshMagnet {
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, polarization;3]);
 
-        let vertices_obj = state.get_item("vertices")?.unwrap();
-        let verts: PointsLike = vertices_obj.extract()?;
+        let verts: PointsLike = get_state_item!(state, "vertices", PointsLike)?;
         let v = verts
             .0
             .into_iter()
             .map(|p| Vector3::new(p.x, p.y, p.z))
             .collect::<Vec<_>>();
 
-        let faces_obj = state.get_item("faces")?.unwrap();
-        let f: FacesLike = faces_obj.extract()?;
+        let f: FacesLike = get_state_item!(state, "faces", FacesLike)?;
 
         let f_clone = f.0.clone();
         let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
-        let mut inner = MagbaMeshMagnet::from_vertices_and_faces(v.clone(), f.0, polarization)
-            .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
-        inner.set_position(Vector3::from(position));
-        inner.set_orientation(rot);
+        let (new_inner, vertices_arr, faces_arr) =
+            catch_unwind_to_pyerr(move || -> PyResult<_> {
+                let mut inner =
+                    MagbaMeshMagnet::from_vertices_and_faces(v.clone(), f.0, polarization)
+                        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+                inner.set_position(Vector3::from(position));
+                inner.set_orientation(rot);
+                let vertices_arr = v.iter().map(|p| [p.x, p.y, p.z]).collect();
+                Ok((inner, vertices_arr, f_clone))
+            })??;
 
-        self.inner = inner;
-        self._vertices = v.iter().map(|p| [p.x, p.y, p.z]).collect();
-        self._faces = f_clone;
+        self.inner = new_inner;
+        self._vertices = vertices_arr;
+        self._faces = faces_arr;
         Ok(())
     }
 }

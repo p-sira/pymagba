@@ -13,7 +13,7 @@ use pyo3::IntoPyObject;
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
-use crate::base::{try_into_quat, try_into_slice};
+use crate::base::{get_state_item, try_into_quat, try_into_slice};
 use crate::{
     base::{ObserverRef, SourceRef},
     macros::impl_pypose,
@@ -137,49 +137,45 @@ impl SourceCollection {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
-        let sources_item = state.get_item("sources")?.ok_or_else(|| {
-            pyo3::exceptions::PyKeyError::new_err("missing 'sources' in state")
-        })?;
-        let sources: Vec<Py<PyAny>> = sources_item.extract()?;
+        let sources: Vec<Py<PyAny>> = get_state_item!(state, "sources", Vec<Py<PyAny>>)?;
+        for s in &sources {
+            SourceRef::try_extract_with_py(s, py)?;
+        }
 
-        let pos_item = state.get_item("position")?.ok_or_else(|| {
-            pyo3::exceptions::PyKeyError::new_err("missing 'position' in state")
-        })?;
-        let position: [f64; 3] = pos_item.extract()?;
-
-        let ori_item = state.get_item("orientation")?.ok_or_else(|| {
-            pyo3::exceptions::PyKeyError::new_err("missing 'orientation' in state")
-        })?;
-        let orientation: [f64; 4] = ori_item.extract()?;
+        let position: [f64; 3] = get_state_item!(state, "position", [f64; 3])?;
+        let orientation: [f64; 4] = get_state_item!(state, "orientation", [f64; 4])?;
 
         let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
         let pose = magba::base::Pose::new(position, rot);
 
-        let local_offsets: Vec<nalgebra::Isometry3<f64>> = if let Ok(Some(offsets_item)) =
-            state.get_item("local_offsets")
-        {
-            let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
-            let mut offsets = Vec::with_capacity(raw.len());
-            for (t, r) in raw {
-                let r_rot = crate::base::validate_and_normalize_quaternion(r)?;
-                offsets.push(nalgebra::Isometry3::from_parts(
-                    nalgebra::Translation3::from(t),
-                    r_rot,
-                ));
-            }
-            offsets
-        } else {
-            // Legacy unversioned state compatibility:
-            let mut offsets = Vec::with_capacity(sources.len());
-            for s in &sources {
-                if let Ok(s_ref) = SourceRef::try_extract_with_py(s, py) {
-                    offsets.push(*s_ref.pose().as_isometry());
-                } else {
-                    offsets.push(nalgebra::Isometry3::identity());
+        let local_offsets: Vec<nalgebra::Isometry3<f64>> =
+            if let Ok(Some(offsets_item)) = state.get_item("local_offsets") {
+                let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
+                if raw.len() != sources.len() {
+                    return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                        "Number of local_offsets ({}) does not match number of sources ({})",
+                        raw.len(),
+                        sources.len()
+                    )));
                 }
-            }
-            offsets
-        };
+                let mut offsets = Vec::with_capacity(raw.len());
+                for (t, r) in raw {
+                    let r_rot = crate::base::validate_and_normalize_quaternion(r)?;
+                    offsets.push(nalgebra::Isometry3::from_parts(
+                        nalgebra::Translation3::from(t),
+                        r_rot,
+                    ));
+                }
+                offsets
+            } else {
+                // Legacy unversioned state compatibility:
+                let mut offsets = Vec::with_capacity(sources.len());
+                for s in &sources {
+                    let s_ref = SourceRef::try_extract_with_py(s, py)?;
+                    offsets.push(*s_ref.pose().as_isometry());
+                }
+                offsets
+            };
 
         self.inner = pose;
         self.sources = sources;
@@ -276,49 +272,45 @@ impl ObserverCollection {
     }
 
     fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
-        let sensors_item = state.get_item("sensors")?.ok_or_else(|| {
-            pyo3::exceptions::PyKeyError::new_err("missing 'sensors' in state")
-        })?;
-        let sensors: Vec<Py<PyAny>> = sensors_item.extract()?;
+        let sensors: Vec<Py<PyAny>> = get_state_item!(state, "sensors", Vec<Py<PyAny>>)?;
+        for s in &sensors {
+            ObserverRef::try_extract_with_py(s, py)?;
+        }
 
-        let pos_item = state.get_item("position")?.ok_or_else(|| {
-            pyo3::exceptions::PyKeyError::new_err("missing 'position' in state")
-        })?;
-        let position: [f64; 3] = pos_item.extract()?;
-
-        let ori_item = state.get_item("orientation")?.ok_or_else(|| {
-            pyo3::exceptions::PyKeyError::new_err("missing 'orientation' in state")
-        })?;
-        let orientation: [f64; 4] = ori_item.extract()?;
+        let position: [f64; 3] = get_state_item!(state, "position", [f64; 3])?;
+        let orientation: [f64; 4] = get_state_item!(state, "orientation", [f64; 4])?;
 
         let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
         let pose = magba::base::Pose::new(position, rot);
 
-        let local_offsets: Vec<nalgebra::Isometry3<f64>> = if let Ok(Some(offsets_item)) =
-            state.get_item("local_offsets")
-        {
-            let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
-            let mut offsets = Vec::with_capacity(raw.len());
-            for (t, r) in raw {
-                let r_rot = crate::base::validate_and_normalize_quaternion(r)?;
-                offsets.push(nalgebra::Isometry3::from_parts(
-                    nalgebra::Translation3::from(t),
-                    r_rot,
-                ));
-            }
-            offsets
-        } else {
-            // Legacy unversioned state compatibility:
-            let mut offsets = Vec::with_capacity(sensors.len());
-            for s in &sensors {
-                if let Ok(o_ref) = ObserverRef::try_extract_with_py(s, py) {
-                    offsets.push(*o_ref.pose().as_isometry());
-                } else {
-                    offsets.push(nalgebra::Isometry3::identity());
+        let local_offsets: Vec<nalgebra::Isometry3<f64>> =
+            if let Ok(Some(offsets_item)) = state.get_item("local_offsets") {
+                let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
+                if raw.len() != sensors.len() {
+                    return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                        "Number of local_offsets ({}) does not match number of sensors ({})",
+                        raw.len(),
+                        sensors.len()
+                    )));
                 }
-            }
-            offsets
-        };
+                let mut offsets = Vec::with_capacity(raw.len());
+                for (t, r) in raw {
+                    let r_rot = crate::base::validate_and_normalize_quaternion(r)?;
+                    offsets.push(nalgebra::Isometry3::from_parts(
+                        nalgebra::Translation3::from(t),
+                        r_rot,
+                    ));
+                }
+                offsets
+            } else {
+                // Legacy unversioned state compatibility:
+                let mut offsets = Vec::with_capacity(sensors.len());
+                for s in &sensors {
+                    let o_ref = ObserverRef::try_extract_with_py(s, py)?;
+                    offsets.push(*o_ref.pose().as_isometry());
+                }
+                offsets
+            };
 
         self.inner = pose;
         self.sensors = sensors;
@@ -346,9 +338,7 @@ fn sensor_output_to_py(
     output: magba::base::SensorOutput<f64>,
 ) -> PyResult<Py<PyAny>> {
     match output {
-        magba::base::SensorOutput::Scalar(val) => {
-            Ok(val.into_pyobject(py)?.into_any().unbind())
-        }
+        magba::base::SensorOutput::Scalar(val) => Ok(val.into_pyobject(py)?.into_any().unbind()),
         magba::base::SensorOutput::Vector(vec) => {
             Ok(PyArray1::from_slice(py, &[vec.x, vec.y, vec.z])
                 .into_any()
