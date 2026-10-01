@@ -94,4 +94,4 @@ impl SphereMagnet {
 }
 
 impl_pypose!(SphereMagnet);
-impl_compute_B!(SphereMagnet);
+impl_compute_B!(SphereMagnet, 32);
