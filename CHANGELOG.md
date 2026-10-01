@@ -23,6 +23,7 @@ This version corresponds to Magba v0.7.0.
   - Add pre-commit hook in `.githooks/pre-commit` and setup script `scripts/setup_git_hooks.sh` to block commits with outdated stubs when Rust sources are modified.
   - Add test suite in `python/tests/test_stubs.py` verifying stub symbol completeness against runtime PyO3 bindings, generator freshness, and consumer typing with `mypy`.
   - Add CI workflow verification in GitHub Actions to ensure stubs remain synchronized and type-checked on all pull requests.
+  - Optimize release workflow (`publish.yml`) to only trigger on release tags and manual dispatch, avoiding redundant 16-wheel cross-compilations on pull requests.
 
 ### Dependencies
 
