@@ -17,13 +17,17 @@ class ObjectCreation:
     params = (["PyMagba", "MagpyLib"], ["Cylinder", "Collection"])
     param_names = ("library", "geometry")
 
+    def setup(self, library, geometry):
+        self.rot = get_standard_rotation()
+
     def time_creation(self, library, geometry):
+        rot = self.rot
         if library == "PyMagba":
             if geometry == "Cylinder":
                 for _ in range(10000):
                     pymagba.magnets.CylinderMagnet(
                         position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
+                        orientation=rot,
                         diameter=0.1,
                         height=0.2,
                         polarization=(1, 2, 3),
@@ -47,7 +51,7 @@ class ObjectCreation:
                 for _ in range(10000):
                     Cylinder(
                         position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
+                        orientation=rot,
                         dimension=(0.1, 0.2),
                         polarization=(1, 2, 3),
                     )
