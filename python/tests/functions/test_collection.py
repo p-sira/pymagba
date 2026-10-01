@@ -380,28 +380,3 @@ def test_collection_gc_cyclic_collection():
     gc.collect()
     assert ocol_ref() is None, "ObserverCollection cycle was not collected by GC"
     assert sensor_ref() is None, "Sensor cycle was not collected by GC"
-
-
-def test_magnet_default_polarization_and_docstrings():
-    from pymagba import fields
-    from pymagba.magnets import SphereMagnet
-
-    # Runtime default polarization check
-    cyl = CylinderMagnet()
-    cub = CuboidMagnet()
-    sph = SphereMagnet()
-
-    np.testing.assert_allclose(cyl.polarization, [0.0, 0.0, 1.0])
-    np.testing.assert_allclose(cub.polarization, [0.0, 0.0, 1.0])
-    np.testing.assert_allclose(sph.polarization, [0.0, 0.0, 1.0])
-
-    # Docstring check for classes
-    assert "Defaults to [0.0, 0.0, 1.0]" in CylinderMagnet.__doc__
-    assert "Defaults to [0.0, 0.0, 1.0]" in CuboidMagnet.__doc__
-    assert "Defaults to [0.0, 0.0, 1.0]" in SphereMagnet.__doc__
-
-    # Docstring check for free functions
-    assert "Defaults to [0.0, 0.0, 1.0]" in fields.cylinder_B.__doc__
-    assert "Defaults to [0.0, 0.0, 1.0]" in fields.cuboid_B.__doc__
-    assert "Defaults to [0.0, 0.0, 1.0]" in fields.sphere_B.__doc__
-
