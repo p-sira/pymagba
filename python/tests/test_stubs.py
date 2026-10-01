@@ -2,8 +2,10 @@
 
 import ast
 import inspect
+import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pymagba.pymagba_binding as binding
@@ -65,14 +67,16 @@ def parse_stub_ast(stub_file: Path) -> tuple[dict[str, set[str]], set[str], list
             functions.add(node.name)
         elif isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "__all__":
-                    if isinstance(node.value, (ast.List, ast.Tuple)):
-                        all_exports = [
-                            elt.value
-                            for elt in node.value.elts
-                            if isinstance(elt, ast.Constant)
-                            and isinstance(elt.value, str)
-                        ]
+                if (
+                    isinstance(target, ast.Name)
+                    and target.id == "__all__"
+                    and isinstance(node.value, (ast.List, ast.Tuple))
+                ):
+                    all_exports = [
+                        elt.value
+                        for elt in node.value.elts
+                        if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+                    ]
 
     return classes, functions, all_exports
 
@@ -106,7 +110,9 @@ def test_stub_covers_all_runtime_symbols():
                     continue
                 if attr_name.startswith("__") and attr_name.endswith("__"):
                     if attr_name in CRITICAL_DUNDERS and attr_name not in stub_methods:
-                        missing.append(f"Method '{name}.{attr_name}' missing from stubs")
+                        missing.append(
+                            f"Method '{name}.{attr_name}' missing from stubs"
+                        )
                     continue
                 if attr_name not in stub_methods:
                     missing.append(f"Member '{name}.{attr_name}' missing from stubs")
@@ -127,9 +133,18 @@ def test_stub_covers_all_runtime_symbols():
 @pytest.mark.skipif(
     shutil.which("cargo") is None, reason="cargo is not available in environment"
 )
+@pytest.mark.skipif(
+    "CI" in os.environ,
+    reason="CI verifies stub freshness in a dedicated workflow step",
+)
 def test_stub_freshness_with_cargo_stub_gen():
     """Verify that running 'cargo stub-gen' produces identical content to committed stubs."""
     original_content = STUB_PATH.read_text(encoding="utf-8")
+
+    env = os.environ.copy()
+    env["PYO3_PYTHON"] = sys.executable
+    lib_dir = str(Path(sys.executable).parent.parent / "lib")
+    env["LD_LIBRARY_PATH"] = f"{lib_dir}:{env.get('LD_LIBRARY_PATH', '')}"
 
     result = subprocess.run(
         [
@@ -142,8 +157,10 @@ def test_stub_freshness_with_cargo_stub_gen():
             "stub-gen",
         ],
         cwd=REPO_ROOT,
+        env=env,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, f"cargo stub-gen failed:\n{result.stderr}"
 
