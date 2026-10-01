@@ -3,7 +3,7 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-use magba::collections::{ObserverComponent, SourceAssembly, SourceComponent};
+use magba::collections::{SourceAssembly, SourceComponent};
 use pyo3::prelude::*;
 
 #[derive(FromPyObject)]
@@ -61,15 +61,6 @@ impl<'py> ObserverRef<'py> {
                     .store(current_state, std::sync::atomic::Ordering::SeqCst);
                 out
             }
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn into_component(self) -> ObserverComponent<f64> {
-        match self {
-            ObserverRef::Linear(s) => s.inner.clone().into(),
-            ObserverRef::Switch(s) => s.inner.clone().into(),
-            ObserverRef::Latch(s) => s.inner.clone().into(),
         }
     }
 }
