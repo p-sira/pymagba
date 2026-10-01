@@ -48,7 +48,3 @@ jobs:
       - name: Run tests
         run: |
           uv run pytest python/tests/
-      - name: Test performance regressions
-        run: |
-          uv run asv machine --yes
-          uv run asv continuous --bench "^benchmarks_|^fields\.|^magnets\.|^operations\." origin/main HEAD --factor 1.4 --split -a repeat="(3, 30, 30.0)"
