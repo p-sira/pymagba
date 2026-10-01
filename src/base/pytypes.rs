@@ -83,14 +83,40 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
     }
 }
 
+/// Internal storage for extracted points to avoid unnecessary heap allocations.
+pub enum PointsStorage<'a> {
+    Borrowed(&'a [nalgebra::Point3<f64>]),
+    Single([nalgebra::Point3<f64>; 1]),
+    Owned(Vec<nalgebra::Point3<f64>>),
+}
+
 /// A wrapper for extracting a batch of 3D points (N, 3).
 ///
 /// Supports lists, tuples, and numpy arrays. Also handles a single 1D point
-/// [x, y, z] by converting it to a single-element batch [[x, y, z]].
-pub struct PointsLike(pub Vec<nalgebra::Point3<f64>>);
+/// [x, y, z] by converting it to a single-element batch [[x, y, z]] without
+/// heap allocation, and borrows C-contiguous f64 NumPy arrays zero-copy.
+pub struct PointsLike<'a>(pub PointsStorage<'a>);
+
+impl<'a> std::ops::Deref for PointsLike<'a> {
+    type Target = [nalgebra::Point3<f64>];
+
+    fn deref(&self) -> &Self::Target {
+        match &self.0 {
+            PointsStorage::Borrowed(s) => s,
+            PointsStorage::Single(s) => s.as_slice(),
+            PointsStorage::Owned(v) => v.as_slice(),
+        }
+    }
+}
+
+impl<'a> PointsLike<'a> {
+    pub fn as_slice(&self) -> &[nalgebra::Point3<f64>] {
+        self
+    }
+}
 
 #[cfg(feature = "stub-gen")]
-impl PyStubType for PointsLike {
+impl PyStubType for PointsLike<'_> {
     fn type_output() -> TypeInfo {
         TypeInfo {
             name: "numpy.typing.ArrayLike".to_string(),
@@ -103,23 +129,27 @@ impl PyStubType for PointsLike {
     }
 }
 
-impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
+impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike<'py> {
     type Error = PyErr;
 
     fn extract(ob: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
-        // 1. Fast path: 2D NumPy array (N, 3) f64 (batch fast-path)
+        // 1. Fast path: 2D NumPy array (N, 3) f64 (batch zero-copy fast-path)
         if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, f64>>() {
             let view = arr2.as_array();
             let shape = view.shape();
 
             if shape[1] == 3 {
                 let n = shape[0];
-                let mut pts = Vec::with_capacity(n);
                 if let Some(slice) = view.as_slice() {
-                    for &[x, y, z] in slice.as_chunks::<3>().0 {
-                        pts.push(nalgebra::Point3::new(x, y, z));
-                    }
+                    let pt_slice = unsafe {
+                        std::slice::from_raw_parts(
+                            slice.as_ptr() as *const nalgebra::Point3<f64>,
+                            n,
+                        )
+                    };
+                    return Ok(PointsLike(PointsStorage::Borrowed(pt_slice)));
                 } else {
+                    let mut pts = Vec::with_capacity(n);
                     for i in 0..n {
                         pts.push(nalgebra::Point3::new(
                             view[[i, 0]],
@@ -127,18 +157,18 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
                             view[[i, 2]],
                         ));
                     }
+                    return Ok(PointsLike(PointsStorage::Owned(pts)));
                 }
-                return Ok(PointsLike(pts));
             }
         }
 
-        // 2. Fast path: 1D NumPy array (3,) f64 (scalar fast-path)
+        // 2. Fast path: 1D NumPy array (3,) f64 (scalar stack fast-path)
         if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f64>>() {
             let view = arr1.as_array();
             if view.shape()[0] == 3 {
-                return Ok(PointsLike(vec![nalgebra::Point3::new(
+                return Ok(PointsLike(PointsStorage::Single([nalgebra::Point3::new(
                     view[0], view[1], view[2],
-                )]));
+                )])));
             }
         }
 
@@ -163,7 +193,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
                         ));
                     }
                 }
-                return Ok(PointsLike(pts));
+                return Ok(PointsLike(PointsStorage::Owned(pts)));
             }
         }
 
@@ -171,11 +201,11 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
         if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f32>>() {
             let view = arr1.as_array();
             if view.shape()[0] == 3 {
-                return Ok(PointsLike(vec![nalgebra::Point3::new(
+                return Ok(PointsLike(PointsStorage::Single([nalgebra::Point3::new(
                     view[0] as f64,
                     view[1] as f64,
                     view[2] as f64,
-                )]));
+                )])));
             }
         }
 
@@ -185,15 +215,15 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
                 .into_iter()
                 .map(|p| nalgebra::Point3::new(p[0], p[1], p[2]))
                 .collect();
-            return Ok(PointsLike(pts));
+            return Ok(PointsLike(PointsStorage::Owned(pts)));
         }
 
         // 6. Native Python single point / sequence: [x, y, z] or (x, y, z)
         if let Ok(single_point) = ob.extract::<ArrayLike3>() {
             let arr = single_point.0;
-            return Ok(PointsLike(vec![nalgebra::Point3::new(
+            return Ok(PointsLike(PointsStorage::Single([nalgebra::Point3::new(
                 arr[0], arr[1], arr[2],
-            )]));
+            )])));
         }
 
         Err(pyo3::exceptions::PyTypeError::new_err(

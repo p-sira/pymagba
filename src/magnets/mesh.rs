@@ -37,7 +37,7 @@ impl MeshMagnet {
         position: Option<ArrayLike3>,
         orientation: Option<PyRotation>,
         polarization: Option<ArrayLike3>,
-        vertices: Option<PointsLike>,
+        vertices: Option<PointsLike<'_>>,
         faces: Option<FacesLike>,
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
@@ -46,8 +46,7 @@ impl MeshMagnet {
 
         let verts = vertices
             .map(|pts| {
-                pts.0
-                    .into_iter()
+                pts.iter()
                     .map(|p| Vector3::new(p.x, p.y, p.z))
                     .collect::<Vec<_>>()
             })
@@ -143,10 +142,9 @@ impl MeshMagnet {
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, polarization;3]);
 
-        let verts: PointsLike = get_state_item!(state, "vertices", PointsLike)?;
+        let verts: PointsLike<'_> = get_state_item!(state, "vertices", PointsLike<'_>)?;
         let v = verts
-            .0
-            .into_iter()
+            .iter()
             .map(|p| Vector3::new(p.x, p.y, p.z))
             .collect::<Vec<_>>();
 

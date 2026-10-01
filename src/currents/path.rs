@@ -36,16 +36,12 @@ impl PathCurrent {
         position: Option<ArrayLike3>,
         orientation: Option<PyRotation>,
         current: f64,
-        vertices: Option<PointsLike>,
+        vertices: Option<PointsLike<'_>>,
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
         let v = vertices
-            .map(|v| {
-                v.0.into_iter()
-                    .map(|p| Vector3::new(p.x, p.y, p.z))
-                    .collect()
-            })
+            .map(|v| v.iter().map(|p| Vector3::new(p.x, p.y, p.z)).collect())
             .unwrap_or_default();
 
         catch_unwind_to_pyerr(move || Self {
@@ -77,10 +73,9 @@ impl PathCurrent {
     }
 
     #[setter]
-    fn set_vertices(&mut self, vertices: PointsLike) -> PyResult<()> {
+    fn set_vertices(&mut self, vertices: PointsLike<'_>) -> PyResult<()> {
         let v: Vec<Vector3<f64>> = vertices
-            .0
-            .into_iter()
+            .iter()
             .map(|p| Vector3::new(p.x, p.y, p.z))
             .collect();
         catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {

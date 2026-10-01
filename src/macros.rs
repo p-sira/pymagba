@@ -78,15 +78,15 @@ macro_rules! impl_compute_B {
             fn compute_B<'py>(
                 &self,
                 py: pyo3::Python<'py>,
-                points: crate::base::PointsLike,
+                points: crate::base::PointsLike<'py>,
             ) -> pyo3::Bound<'py, numpy::PyArray2<f64>> {
                 use magba::base::Source;
 
-                let pts = points.0;
+                let pts = points.as_slice();
                 let b_field = if pts.len() <= $gil_threshold {
-                    self.inner.compute_B_batch(&pts)
+                    self.inner.compute_B_batch(pts)
                 } else {
-                    py.detach(|| self.inner.compute_B_batch(&pts))
+                    py.detach(|| self.inner.compute_B_batch(pts))
                 };
 
                 crate::util::vec3_to_pyarray2(py, b_field)

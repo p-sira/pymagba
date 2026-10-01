@@ -30,6 +30,7 @@ This version corresponds to Magba v0.7.0.
 - Transparently cache verified `TriMesh` geometry in `mesh_B` and `sheet_current_B`: maintain a budgeted LRU cache (capped at 8 entries and 200k faces) of compiled topological mesh structures across repeated functional calls with identical vertex and face buffers, accelerating realistic mesh evaluations by up to 11.2x on single meshes and up to 9.0x in multi-mesh loops without thrashing or memory leaks.
 - Accelerate source and observer reference extraction with exact type pointer dispatch in `SourceRef` and `ObserverRef`, bypassing sequential Python MRO subclass traversal for concrete instances.
 - Cache `SourceAssembly` in `SourceCollection`: cache compiled `SourceAssembly` across repeated `compute_B` evaluations and observer `read_all` calls using lightweight child state fingerprints (hashing pose and intrinsic physical parameters per source), updating assembly poses in-place via `Transform::set_pose` when the collection transforms, and bypassing expensive component re-cloning and assembly rebuilding when child sources are unchanged.
+- Implement zero-copy buffer borrowing and stack allocation in `PointsLike`: borrow C-contiguous `(N, 3)` `float64` NumPy arrays directly as `&[Point3<f64>]` without copying or heap allocation, and store single points on the stack via `PointsStorage::Single([Point3<f64>; 1])`, completely eliminating heap allocation and copy overhead on batch evaluation.
 
 ### Tooling & Typing
 

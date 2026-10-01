@@ -36,8 +36,8 @@ impl SheetCurrent {
     fn new(
         position: Option<ArrayLike3>,
         orientation: Option<PyRotation>,
-        current_densities: Option<PointsLike>,
-        vertices: Option<PointsLike>,
+        current_densities: Option<PointsLike<'_>>,
+        vertices: Option<PointsLike<'_>>,
         faces: Option<FacesLike>,
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
@@ -45,8 +45,7 @@ impl SheetCurrent {
 
         let verts = vertices
             .map(|pts| {
-                pts.0
-                    .into_iter()
+                pts.iter()
                     .map(|p| Vector3::new(p.x, p.y, p.z))
                     .collect::<Vec<_>>()
             })
@@ -59,15 +58,14 @@ impl SheetCurrent {
 
         let cd = match current_densities {
             Some(pts) => {
-                if pts.0.len() != num_faces {
+                if pts.len() != num_faces {
                     return Err(pyo3::exceptions::PyValueError::new_err(format!(
                         "Number of current densities ({}) must match number of faces ({})",
-                        pts.0.len(),
+                        pts.len(),
                         num_faces
                     )));
                 }
-                pts.0
-                    .into_iter()
+                pts.iter()
                     .map(|p| Vector3::new(p.x, p.y, p.z))
                     .collect::<Vec<_>>()
             }
@@ -94,7 +92,7 @@ impl SheetCurrent {
         path: String,
         position: Option<ArrayLike3>,
         orientation: Option<PyRotation>,
-        current_densities: Option<PointsLike>,
+        current_densities: Option<PointsLike<'_>>,
     ) -> PyResult<Bound<'py, Self>> {
         let mut file = std::fs::File::open(&path).map_err(|e| {
             pyo3::exceptions::PyIOError::new_err(format!("Failed to open file: {}", e))
@@ -116,10 +114,10 @@ impl SheetCurrent {
             .collect::<Vec<_>>();
 
         if let Some(ref pts) = current_densities {
-            if pts.0.len() != faces.len() {
+            if pts.len() != faces.len() {
                 return Err(pyo3::exceptions::PyValueError::new_err(format!(
                     "Number of current densities ({}) must match number of faces ({})",
-                    pts.0.len(),
+                    pts.len(),
                     faces.len()
                 )));
             }
@@ -127,12 +125,8 @@ impl SheetCurrent {
 
         let pos_py = position.map(|p| p.0);
         let ori_py = orientation.map(|o| <[f64; 4]>::from(o.0.into_inner().coords));
-        let cd_py = current_densities.map(|pts| {
-            pts.0
-                .into_iter()
-                .map(|p| [p.x, p.y, p.z])
-                .collect::<Vec<_>>()
-        });
+        let cd_py =
+            current_densities.map(|pts| pts.iter().map(|p| [p.x, p.y, p.z]).collect::<Vec<_>>());
 
         Ok(cls
             .call1((pos_py, ori_py, cd_py, vertices, faces))?
@@ -174,18 +168,16 @@ impl SheetCurrent {
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4]);
 
-        let current_densities: PointsLike =
-            get_state_item!(state, "current_densities", PointsLike)?;
+        let current_densities: PointsLike<'_> =
+            get_state_item!(state, "current_densities", PointsLike<'_>)?;
         let cd = current_densities
-            .0
-            .into_iter()
+            .iter()
             .map(|p| Vector3::new(p.x, p.y, p.z))
             .collect::<Vec<_>>();
 
-        let verts: PointsLike = get_state_item!(state, "vertices", PointsLike)?;
+        let verts: PointsLike<'_> = get_state_item!(state, "vertices", PointsLike<'_>)?;
         let v = verts
-            .0
-            .into_iter()
+            .iter()
             .map(|p| Vector3::new(p.x, p.y, p.z))
             .collect::<Vec<_>>();
 

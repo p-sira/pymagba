@@ -68,7 +68,7 @@ macro_rules! detach_if_multi {
 #[pyo3(signature = (points, position=None, orientation=None, diameter=1.0, height=1.0, polarization=None))]
 pub fn cylinder_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     diameter: f64,
@@ -86,7 +86,6 @@ pub fn cylinder_B<'py>(
         ));
     }
 
-    let points = points.0;
     let n = points.len();
 
     // Map options to defaults
@@ -103,7 +102,7 @@ pub fn cylinder_B<'py>(
         py,
         n,
         magba::fields::cylinder_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
@@ -135,12 +134,11 @@ pub fn cylinder_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, moment=None))]
 pub fn dipole_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     moment: Option<ArrayLike3>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -155,7 +153,13 @@ pub fn dipole_B<'py>(
         py,
         n,
         32,
-        magba::fields::dipole_B_batch(&points, pos.into(), rot, m.into(), results.as_mut_slice())
+        magba::fields::dipole_B_batch(
+            points.as_slice(),
+            pos.into(),
+            rot,
+            m.into(),
+            results.as_mut_slice(),
+        )
     );
 
     vec3_to_pyarray2(py, results)
@@ -182,7 +186,7 @@ pub fn dipole_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, dimensions=None, polarization=None))]
 pub fn cuboid_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     dimensions: Option<ArrayLike3>,
@@ -195,7 +199,6 @@ pub fn cuboid_B<'py>(
         ));
     }
 
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -210,7 +213,7 @@ pub fn cuboid_B<'py>(
         py,
         n,
         magba::fields::cuboid_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
@@ -243,7 +246,7 @@ pub fn cuboid_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, diameter=1.0, polarization=None))]
 pub fn sphere_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     diameter: f64,
@@ -255,7 +258,6 @@ pub fn sphere_B<'py>(
         ));
     }
 
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -271,7 +273,7 @@ pub fn sphere_B<'py>(
         n,
         32,
         magba::fields::sphere_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
@@ -304,7 +306,7 @@ pub fn sphere_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, diameter=1.0, current=1.0))]
 pub fn circular_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     diameter: f64,
@@ -316,7 +318,6 @@ pub fn circular_B<'py>(
         ));
     }
 
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -330,7 +331,7 @@ pub fn circular_B<'py>(
         py,
         n,
         magba::fields::circular_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             diameter,
@@ -362,13 +363,12 @@ pub fn circular_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, polarization=None, vertices=None))]
 pub fn triangle_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     polarization: Option<ArrayLike3>,
     vertices: Option<[[f64; 3]; 3]>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -389,7 +389,7 @@ pub fn triangle_B<'py>(
         py,
         n,
         magba::fields::triangle_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
@@ -421,13 +421,12 @@ pub fn triangle_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, polarization=None, vertices=None))]
 pub fn tetrahedron_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     polarization: Option<ArrayLike3>,
     vertices: Option<[[f64; 3]; 4]>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -454,7 +453,7 @@ pub fn tetrahedron_B<'py>(
         py,
         n,
         magba::fields::tetrahedron_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
@@ -487,14 +486,13 @@ pub fn tetrahedron_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, polarization=None, vertices=None, faces=None))]
 pub fn mesh_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     polarization: Option<ArrayLike3>,
-    vertices: Option<PointsLike>,
+    vertices: Option<PointsLike<'py>>,
     faces: Option<FacesLike>,
 ) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -505,8 +503,7 @@ pub fn mesh_B<'py>(
 
     let verts = vertices
         .map(|pts| {
-            pts.0
-                .into_iter()
+            pts.iter()
                 .map(|p| Vector3::new(p.x, p.y, p.z))
                 .collect::<Vec<_>>()
         })
@@ -522,7 +519,7 @@ pub fn mesh_B<'py>(
         py,
         n,
         magba::fields::mesh_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
@@ -539,13 +536,12 @@ pub fn mesh_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, current=1.0, vertices=None))]
 pub fn path_current_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     current: f64,
-    vertices: Option<PointsLike>,
+    vertices: Option<PointsLike<'py>>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -555,8 +551,7 @@ pub fn path_current_B<'py>(
 
     let verts = vertices
         .map(|pts| {
-            pts.0
-                .into_iter()
+            pts.iter()
                 .map(|p| Vector3::new(p.x, p.y, p.z))
                 .collect::<Vec<_>>()
         })
@@ -568,7 +563,7 @@ pub fn path_current_B<'py>(
         py,
         n,
         magba::fields::path_current_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             current,
@@ -585,13 +580,12 @@ pub fn path_current_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, current_density=None, vertices=None))]
 pub fn triangle_current_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     current_density: Option<ArrayLike3>,
     vertices: Option<[[f64; 3]; 3]>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -612,7 +606,7 @@ pub fn triangle_current_B<'py>(
         py,
         n,
         magba::fields::triangle_current_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             j.into(),
@@ -629,14 +623,13 @@ pub fn triangle_current_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, current_densities=None, vertices=None, faces=None))]
 pub fn sheet_current_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
-    current_densities: Option<PointsLike>,
-    vertices: Option<PointsLike>,
+    current_densities: Option<PointsLike<'py>>,
+    vertices: Option<PointsLike<'py>>,
     faces: Option<FacesLike>,
 ) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -646,8 +639,7 @@ pub fn sheet_current_B<'py>(
 
     let verts = vertices
         .map(|pts| {
-            pts.0
-                .into_iter()
+            pts.iter()
                 .map(|p| Vector3::new(p.x, p.y, p.z))
                 .collect::<Vec<_>>()
         })
@@ -658,15 +650,14 @@ pub fn sheet_current_B<'py>(
 
     let j = match current_densities {
         Some(pts) => {
-            if pts.0.len() != num_faces {
+            if pts.len() != num_faces {
                 return Err(pyo3::exceptions::PyValueError::new_err(format!(
                     "Number of current densities ({}) must match number of faces ({})",
-                    pts.0.len(),
+                    pts.len(),
                     num_faces
                 )));
             }
-            pts.0
-                .into_iter()
+            pts.iter()
                 .map(|p| Vector3::new(p.x, p.y, p.z))
                 .collect::<Vec<_>>()
         }
@@ -681,7 +672,7 @@ pub fn sheet_current_B<'py>(
         py,
         n,
         magba::fields::sheet_current_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             &j,
