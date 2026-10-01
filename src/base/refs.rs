@@ -80,7 +80,20 @@ pub enum SourceRef<'py> {
     PathCurrent(PyRef<'py, crate::currents::PathCurrent>),
     TriangleCurrent(PyRef<'py, crate::currents::TriangleCurrent>),
     SheetCurrent(PyRef<'py, crate::currents::SheetCurrent>),
-    Collection(PyRef<'py, crate::SourceCollection>, SourceAssembly<f64>),
+    Collection(
+        PyRef<'py, crate::SourceCollection>,
+        std::sync::Arc<SourceAssembly<f64>>,
+    ),
+}
+
+fn hash_pose<H: std::hash::Hasher>(pose: &magba::base::Pose<f64>, hasher: &mut H) {
+    use std::hash::Hash;
+    for &c in pose.position().coords.as_slice() {
+        c.to_bits().hash(hasher);
+    }
+    for &c in pose.orientation().into_inner().coords.as_slice() {
+        c.to_bits().hash(hasher);
+    }
 }
 
 impl<'py> SourceRef<'py> {
@@ -88,7 +101,7 @@ impl<'py> SourceRef<'py> {
         let py = obj.py();
         if obj.is_exact_instance_of::<crate::SourceCollection>() {
             let col = obj.extract::<PyRef<'py, crate::SourceCollection>>()?;
-            let assembly = col.sync_assembly(py)?;
+            let assembly = col.get_or_sync_assembly(py)?;
             return Ok(SourceRef::Collection(col, assembly));
         }
         super::try_extract!(
@@ -106,7 +119,7 @@ impl<'py> SourceRef<'py> {
             SheetCurrent => crate::currents::SheetCurrent,
         );
         if let Ok(col) = obj.extract::<PyRef<'py, crate::SourceCollection>>() {
-            let assembly = col.sync_assembly(py)?;
+            let assembly = col.get_or_sync_assembly(py)?;
             return Ok(SourceRef::Collection(col, assembly));
         }
         Err(pyo3::exceptions::PyTypeError::new_err(
@@ -136,6 +149,133 @@ impl<'py> SourceRef<'py> {
         }
     }
 
+    pub fn state_fingerprint(&self, py: Python<'_>) -> u64 {
+        use magba::base::Transform;
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        match self {
+            SourceRef::Cylinder(m) => {
+                0u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                m.inner.diameter().to_bits().hash(&mut hasher);
+                m.inner.height().to_bits().hash(&mut hasher);
+                for &c in m.inner.polarization().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+            }
+            SourceRef::Cuboid(m) => {
+                1u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                for &c in m.inner.dimensions().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+                for &c in m.inner.polarization().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+            }
+            SourceRef::Dipole(m) => {
+                2u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                for &c in m.inner.moment().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+            }
+            SourceRef::Sphere(m) => {
+                3u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                m.inner.diameter().to_bits().hash(&mut hasher);
+                for &c in m.inner.polarization().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+            }
+            SourceRef::TriangleMagnet(m) => {
+                4u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                for &c in m.inner.polarization().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+                for v in m.inner.vertices() {
+                    for &c in v.as_slice() {
+                        c.to_bits().hash(&mut hasher);
+                    }
+                }
+            }
+            SourceRef::TetrahedronMagnet(m) => {
+                5u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                for &c in m.inner.polarization().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+                for v in m.inner.vertices() {
+                    for &c in v.as_slice() {
+                        c.to_bits().hash(&mut hasher);
+                    }
+                }
+            }
+            SourceRef::MeshMagnet(m) => {
+                6u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                for &c in m.inner.polarization().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+                m._vertices.len().hash(&mut hasher);
+                m._faces.len().hash(&mut hasher);
+            }
+            SourceRef::CircularCurrent(m) => {
+                7u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                m.inner.diameter().to_bits().hash(&mut hasher);
+                m.inner.current().to_bits().hash(&mut hasher);
+            }
+            SourceRef::PathCurrent(m) => {
+                8u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                m.inner.current().to_bits().hash(&mut hasher);
+                m.inner.vertices().len().hash(&mut hasher);
+                if let Some(first) = m.inner.vertices().first() {
+                    for &c in first.as_slice() {
+                        c.to_bits().hash(&mut hasher);
+                    }
+                }
+                if let Some(last) = m.inner.vertices().last() {
+                    for &c in last.as_slice() {
+                        c.to_bits().hash(&mut hasher);
+                    }
+                }
+            }
+            SourceRef::TriangleCurrent(m) => {
+                9u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                for &c in m.inner.current_density().as_slice() {
+                    c.to_bits().hash(&mut hasher);
+                }
+                for v in m.inner.vertices() {
+                    for &c in v.as_slice() {
+                        c.to_bits().hash(&mut hasher);
+                    }
+                }
+            }
+            SourceRef::SheetCurrent(m) => {
+                10u8.hash(&mut hasher);
+                hash_pose(m.inner.pose(), &mut hasher);
+                m.inner.current_densities().len().hash(&mut hasher);
+                m._vertices.len().hash(&mut hasher);
+                m._faces.len().hash(&mut hasher);
+            }
+            SourceRef::Collection(col, _) => {
+                11u8.hash(&mut hasher);
+                hash_pose(&col.inner, &mut hasher);
+                col.sources.len().hash(&mut hasher);
+                for child in &col.sources {
+                    if let Ok(child_ref) = SourceRef::try_extract_with_py(child, py) {
+                        child_ref.state_fingerprint(py).hash(&mut hasher);
+                    }
+                }
+            }
+        }
+        hasher.finish()
+    }
+
     pub fn into_component(self) -> SourceComponent<f64> {
         match self {
             SourceRef::Cylinder(m) => m.inner.clone().into(),
@@ -149,7 +289,7 @@ impl<'py> SourceRef<'py> {
             SourceRef::PathCurrent(m) => m.inner.clone().into(),
             SourceRef::TriangleCurrent(m) => m.inner.clone().into(),
             SourceRef::SheetCurrent(m) => m.inner.clone().into(),
-            SourceRef::Collection(_, assembly) => SourceComponent::Assembly(assembly),
+            SourceRef::Collection(_, assembly) => SourceComponent::Assembly((*assembly).clone()),
         }
     }
 
@@ -166,7 +306,7 @@ impl<'py> SourceRef<'py> {
             SourceRef::PathCurrent(m) => &m.inner,
             SourceRef::TriangleCurrent(m) => &m.inner,
             SourceRef::SheetCurrent(m) => &m.inner,
-            SourceRef::Collection(_, assembly) => assembly,
+            SourceRef::Collection(_, assembly) => assembly.as_ref(),
         }
     }
 }

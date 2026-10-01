@@ -27,6 +27,7 @@ This version corresponds to Magba v0.7.0.
 - Implement bulk `float32` extraction in `PointsLike` and `ArrayLike3`: vectorize contiguous 2D float32 slice conversion using `as_chunks::<3>()`, eliminating the 17x element-by-element Python iteration penalty.
 - Optimize rotation extraction in `PyRotation`: prioritize direct 1D NumPy array and sequence extraction, eliminate `AttributeError` exceptions on array inputs, and extract SciPy quaternion buffers directly, achieving up to 4.3x speedup on rotate operations.
 - Accelerate source and observer reference extraction with exact type pointer dispatch in `SourceRef` and `ObserverRef`, bypassing sequential Python MRO subclass traversal for concrete instances.
+- Cache `SourceAssembly` in `SourceCollection`: cache compiled `SourceAssembly` across repeated `compute_B` evaluations and observer `read_all` calls using lightweight child state fingerprints (hashing pose and intrinsic physical parameters per source), updating assembly poses in-place via `Transform::set_pose` when the collection transforms, and bypassing expensive component re-cloning and assembly rebuilding when child sources are unchanged.
 
 ### Tooling & Typing
 
