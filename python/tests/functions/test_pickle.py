@@ -156,7 +156,7 @@ def test_pickle_observer_collection():
 
 
 def test_pickle_source_collection_initial_pose():
-    # Audit item 1: SourceCollection constructed with non-origin position
+    # https://github.com/p-sira/pymagba/pull/40: SourceCollection constructed with non-origin position
     # must preserve field calculation across pickle roundtrip
     from pymagba.magnets import SphereMagnet
     point = [0, 0, 2]
@@ -173,7 +173,7 @@ def test_pickle_source_collection_initial_pose():
 
 
 def test_pickle_observer_collection_initial_pose():
-    # Audit item 1: ObserverCollection constructed with non-origin position
+    # https://github.com/p-sira/pymagba/pull/40: ObserverCollection constructed with non-origin position
     from pymagba.magnets import SphereMagnet
     magnet = SphereMagnet()
     point = [0, 0, 2]
@@ -190,7 +190,7 @@ def test_pickle_observer_collection_initial_pose():
 
 
 def test_pickle_hall_latch_hysteresis():
-    # Audit item 3: HallLatch pickle loses hysteresis
+    # https://github.com/p-sira/pymagba/pull/40: HallLatch pickle loses hysteresis
     from pymagba.magnets import SphereMagnet
     from pymagba.sensors import HallLatch
     magnet = SphereMagnet()

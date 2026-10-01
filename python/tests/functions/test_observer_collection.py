@@ -94,7 +94,7 @@ def test_observer_collection_read_source_collection():
 
 
 def test_observer_child_mutation():
-    # Audit item 2: Mutating indexed observer child must reflect in collection read_all
+    # https://github.com/p-sira/pymagba/pull/40: Mutating indexed observer child must reflect in collection read_all
     from pymagba.magnets import SphereMagnet
     magnet = SphereMagnet()
     sensor = LinearHallSensor()
@@ -109,7 +109,7 @@ def test_observer_child_mutation():
 
 
 def test_observer_collection_latch_state_sync():
-    # Audit item 2: Activating collection latch must update authoritative child state
+    # https://github.com/p-sira/pymagba/pull/40: Activating collection latch must update authoritative child state
     from pymagba.magnets import SphereMagnet
     from pymagba.sensors import HallLatch
     magnet = SphereMagnet()

@@ -171,7 +171,7 @@ def test_child_indexing_methods():
 
 
 def test_source_child_mutation():
-    # Audit item 2: Mutating indexed child must reflect in collection compute_B
+    # https://github.com/p-sira/pymagba/pull/40: Mutating indexed child must reflect in collection compute_B
     from pymagba.magnets import Dipole
     point = [0, 0, 2]
     magnet = Dipole(moment=[0, 0, 1])
@@ -186,7 +186,7 @@ def test_source_child_mutation():
 
 
 def test_source_child_shared_between_collections():
-    # Audit item 2: Child used by multiple parents
+    # https://github.com/p-sira/pymagba/pull/40: Child used by multiple parents
     from pymagba.magnets import Dipole
     m = Dipole(moment=[0, 0, 1])
     col1 = SourceCollection([m], position=[0, 0, 0])
@@ -197,7 +197,7 @@ def test_source_child_shared_between_collections():
 
 
 def test_nested_collection_child_mutation():
-    # Audit item 2: Nested collection child mutation
+    # https://github.com/p-sira/pymagba/pull/40: Nested collection child mutation
     from pymagba.magnets import Dipole
     m = Dipole(moment=[0, 0, 1])
     inner = SourceCollection([m])
