@@ -26,6 +26,7 @@ This version corresponds to Magba v0.7.0.
 - Implement zero-copy buffer conversion in `vec3_to_pyarray2`: construct single-point 2D arrays directly, and convert contiguous `Vec<Vector3<f64>>` to `PyArray2` without redundant intermediate heap buffer re-allocations (saving 24 MB per 1M points).
 - Implement bulk `float32` extraction in `PointsLike` and `ArrayLike3`: vectorize contiguous 2D float32 slice conversion using `as_chunks::<3>()`, eliminating the 17x element-by-element Python iteration penalty.
 - Optimize rotation extraction in `PyRotation`: prioritize direct 1D NumPy array and sequence extraction, eliminate `AttributeError` exceptions on array inputs, and extract SciPy quaternion buffers directly, achieving up to 4.3x speedup on rotate operations.
+- Transparently cache verified `TriMesh` geometry in `mesh_B` and `sheet_current_B`: maintain a budgeted LRU cache (capped at 8 entries and 200k faces) of compiled topological mesh structures across repeated functional calls with identical vertex and face buffers, accelerating realistic mesh evaluations by up to 11.2x on single meshes and up to 9.0x in multi-mesh loops without thrashing or memory leaks.
 
 ### Tooling & Typing
 

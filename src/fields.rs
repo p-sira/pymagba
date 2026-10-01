@@ -509,8 +509,7 @@ pub fn mesh_B<'py>(
 
     let f = faces.map(|fs| fs.0).unwrap_or_default();
 
-    let trimesh = magba::base::mesh::TriMesh::new(verts, f)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+    let trimesh = crate::base::mesh::get_or_build_trimesh(verts, f)?;
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
@@ -669,8 +668,7 @@ pub fn sheet_current_B<'py>(
         None => vec![Vector3::zeros(); num_faces],
     };
 
-    let trimesh = magba::base::mesh::TriMesh::new(verts, f)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+    let trimesh = crate::base::mesh::get_or_build_trimesh(verts, f)?;
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
