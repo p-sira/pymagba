@@ -5,6 +5,7 @@ from pymagba.magnets import (
     CuboidMagnet,
     CylinderMagnet,
     Dipole,
+    MeshMagnet,
     SourceCollection,
     SphereMagnet,
 )
@@ -94,9 +95,19 @@ def test_triangle_current_validation():
 def test_sheet_current_validation():
     with pytest.raises(TypeError):
         SheetCurrent(vertices=[[1.0, 2.0], [3.0, 4.0]])
-    with pytest.raises(ValueError, match="(?i)index out of bounds"):
+    with pytest.raises(ValueError, match=r"(?i)(missing vertex|index out of bounds)"):
         SheetCurrent(
             current_densities=[[1.0, 2.0, 3.0]],
+            vertices=[[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1]],
+            faces=[[0, 2, 4]],  # Out of bounds
+        )
+
+
+def test_mesh_magnet_validation():
+    with pytest.raises(TypeError):
+        MeshMagnet(vertices=[[1.0, 2.0], [3.0, 4.0]])
+    with pytest.raises(ValueError, match=r"(?i)(missing vertex|index out of bounds)"):
+        MeshMagnet(
             vertices=[[-0.1, -0.1, -0.1], [0.1, -0.1, -0.1], [0.0, 0.1, -0.1]],
             faces=[[0, 2, 4]],  # Out of bounds
         )
