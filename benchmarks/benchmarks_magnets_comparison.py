@@ -288,3 +288,61 @@ class ObjectManipulation:
 ObjectManipulation.time_manipulation.benchmark_name = (
     "operations.ObjectManipulation.time_manipulation"
 )
+
+
+class SmallBatchComputation:
+    params = (["Cylinder", "Cuboid", "Dipole", "Collection"], [1, 10])
+    param_names = ("geometry", "n_points")
+
+    def setup(self, geometry, n_points):
+        if n_points == 1:
+            self.observers = np.array([0.1, 0.2, 0.3])
+        else:
+            self.observers = np.linspace(-1, 1, n_points * 3).reshape(n_points, 3)
+
+        if geometry == "Cylinder":
+            self.source = pymagba.magnets.CylinderMagnet(
+                position=(0, 0, 0),
+                orientation=_get_standard_rotation(),
+                diameter=0.1,
+                height=0.2,
+                polarization=(1, 2, 3),
+            )
+        elif geometry == "Cuboid":
+            self.source = pymagba.magnets.CuboidMagnet(
+                position=(0, 0, 0),
+                orientation=_get_standard_rotation(),
+                dimensions=(0.1, 0.2, 0.3),
+                polarization=(1, 2, 3),
+            )
+        elif geometry == "Dipole":
+            self.source = pymagba.magnets.Dipole(
+                position=(0, 0, 0),
+                orientation=_get_standard_rotation(),
+                moment=(1, 2, 3),
+            )
+        elif geometry == "Collection":
+            m1 = pymagba.magnets.CylinderMagnet(
+                position=(0.005, 0.0, 0.0),
+                diameter=0.01,
+                height=0.02,
+                polarization=(0.0, 0.0, 1.0),
+            )
+            m2 = pymagba.magnets.CuboidMagnet(
+                position=(-0.005, 0.0, 0.0),
+                dimensions=(0.01, 0.01, 0.01),
+                polarization=(0.0, 0.0, -1.0),
+            )
+            self.source = pymagba.magnets.SourceCollection([m1, m2])
+        self.func = self.source.compute_B
+
+    def time_small_batch(self, geometry, n_points):
+        func = self.func
+        obs = self.observers
+        for _ in range(10000):
+            func(obs)
+
+
+SmallBatchComputation.time_small_batch.benchmark_name = (  # type: ignore[attr-defined]
+    "operations.SmallBatchComputation.time_small_batch"
+)

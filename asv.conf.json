@@ -18,7 +18,8 @@
     "matrix": {
         "req": {
             "numpy": "",
-            "scipy": ""
+            "scipy": "",
+            "magpylib": ""
         }
     },
     "build_command": [

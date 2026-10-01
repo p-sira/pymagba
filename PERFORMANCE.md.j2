@@ -29,14 +29,25 @@ Below is a comparison of computation times for various source geometries, calcul
 {% for row in composite_rows -%}
 | **{{ row.geom }}** | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} | {{ row.max_e }} | {{ row.p95_e }} |
 {% endfor %}
-## 2. Object Creation
+## 2. Small-Batch / Looped Field Computation
+
+In dynamic tracking and time-stepping simulations (such as sensor reading loops or trajectory integration), magnetic fields are frequently evaluated over small observer batches (1–10 positions) in a tight loop. This benchmark measures the per-call overhead, FFI boundary cost, and dispatch efficiency when evaluating 1 and 10 observer positions repeatedly (10,000 operations).
+
+| Operation | PyMagba Time | Magpylib Time | Speedup |
+|-----------|--------------|---------------|---------|
+{% for row in small_batch_rows -%}
+| {{ row.label }} | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} |
+{% endfor %}
+
+## 3. Object Creation
 
 | Operation | PyMagba Time | Magpylib Time | Speedup |
 |-----------|--------------|---------------|---------|
 {% for row in create_rows -%}
 | {{ row.label }} | {{ row.py_t }} | {{ row.ma_t }} | {{ row.speed }} |
 {% endfor %}
-## 3. Object Manipulation
+
+## 4. Object Manipulation
 
 Simulations often require dynamic movement of sources. This benchmark measures the overhead of translating and rotating objects in 3D space (10,000 operations).
 

@@ -1,12 +1,19 @@
 import glob
+import inspect
+import itertools
 import json
+import math
 import os
+import sys
+import warnings
 
+import jinja2
+import magpylib
 import numpy as np
-from scipy.spatial.transform import Rotation
+import pymagba
 
 
-def get_observer_grid(n_points):
+def get_observer_grid(n_points: int) -> np.ndarray:
     n = round(n_points ** (1 / 3.0))
     x = np.linspace(-1.0, 1.0, n)
     y = np.linspace(-1.0, 1.0, n)
@@ -15,11 +22,9 @@ def get_observer_grid(n_points):
     return np.column_stack((X.ravel(), Y.ravel(), Z.ravel()))
 
 
-def get_standard_rotation():
-    return Rotation.from_euler("xyz", [10, 20, 30], degrees=True)
-
-
-def relative_error(B_pymagba, B_magpylib):
+def relative_error(
+    B_pymagba: np.ndarray, B_magpylib: np.ndarray
+) -> tuple[float, float]:
     diff = np.linalg.norm(B_pymagba - B_magpylib, axis=1)
     mag = np.linalg.norm(B_magpylib, axis=1)
     mask = mag > 1e-15
@@ -27,33 +32,26 @@ def relative_error(B_pymagba, B_magpylib):
     rel_err[mask] = diff[mask] / mag[mask]
     if len(rel_err) == 0:
         return 0.0, 0.0
-    return np.max(rel_err), np.percentile(rel_err, 95)
+    return float(np.max(rel_err)), float(np.percentile(rel_err, 95))
 
 
-def calc_accuracy():
-    import inspect
-    import sys
-    import warnings
-
+def calc_accuracy() -> dict[str, tuple[float, float]]:
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
     from benchmarks.comparison import currents as bench_currents
     from benchmarks.comparison import magnets as bench_magnets
 
     observers = get_observer_grid(100000)
-    acc = {}
+    acc: dict[str, tuple[float, float]] = {}
 
-    modules = [bench_magnets, bench_currents]
-
-    for mod in modules:
+    for mod in (bench_magnets, bench_currents):
         for name, cls in inspect.getmembers(mod, inspect.isclass):
             if not name.startswith(("Magnet", "Current", "Composite")):
                 continue
 
             geom_name = name
-            for prefix in ["Magnet", "Current", "Composite"]:
+            for prefix in ("Magnet", "Current", "Composite"):
                 if name.startswith(prefix):
-                    geom_name = name[len(prefix) :]
+                    geom_name = name.removeprefix(prefix)
                     break
 
             try:
@@ -76,87 +74,88 @@ def calc_accuracy():
     return acc
 
 
+def parse_asv_results(results: dict) -> dict[str, dict[str, float]]:
+    """Dynamically parse comparison benchmarks using ASV's parameter grid metadata."""
+    speedups: dict[str, dict[str, float]] = {}
+
+    for name, val in results.items():
+        if not name.startswith("comparison.") or not isinstance(val, list) or not val:
+            continue
+        timings = val[0]
+        param_grid = val[1]
+        if not timings or not param_grid:
+            continue
+
+        # ASV stores param_grid as a list of lists of strings, e.g. [["'PyMagba'", "'MagpyLib'"], ...]
+        params = [[p.strip("'\"") for p in level] for level in param_grid]
+        if not params or params[0] != ["PyMagba", "MagpyLib"]:
+            continue
+
+        # Map each parameter combination in the Cartesian product to its timing
+        for param_tuple, timing in zip(itertools.product(*params), timings):
+            lib = param_tuple[0]  # "PyMagba" or "MagpyLib"
+            lib_key = "py" if lib == "PyMagba" else "ma"
+            rest = param_tuple[1:]
+
+            if "comparison.operations.ObjectCreation" in name:
+                geom = rest[0]
+                key = f"Create {geom}"
+            elif "comparison.operations.ObjectManipulation" in name:
+                geom, op = rest[0], rest[1]
+                key = f"{op} {geom}"
+            elif "comparison.operations.SmallBatchComputation" in name:
+                geom, n_pts = rest[0], rest[1]
+                unit = "point" if n_pts == "1" else "points"
+                key = f"{geom} ({n_pts} {unit})"
+            elif "comparison.fields." in name:
+                key = name.split("Field")[1].split(".")[0]
+            elif "comparison.magnets." in name or "comparison.currents." in name:
+                class_name = name.split(".")[-2]
+                key = class_name.removeprefix("Magnet").removeprefix("Current")
+            else:
+                continue
+
+            speedups.setdefault(key, {})[lib_key] = timing
+
+    return speedups
+
+
+def extract_environment(params: dict) -> dict[str, str]:
+    try:
+        # asv stores ram in KB. Ceil brings it back to physical RAM size (e.g. 15.03 -> 16 GB)
+        ram_gb = f"{math.ceil(int(params.get('ram', '0')) / 1024 / 1024)} GB"
+    except ValueError:
+        ram_gb = "Unknown"
+
+    return {
+        "os": params.get("os", "Unknown"),
+        "cpu": f"{params.get('cpu', 'Unknown')} ({params.get('num_cpu', '?')} cores)",
+        "ram": ram_gb,
+        "python": params.get("python", "Unknown"),
+    }
+
+
 def main():
     results_dir = ".asv/results"
     json_files = glob.glob(os.path.join(results_dir, "*", "*.json"))
     json_files = [f for f in json_files if "machine.json" not in f]
 
-    speedups = {}
-    env = {}
-    if json_files:
-        latest_file = max(json_files, key=os.path.getmtime)
+    # Prefer local machine results over CI runner results if available
+    local_files = [f for f in json_files if "github-runner" not in f]
+    target_files = local_files if local_files else json_files
+
+    speedups: dict[str, dict[str, float]] = {}
+    env: dict[str, str] = {}
+
+    if target_files:
+        latest_file = max(target_files, key=os.path.getmtime)
         with open(latest_file, "r") as f:
             data = json.load(f)
 
-        params = data.get("params", {})
-        try:
-            import math
-
-            # asv stores ram in KB. OS often reserves ~0.5-1GB for iGPU/hardware,
-            # so ceil() brings it back to the physical RAM size (e.g. 15.03 -> 16)
-            ram_gb = math.ceil(int(params.get("ram", "0")) / 1024 / 1024)
-        except ValueError:
-            ram_gb = "Unknown"
-        env = {
-            "os": params.get("os", "Unknown"),
-            "cpu": f"{params.get('cpu', 'Unknown')} ({params.get('num_cpu', '?')} cores)",
-            "ram": f"{ram_gb} GB",
-            "python": params.get("python", "Unknown"),
-        }
-
-        results = data.get("results", {})
-        for name, val in results.items():
-            if not isinstance(val, list) or not val:
-                continue
-            res = val[0]
-            if not res:
-                continue
-
-            # Pure fields
-            if "Field" in name and "time_field" in name:
-                geom = name.split("Field")[1].split(".")[0]
-                if len(res) >= 2 and res[0] and res[1]:
-                    speedups[geom] = {"py": res[0], "ma": res[1]}
-            elif "Magnet" in name and "time_compute_B" in name:
-                # name is like comparison.magnets.MagnetCuboid.time_compute_B
-                class_name = name.split(".")[-2]
-                geom = class_name.removeprefix("Magnet")
-                if len(res) >= 2 and res[0] and res[1]:
-                    speedups[geom] = {"py": res[0], "ma": res[1]}
-            elif "Current" in name and "time_compute_B" in name:
-                # name is like comparison.currents.CurrentPolyline.time_compute_B
-                class_name = name.split(".")[-2]
-                geom = class_name.removeprefix("Current")
-                if len(res) >= 2 and res[0] and res[1]:
-                    speedups[geom] = {"py": res[0], "ma": res[1]}
-
-            # Object Creation
-            if "ObjectCreation" in name and len(res) == 4:
-                speedups["Create Cylinder"] = {"py": res[0], "ma": res[2]}
-                speedups["Create Collection"] = {"py": res[1], "ma": res[3]}
-            elif "ObjectCreation" in name and len(res) == 8:
-                # Fallback
-                speedups["Create Cylinder"] = {"py": res[1], "ma": res[5]}
-                speedups["Create Collection"] = {"py": res[3], "ma": res[7]}
-
-            # Object Manipulation
-            if "ObjectManipulation" in name and len(res) == 8:
-                speedups["Translate Cylinder"] = {"py": res[0], "ma": res[4]}
-                speedups["Rotate Cylinder"] = {"py": res[1], "ma": res[5]}
-                speedups["Translate Collection"] = {"py": res[2], "ma": res[6]}
-                speedups["Rotate Collection"] = {"py": res[3], "ma": res[7]}
-            elif "ObjectManipulation" in name and len(res) == 16:
-                # Fallback for old
-                speedups["Translate Cylinder"] = {"py": res[2], "ma": res[10]}
-                speedups["Rotate Cylinder"] = {"py": res[3], "ma": res[11]}
-                speedups["Translate Collection"] = {"py": res[6], "ma": res[14]}
-                speedups["Rotate Collection"] = {"py": res[7], "ma": res[15]}
+        env = extract_environment(data.get("params", {}))
+        speedups = parse_asv_results(data.get("results", {}))
 
     accuracy = calc_accuracy()
-
-    import jinja2
-    import magpylib
-    import pymagba
 
     pymagba_version = getattr(pymagba, "__version__", "Unknown")
     magpylib_version = getattr(magpylib, "__version__", "Unknown")
@@ -164,13 +163,9 @@ def main():
     with open("PERFORMANCE.md.j2", "r") as f:
         template = jinja2.Template(f.read())
 
-    magnet_rows = []
-    current_rows = []
-    composite_rows = []
-
-    def format_row(geom, dict_speedups, dict_acc):
-        sp = dict_speedups.get(geom, {})
-        acc_data = dict_acc.get(geom)
+    def format_geom_row(geom: str) -> dict[str, str]:
+        sp = speedups.get(geom, {})
+        acc_data = accuracy.get(geom)
         return {
             "geom": geom,
             "py_t": f"{sp.get('py', 0) * 1000:.2f} ms" if sp else "*TBD*",
@@ -180,58 +175,52 @@ def main():
             "p95_e": f"{acc_data[1]:.2e}" if acc_data else "*TBD*",
         }
 
-    for geom in [
-        "Cylinder",
-        "Sphere",
-        "Cuboid",
-        "Dipole",
-        "Tetrahedron",
-        "Mesh",
-        "Triangle",
-    ]:
-        magnet_rows.append(format_row(geom, speedups, accuracy))
+    def format_op_row(key: str, label: str | None = None) -> dict[str, str]:
+        sp = speedups.get(key, {})
+        return {
+            "label": label or key,
+            "py_t": f"{sp.get('py', 0) * 1000:.2f} ms" if sp else "*TBD*",
+            "ma_t": f"{sp.get('ma', 0) * 1000:.2f} ms" if sp else "*TBD*",
+            "speed": f"{sp['ma'] / sp['py']:.1f}x" if sp and sp.get("py") else "*TBD*",
+        }
 
-    for geom in ["Circular", "Polyline", "TriangleCurrent", "SheetCurrent"]:
-        current_rows.append(format_row(geom, speedups, accuracy))
+    magnet_rows = [
+        format_geom_row(geom)
+        for geom in [
+            "Cylinder",
+            "Sphere",
+            "Cuboid",
+            "Dipole",
+            "Tetrahedron",
+            "Mesh",
+            "Triangle",
+        ]
+    ]
 
-    for geom in ["Collection"]:
-        composite_rows.append(format_row(geom, speedups, accuracy))
+    current_rows = [
+        format_geom_row(geom)
+        for geom in ["Circular", "Polyline", "TriangleCurrent", "SheetCurrent"]
+    ]
 
-    create_rows = []
-    for op, label in [
-        ("Create Cylinder", "Cylinder"),
-        ("Create Collection", "Collection"),
-    ]:
-        sp = speedups.get(op, {})
-        create_rows.append(
-            {
-                "label": label,
-                "py_t": f"{sp.get('py', 0) * 1000:.2f} ms" if sp else "*TBD*",
-                "ma_t": f"{sp.get('ma', 0) * 1000:.2f} ms" if sp else "*TBD*",
-                "speed": f"{sp['ma'] / sp['py']:.1f}x"
-                if sp and sp.get("py")
-                else "*TBD*",
-            }
-        )
+    composite_rows = [format_geom_row("Collection")]
 
-    man_rows = []
-    for op, label in [
-        ("Translate Cylinder", "Translate Cylinder"),
-        ("Rotate Cylinder", "Rotate Cylinder"),
-        ("Translate Collection", "Translate Collection"),
-        ("Rotate Collection", "Rotate Collection"),
-    ]:
-        sp = speedups.get(op, {})
-        man_rows.append(
-            {
-                "label": label,
-                "py_t": f"{sp.get('py', 0) * 1000:.2f} ms" if sp else "*TBD*",
-                "ma_t": f"{sp.get('ma', 0) * 1000:.2f} ms" if sp else "*TBD*",
-                "speed": f"{sp['ma'] / sp['py']:.1f}x"
-                if sp and sp.get("py")
-                else "*TBD*",
-            }
-        )
+    create_rows = [
+        format_op_row("Create Cylinder", "Cylinder"),
+        format_op_row("Create Collection", "Collection"),
+    ]
+
+    man_rows = [
+        format_op_row("Translate Cylinder"),
+        format_op_row("Rotate Cylinder"),
+        format_op_row("Translate Collection"),
+        format_op_row("Rotate Collection"),
+    ]
+
+    small_batch_rows = [
+        format_op_row(f"{geom} ({pts} point{'s' if pts != 1 else ''})")
+        for geom in ["Cylinder", "Cuboid", "Dipole", "Collection"]
+        for pts in [1, 10]
+    ]
 
     content = template.render(
         magnet_rows=magnet_rows,
@@ -239,6 +228,7 @@ def main():
         composite_rows=composite_rows,
         create_rows=create_rows,
         man_rows=man_rows,
+        small_batch_rows=small_batch_rows,
         env=env,
         pymagba_version=pymagba_version,
         magpylib_version=magpylib_version,
