@@ -202,3 +202,25 @@ def test_pickle_hall_latch_hysteresis():
     restored = pickle.loads(pickle.dumps(latch))
     assert restored.read(zero) is True
 
+
+def test_pickle_nested_collection_transformation():
+    # https://github.com/p-sira/pymagba/pull/40: Transformation propagation through nested collections across pickle
+    from pymagba.magnets import CylinderMagnet
+    child_pos = [0.1, 0.2, 0.3]
+    m = CylinderMagnet(position=child_pos, polarization=[0, 0, 1])
+    inner = SourceCollection([m], position=[0, 0, 1])
+    outer = SourceCollection([inner], position=[0, 0, 2])
+
+    outer.translate([1.0, 2.0, 3.0])
+    quat_x_90 = [0.70710678, 0.0, 0.0, 0.70710678]
+    outer.rotate_anchor(quat_x_90, anchor=outer.position)
+
+    pt = [2.0, 3.0, 5.0]
+    b_before = outer.compute_B(pt)
+
+    restored = pickle.loads(pickle.dumps(outer))
+    b_after = restored.compute_B(pt)
+
+    np.testing.assert_allclose(b_after, b_before, atol=0)
+
+
