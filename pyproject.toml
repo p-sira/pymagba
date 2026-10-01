@@ -38,6 +38,7 @@ dev = [
     "scipy-stubs>=1.17.1.5",
     "numpy-stl>=4.0.1",
     "ruff>=0.16.8",
+    "pytest-codspeed>=5.0.3",
 ]
 docs = [
     "sphinx>=8.2.3",
