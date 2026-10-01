@@ -4,8 +4,7 @@
  */
 
 use nalgebra::Vector3;
-use numpy::prelude::*;
-use numpy::{PyArray1, PyArray2};
+use numpy::PyArray2;
 use pyo3::prelude::*;
 
 /// Efficiently converts a Vec<Vector3<f64>> into a (N, 3) PyArray2.
@@ -15,14 +14,32 @@ pub fn vec3_to_pyarray2<'py>(
     vec3: Vec<Vector3<f64>>,
 ) -> Bound<'py, PyArray2<f64>> {
     let n = vec3.len();
+    if n == 0 {
+        let arr = ndarray::Array2::<f64>::zeros((0, 3));
+        return numpy::PyArray2::from_owned_array(py, arr);
+    }
+    if n == 1 {
+        let v = vec3[0];
+        let arr = ndarray::arr2(&[[v.x, v.y, v.z]]);
+        return numpy::PyArray2::from_owned_array(py, arr);
+    }
 
-    // Flatten to 1D
-    let flat_results: Vec<f64> = vec3.into_iter().flat_map(|v| [v.x, v.y, v.z]).collect();
+    debug_assert_eq!(
+        std::mem::size_of::<Vector3<f64>>(),
+        3 * std::mem::size_of::<f64>()
+    );
+    debug_assert_eq!(
+        std::mem::align_of::<Vector3<f64>>(),
+        std::mem::align_of::<f64>()
+    );
 
-    // Move to NumPy and reshape to 2D
-    PyArray1::from_vec(py, flat_results)
-        .reshape([n, 3])
-        .unwrap()
+    let flat_results = unsafe {
+        let mut v = std::mem::ManuallyDrop::new(vec3);
+        Vec::from_raw_parts(v.as_mut_ptr() as *mut f64, n * 3, v.capacity() * 3)
+    };
+
+    let arr = ndarray::Array2::from_shape_vec((n, 3), flat_results).unwrap();
+    numpy::PyArray2::from_owned_array(py, arr)
 }
 
 /// Runs a closure and catches any panics, converting them to a Python `ValueError`.

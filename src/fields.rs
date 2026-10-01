@@ -30,6 +30,18 @@ pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
+macro_rules! detach_if_multi {
+    ($py:expr, $n:expr, $work:expr) => {
+        if $n <= 1 {
+            $work;
+        } else {
+            $py.detach(|| {
+                $work;
+            });
+        }
+    };
+}
+
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
 #[pyfunction]
 /// Calculates the magnetic field of a cylindrical magnet.
@@ -84,8 +96,9 @@ pub fn cylinder_B<'py>(
     // Pre-allocate the result buffer
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    // Multithreaded computation
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::cylinder_B_batch(
             &points,
             pos.into(),
@@ -94,8 +107,8 @@ pub fn cylinder_B<'py>(
             diameter,
             height,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     Ok(vec3_to_pyarray2(py, results))
 }
@@ -135,9 +148,11 @@ pub fn dipole_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
-        magba::fields::dipole_B_batch(&points, pos.into(), rot, m.into(), results.as_mut_slice());
-    });
+    detach_if_multi!(
+        py,
+        n,
+        magba::fields::dipole_B_batch(&points, pos.into(), rot, m.into(), results.as_mut_slice())
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -187,7 +202,9 @@ pub fn cuboid_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::cuboid_B_batch(
             &points,
             pos.into(),
@@ -195,8 +212,8 @@ pub fn cuboid_B<'py>(
             pol.into(),
             dim.into(),
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     Ok(vec3_to_pyarray2(py, results))
 }
@@ -245,7 +262,9 @@ pub fn sphere_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::sphere_B_batch(
             &points,
             pos.into(),
@@ -253,8 +272,8 @@ pub fn sphere_B<'py>(
             pol.into(),
             diameter,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     Ok(vec3_to_pyarray2(py, results))
 }
@@ -302,7 +321,9 @@ pub fn circular_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::circular_B_batch(
             &points,
             pos.into(),
@@ -310,8 +331,8 @@ pub fn circular_B<'py>(
             diameter,
             current,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     Ok(vec3_to_pyarray2(py, results))
 }
@@ -359,7 +380,9 @@ pub fn triangle_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::triangle_B_batch(
             &points,
             pos.into(),
@@ -367,8 +390,8 @@ pub fn triangle_B<'py>(
             pol.into(),
             v,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -422,7 +445,9 @@ pub fn tetrahedron_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::tetrahedron_B_batch(
             &points,
             pos.into(),
@@ -430,8 +455,8 @@ pub fn tetrahedron_B<'py>(
             pol.into(),
             v,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -489,7 +514,9 @@ pub fn mesh_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::mesh_B_batch(
             &points,
             pos.into(),
@@ -497,8 +524,8 @@ pub fn mesh_B<'py>(
             pol.into(),
             &trimesh,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     Ok(vec3_to_pyarray2(py, results))
 }
@@ -533,7 +560,9 @@ pub fn path_current_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::path_current_B_batch(
             &points,
             pos.into(),
@@ -541,8 +570,8 @@ pub fn path_current_B<'py>(
             current,
             &verts,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -575,7 +604,9 @@ pub fn triangle_current_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::triangle_current_B_batch(
             &points,
             pos.into(),
@@ -583,8 +614,8 @@ pub fn triangle_current_B<'py>(
             j.into(),
             v,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -643,7 +674,9 @@ pub fn sheet_current_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
         magba::fields::sheet_current_B_batch(
             &points,
             pos.into(),
@@ -651,8 +684,8 @@ pub fn sheet_current_B<'py>(
             &j,
             &trimesh,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     Ok(vec3_to_pyarray2(py, results))
 }

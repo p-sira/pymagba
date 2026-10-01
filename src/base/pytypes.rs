@@ -48,6 +48,19 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
                 )));
             }
         }
+        if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f32>>() {
+            let view = arr1.as_array();
+            let shape = view.shape();
+
+            if shape[0] == 3 {
+                return Ok(ArrayLike3([view[0] as f64, view[1] as f64, view[2] as f64]));
+            } else {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Expected exactly 3 elements, got shape {:?}",
+                    shape
+                )));
+            }
+        }
 
         // 2. Fallback for native Python lists: [x, y, z]
         if let Ok(list_1d) = ob.extract::<[f64; 3]>() {
@@ -94,7 +107,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
     type Error = PyErr;
 
     fn extract(ob: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
-        // 1. Try extracting as an N x 3 numpy array
+        // 1. Fast path: 2D NumPy array (N, 3) f64 (batch fast-path)
         if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, f64>>() {
             let view = arr2.as_array();
             let shape = view.shape();
@@ -102,18 +115,71 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
             if shape[1] == 3 {
                 let n = shape[0];
                 let mut pts = Vec::with_capacity(n);
-                for i in 0..n {
-                    pts.push(nalgebra::Point3::new(
-                        view[[i, 0]],
-                        view[[i, 1]],
-                        view[[i, 2]],
-                    ));
+                if let Some(slice) = view.as_slice() {
+                    for &[x, y, z] in slice.as_chunks::<3>().0 {
+                        pts.push(nalgebra::Point3::new(x, y, z));
+                    }
+                } else {
+                    for i in 0..n {
+                        pts.push(nalgebra::Point3::new(
+                            view[[i, 0]],
+                            view[[i, 1]],
+                            view[[i, 2]],
+                        ));
+                    }
                 }
                 return Ok(PointsLike(pts));
             }
         }
 
-        // 2. Native Python lists of lists: [[x, y, z], ...]
+        // 2. Fast path: 1D NumPy array (3,) f64 (scalar fast-path)
+        if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f64>>() {
+            let view = arr1.as_array();
+            if view.shape()[0] == 3 {
+                return Ok(PointsLike(vec![nalgebra::Point3::new(
+                    view[0], view[1], view[2],
+                )]));
+            }
+        }
+
+        // 3. 2D NumPy array (N, 3) f32 (batch float32)
+        if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, f32>>() {
+            let view = arr2.as_array();
+            let shape = view.shape();
+
+            if shape[1] == 3 {
+                let n = shape[0];
+                let mut pts = Vec::with_capacity(n);
+                if let Some(slice) = view.as_slice() {
+                    for &[x, y, z] in slice.as_chunks::<3>().0 {
+                        pts.push(nalgebra::Point3::new(x as f64, y as f64, z as f64));
+                    }
+                } else {
+                    for i in 0..n {
+                        pts.push(nalgebra::Point3::new(
+                            view[[i, 0]] as f64,
+                            view[[i, 1]] as f64,
+                            view[[i, 2]] as f64,
+                        ));
+                    }
+                }
+                return Ok(PointsLike(pts));
+            }
+        }
+
+        // 4. 1D NumPy array (3,) f32 (scalar float32)
+        if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f32>>() {
+            let view = arr1.as_array();
+            if view.shape()[0] == 3 {
+                return Ok(PointsLike(vec![nalgebra::Point3::new(
+                    view[0] as f64,
+                    view[1] as f64,
+                    view[2] as f64,
+                )]));
+            }
+        }
+
+        // 5. Native Python lists of lists: [[x, y, z], ...]
         if let Ok(list_2d) = ob.extract::<Vec<[f64; 3]>>() {
             let pts = list_2d
                 .into_iter()
@@ -122,8 +188,7 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
             return Ok(PointsLike(pts));
         }
 
-        // 3. Delegate to ArrayLike3 for the single point / 1D cases
-        // This handles both PyReadonlyArray1 and flat python lists [x, y, z]
+        // 6. Native Python single point / sequence: [x, y, z] or (x, y, z)
         if let Ok(single_point) = ob.extract::<ArrayLike3>() {
             let arr = single_point.0;
             return Ok(PointsLike(vec![nalgebra::Point3::new(

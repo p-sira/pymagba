@@ -80,7 +80,11 @@ macro_rules! impl_compute_B {
                 use magba::base::Source;
 
                 let pts = points.0;
-                let b_field = self.inner.compute_B_batch(&pts);
+                let b_field = if pts.len() <= 1 {
+                    self.inner.compute_B_batch(&pts)
+                } else {
+                    py.detach(|| self.inner.compute_B_batch(&pts))
+                };
 
                 crate::util::vec3_to_pyarray2(py, b_field)
             }
