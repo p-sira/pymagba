@@ -109,9 +109,11 @@ impl TriangleCurrent {
             .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("vertices"))?
             .extract()?;
 
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+
         self.inner = MagbaTriangleCurrent::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
+            rot,
             Vector3::new(current_density[0], current_density[1], current_density[2]),
             [
                 Vector3::new(vertices[0][0], vertices[0][1], vertices[0][2]),

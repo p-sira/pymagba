@@ -81,10 +81,16 @@ impl CuboidMagnet {
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, dimensions;3, polarization;3]);
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        if dimensions.iter().any(|&d| !d.is_finite() || d < 0.0) {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Dimensions must be non-negative.",
+            ));
+        }
 
         self.inner = MagbaCuboidMagnet::new(
             position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
+            rot,
             polarization,
             dimensions,
         );

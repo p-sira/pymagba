@@ -152,23 +152,22 @@ impl SourceCollection {
         })?;
         let orientation: [f64; 4] = ori_item.extract()?;
 
-        let pose = magba::base::Pose::new(
-            position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
-        );
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        let pose = magba::base::Pose::new(position, rot);
 
         let local_offsets: Vec<nalgebra::Isometry3<f64>> = if let Ok(Some(offsets_item)) =
             state.get_item("local_offsets")
         {
             let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
-            raw.into_iter()
-                .map(|(t, r)| {
-                    nalgebra::Isometry3::from_parts(
-                        nalgebra::Translation3::from(t),
-                        nalgebra::UnitQuaternion::from_quaternion(r.into()),
-                    )
-                })
-                .collect()
+            let mut offsets = Vec::with_capacity(raw.len());
+            for (t, r) in raw {
+                let r_rot = crate::base::validate_and_normalize_quaternion(r)?;
+                offsets.push(nalgebra::Isometry3::from_parts(
+                    nalgebra::Translation3::from(t),
+                    r_rot,
+                ));
+            }
+            offsets
         } else {
             // Legacy unversioned state compatibility:
             let mut offsets = Vec::with_capacity(sources.len());
@@ -292,23 +291,22 @@ impl ObserverCollection {
         })?;
         let orientation: [f64; 4] = ori_item.extract()?;
 
-        let pose = magba::base::Pose::new(
-            position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
-        );
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        let pose = magba::base::Pose::new(position, rot);
 
         let local_offsets: Vec<nalgebra::Isometry3<f64>> = if let Ok(Some(offsets_item)) =
             state.get_item("local_offsets")
         {
             let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
-            raw.into_iter()
-                .map(|(t, r)| {
-                    nalgebra::Isometry3::from_parts(
-                        nalgebra::Translation3::from(t),
-                        nalgebra::UnitQuaternion::from_quaternion(r.into()),
-                    )
-                })
-                .collect()
+            let mut offsets = Vec::with_capacity(raw.len());
+            for (t, r) in raw {
+                let r_rot = crate::base::validate_and_normalize_quaternion(r)?;
+                offsets.push(nalgebra::Isometry3::from_parts(
+                    nalgebra::Translation3::from(t),
+                    r_rot,
+                ));
+            }
+            offsets
         } else {
             // Legacy unversioned state compatibility:
             let mut offsets = Vec::with_capacity(sensors.len());

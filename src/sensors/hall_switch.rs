@@ -10,10 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{
-        extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, PyRotation,
-        SourceRef,
-    },
+    base::{extract_states, try_into_quat, try_into_slice, ArrayLike3, PyRotation, SourceRef},
     macros::impl_pypose,
     util::catch_unwind_to_pyerr,
 };
@@ -38,7 +35,17 @@ impl HallSwitch {
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
-        let s_axis = try_into_slice_or!(sensitive_axis, [0.0, 0.0, 1.0]);
+        let s_axis = if let Some(axis) = sensitive_axis {
+            crate::base::validate_and_normalize_axis(axis.0)?
+        } else {
+            nalgebra::Vector3::z()
+        };
+
+        if !b_op.is_finite() || b_op < 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "B_OP must be non-negative.",
+            ));
+        }
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaHallSwitch::new(pos, rot, s_axis, b_op),
@@ -53,9 +60,9 @@ impl HallSwitch {
 
     #[setter]
     fn set_sensitive_axis(&mut self, axis: ArrayLike3) -> PyResult<()> {
-        catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
-            self.inner.set_sensitive_axis(axis.0);
-        }))
+        let s_axis = crate::base::validate_and_normalize_axis(axis.0)?;
+        self.inner.set_sensitive_axis(s_axis);
+        Ok(())
     }
 
     #[getter]
@@ -65,9 +72,13 @@ impl HallSwitch {
 
     #[setter]
     fn set_b_op(&mut self, b_op: f64) -> PyResult<()> {
-        catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
-            self.inner.set_b_op(b_op);
-        }))
+        if !b_op.is_finite() || b_op < 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "B_OP must be non-negative.",
+            ));
+        }
+        self.inner.set_b_op(b_op);
+        Ok(())
     }
 
     fn __getstate__(&self, py: Python<'_>) -> PyResult<Py<pyo3::types::PyDict>> {
@@ -85,13 +96,15 @@ impl HallSwitch {
 
     fn __setstate__(&mut self, state: pyo3::Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, sensitive_axis;3, b_op]);
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        let s_axis = crate::base::validate_and_normalize_axis(sensitive_axis)?;
+        if !b_op.is_finite() || b_op < 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "B_OP must be non-negative.",
+            ));
+        }
 
-        self.inner = MagbaHallSwitch::new(
-            position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
-            sensitive_axis,
-            b_op,
-        );
+        self.inner = MagbaHallSwitch::new(position, rot, s_axis, b_op);
         Ok(())
     }
 

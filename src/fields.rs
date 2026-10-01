@@ -59,7 +59,18 @@ pub fn cylinder_B<'py>(
     diameter: f64,
     height: f64,
     polarization: Option<ArrayLike3>,
-) -> Bound<'py, numpy::PyArray2<f64>> {
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    if !diameter.is_finite() || diameter <= 0.0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Diameter cannot be negative.",
+        ));
+    }
+    if !height.is_finite() || height <= 0.0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Height cannot be negative.",
+        ));
+    }
+
     let points = points.0;
     let n = points.len();
 
@@ -86,7 +97,7 @@ pub fn cylinder_B<'py>(
         );
     });
 
-    vec3_to_pyarray2(py, results)
+    Ok(vec3_to_pyarray2(py, results))
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
@@ -157,7 +168,14 @@ pub fn cuboid_B<'py>(
     orientation: Option<PyRotation>,
     dimensions: Option<ArrayLike3>,
     polarization: Option<ArrayLike3>,
-) -> Bound<'py, numpy::PyArray2<f64>> {
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
+    if dim.iter().any(|&d| !d.is_finite() || d < 0.0) {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Dimensions must be non-negative.",
+        ));
+    }
+
     let points = points.0;
     let n = points.len();
 
@@ -165,7 +183,6 @@ pub fn cuboid_B<'py>(
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-    let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
     let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
@@ -181,7 +198,7 @@ pub fn cuboid_B<'py>(
         );
     });
 
-    vec3_to_pyarray2(py, results)
+    Ok(vec3_to_pyarray2(py, results))
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
@@ -210,7 +227,13 @@ pub fn sphere_B<'py>(
     orientation: Option<PyRotation>,
     diameter: f64,
     polarization: Option<ArrayLike3>,
-) -> Bound<'py, numpy::PyArray2<f64>> {
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    if !diameter.is_finite() || diameter <= 0.0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Diameter cannot be negative.",
+        ));
+    }
+
     let points = points.0;
     let n = points.len();
 
@@ -233,7 +256,7 @@ pub fn sphere_B<'py>(
         );
     });
 
-    vec3_to_pyarray2(py, results)
+    Ok(vec3_to_pyarray2(py, results))
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
@@ -262,7 +285,13 @@ pub fn circular_B<'py>(
     orientation: Option<PyRotation>,
     diameter: f64,
     current: f64,
-) -> Bound<'py, numpy::PyArray2<f64>> {
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    if !diameter.is_finite() || diameter <= 0.0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Diameter must be positive.",
+        ));
+    }
+
     let points = points.0;
     let n = points.len();
 
@@ -284,7 +313,7 @@ pub fn circular_B<'py>(
         );
     });
 
-    vec3_to_pyarray2(py, results)
+    Ok(vec3_to_pyarray2(py, results))
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
