@@ -795,7 +795,7 @@ def cuboid_B(
         dimensions (ArrayLike3, optional): Side lengths [dx, dy, dz] in meters.
             Defaults to [1.0, 1.0, 1.0].
         polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
-            in Tesla. Defaults to [0.0, 0.0, 0.0].
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
 
     Returns:
         numpy.ndarray: Magnetic field (N, 3) in Tesla.
@@ -826,7 +826,7 @@ def cylinder_B(
         height (float, optional): Height of the cylinder in meters.
             Defaults to 1.0.
         polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
-            in Tesla. Defaults to [0.0, 0.0, 0.0].
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
 
     Returns:
         numpy.ndarray: Magnetic field (N, 3) in Tesla.
@@ -927,7 +927,7 @@ def sphere_B(
         diameter (float, optional): Diameter of the sphere in meters.
             Defaults to 1.0.
         polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
-            in Tesla. Defaults to [0.0, 0.0, 0.0].
+            in Tesla. Defaults to [0.0, 0.0, 1.0].
 
     Returns:
         numpy.ndarray: Magnetic field (N, 3) in Tesla.

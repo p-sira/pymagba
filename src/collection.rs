@@ -3,12 +3,14 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
+use std::collections::HashSet;
+
 use magba::collections::SourceAssembly;
 use numpy::PyArray1;
-use pyo3::exceptions::PyIndexError;
+use pyo3::exceptions::{PyIndexError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
-use pyo3::IntoPyObject;
+use pyo3::{IntoPyObject, PyTraverseError, PyVisit};
 
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
@@ -18,6 +20,39 @@ use crate::{
     base::{ObserverRef, SourceRef},
     macros::impl_pypose,
 };
+
+fn check_cycle_containment(
+    root: &Bound<'_, PyAny>,
+    target: *mut pyo3::ffi::PyObject,
+    visited: &mut HashSet<*mut pyo3::ffi::PyObject>,
+    on_stack: &mut HashSet<*mut pyo3::ffi::PyObject>,
+) -> PyResult<bool> {
+    let ptr = root.as_ptr();
+    if !target.is_null() && ptr == target {
+        return Ok(true);
+    }
+    if on_stack.contains(&ptr) {
+        return Ok(true);
+    }
+    if visited.contains(&ptr) {
+        return Ok(false);
+    }
+
+    on_stack.insert(ptr);
+
+    if let Ok(col) = root.extract::<PyRef<'_, SourceCollection>>() {
+        for child_py in &col.sources {
+            let child = child_py.bind(root.py());
+            if check_cycle_containment(child, target, visited, on_stack)? {
+                return Ok(true);
+            }
+        }
+    }
+
+    on_stack.remove(&ptr);
+    visited.insert(ptr);
+    Ok(false)
+}
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass)]
@@ -58,6 +93,17 @@ impl SourceCollection {
         py: Python<'_>,
     ) -> PyResult<Self> {
         let srcs = sources.unwrap_or_default();
+        let mut visited = HashSet::new();
+        let mut on_stack = HashSet::new();
+        for src in &srcs {
+            let bound = src.bind(py);
+            if check_cycle_containment(bound, std::ptr::null_mut(), &mut visited, &mut on_stack)? {
+                return Err(PyValueError::new_err(
+                    "Cannot create a collection with a circular collection hierarchy",
+                ));
+            }
+        }
+
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
         let pose = magba::base::Pose::new(pos, rot);
@@ -91,12 +137,23 @@ impl SourceCollection {
         Ok(self.sources[idx as usize].clone_ref(py))
     }
 
-    fn append(&mut self, source: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
+    fn append(slf: &Bound<'_, Self>, source: Py<PyAny>, py: Python<'_>) -> PyResult<()> {
+        let target = slf.as_ptr();
+        let mut visited = HashSet::new();
+        let mut on_stack = HashSet::new();
+        let bound = source.bind(py);
+        if check_cycle_containment(bound, target, &mut visited, &mut on_stack)? {
+            return Err(PyValueError::new_err(
+                "Cannot add collection to itself or create a circular collection hierarchy",
+            ));
+        }
+
         let s_ref = SourceRef::try_extract_with_py(&source, py)?;
         let child_pose = s_ref.pose();
-        let local_offset = self.inner.as_isometry().inverse() * child_pose.as_isometry();
-        self.local_offsets.push(local_offset);
-        self.sources.push(source);
+        let mut inner = slf.borrow_mut();
+        let local_offset = inner.inner.as_isometry().inverse() * child_pose.as_isometry();
+        inner.local_offsets.push(local_offset);
+        inner.sources.push(source);
         Ok(())
     }
 
@@ -136,8 +193,24 @@ impl SourceCollection {
         Ok(dict.unbind())
     }
 
-    fn __setstate__(&mut self, state: Bound<'_, PyDict>, py: Python<'_>) -> PyResult<()> {
+    fn __setstate__(
+        slf: &Bound<'_, Self>,
+        state: Bound<'_, PyDict>,
+        py: Python<'_>,
+    ) -> PyResult<()> {
         let sources: Vec<Py<PyAny>> = get_state_item!(state, "sources", Vec<Py<PyAny>>)?;
+        let target = slf.as_ptr();
+        let mut visited = HashSet::new();
+        let mut on_stack = HashSet::new();
+        for s in &sources {
+            let bound = s.bind(py);
+            if check_cycle_containment(bound, target, &mut visited, &mut on_stack)? {
+                return Err(PyValueError::new_err(
+                    "Cannot restore collection with a circular collection hierarchy",
+                ));
+            }
+        }
+
         for s in &sources {
             SourceRef::try_extract_with_py(s, py)?;
         }
@@ -152,7 +225,7 @@ impl SourceCollection {
             if let Ok(Some(offsets_item)) = state.get_item("local_offsets") {
                 let raw: Vec<([f64; 3], [f64; 4])> = offsets_item.extract()?;
                 if raw.len() != sources.len() {
-                    return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    return Err(PyValueError::new_err(format!(
                         "Number of local_offsets ({}) does not match number of sources ({})",
                         raw.len(),
                         sources.len()
@@ -177,10 +250,26 @@ impl SourceCollection {
                 offsets
             };
 
-        self.inner = pose;
-        self.sources = sources;
-        self.local_offsets = local_offsets;
+        let mut inner = slf.borrow_mut();
+        inner.inner = pose;
+        inner.sources = sources;
+        inner.local_offsets = local_offsets;
         Ok(())
+    }
+}
+
+#[pymethods]
+impl SourceCollection {
+    fn __traverse__(&self, visit: PyVisit<'_>) -> Result<(), PyTraverseError> {
+        for s in &self.sources {
+            visit.call(s)?;
+        }
+        Ok(())
+    }
+
+    fn __clear__(&mut self) {
+        self.sources.clear();
+        self.local_offsets.clear();
     }
 }
 
@@ -328,6 +417,21 @@ impl ObserverCollection {
             list.append(sensor_output_to_py(py, output)?)?;
         }
         Ok(list.into_any().unbind())
+    }
+}
+
+#[pymethods]
+impl ObserverCollection {
+    fn __traverse__(&self, visit: PyVisit<'_>) -> Result<(), PyTraverseError> {
+        for s in &self.sensors {
+            visit.call(s)?;
+        }
+        Ok(())
+    }
+
+    fn __clear__(&mut self) {
+        self.sensors.clear();
+        self.local_offsets.clear();
     }
 }
 
