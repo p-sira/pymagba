@@ -8,6 +8,10 @@ This version corresponds to Magba v0.7.0.
 
 - Fix mesh error message formatting using `Display` and stabilize validation tests for Magba v0.7.0.
 
+### Dependencies
+
+- Remove `magpylib` from runtime dependencies list (retaining it in the dev dependency group for comparison benchmarks).
+
 ## 0.6.0
 
 This version corresponds to Magba v0.6.2.

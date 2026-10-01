@@ -13,7 +13,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "magpylib>=5.2.2",
     "scipy>=1.16.2",
 ]
 

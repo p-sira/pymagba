@@ -1282,7 +1282,6 @@ wheels = [
 name = "pymagba"
 source = { editable = "." }
 dependencies = [
-    { name = "magpylib" },
     { name = "scipy" },
 ]
 
@@ -1312,10 +1311,7 @@ docs = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "magpylib", specifier = ">=5.2.2" },
-    { name = "scipy", specifier = ">=1.16.2" },
-]
+requires-dist = [{ name = "scipy", specifier = ">=1.16.2" }]
 
 [package.metadata.requires-dev]
 dev = [
