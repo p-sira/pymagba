@@ -32,7 +32,10 @@ pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
 macro_rules! detach_if_multi {
     ($py:expr, $n:expr, $work:expr) => {
-        if $n <= 1 {
+        detach_if_multi!($py, $n, 1, $work);
+    };
+    ($py:expr, $n:expr, $threshold:expr, $work:expr) => {
+        if $n <= $threshold {
             $work;
         } else {
             $py.detach(|| {
@@ -151,6 +154,7 @@ pub fn dipole_B<'py>(
     detach_if_multi!(
         py,
         n,
+        32,
         magba::fields::dipole_B_batch(&points, pos.into(), rot, m.into(), results.as_mut_slice())
     );
 
@@ -265,6 +269,7 @@ pub fn sphere_B<'py>(
     detach_if_multi!(
         py,
         n,
+        32,
         magba::fields::sphere_B_batch(
             &points,
             pos.into(),

@@ -68,6 +68,9 @@ pub(crate) use impl_pypose;
 /// Requires `inner` to implement `magba::base::Source`.
 macro_rules! impl_compute_B {
     ($struct:ty) => {
+        impl_compute_B!($struct, 1);
+    };
+    ($struct:ty, $gil_threshold:expr) => {
         #[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
         #[pyo3::pymethods]
         impl $struct {
@@ -80,7 +83,7 @@ macro_rules! impl_compute_B {
                 use magba::base::Source;
 
                 let pts = points.0;
-                let b_field = if pts.len() <= 1 {
+                let b_field = if pts.len() <= $gil_threshold {
                     self.inner.compute_B_batch(&pts)
                 } else {
                     py.detach(|| self.inner.compute_B_batch(&pts))

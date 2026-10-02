@@ -24,8 +24,8 @@ use crate::{
 #[derive(Clone)]
 pub struct MeshMagnet {
     pub(crate) inner: MagbaMeshMagnet<f64>,
-    _vertices: Vec<[f64; 3]>,
-    _faces: Vec<[usize; 3]>,
+    pub(crate) _vertices: Vec<[f64; 3]>,
+    pub(crate) _faces: Vec<[usize; 3]>,
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
