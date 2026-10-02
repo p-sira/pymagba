@@ -2,7 +2,7 @@
 
 ## 0.7.0
 
-This version corresponds to Magba v0.7.0.
+This version corresponds to Magba v0.7.1.
 
 ### Bug Fixes
 
