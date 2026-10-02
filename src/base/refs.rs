@@ -16,9 +16,9 @@ impl<'py> ObserverRef<'py> {
     pub fn try_extract(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         super::try_extract!(
             obj,
-            Linear: crate::sensors::LinearHallSensor,
-            Switch: crate::sensors::HallSwitch,
-            Latch: crate::sensors::HallLatch,
+            Linear => crate::sensors::LinearHallSensor,
+            Switch => crate::sensors::HallSwitch,
+            Latch => crate::sensors::HallLatch,
         );
         Err(pyo3::exceptions::PyTypeError::new_err(
             "sensors must be LinearHallSensor, HallSwitch, or HallLatch",
@@ -93,17 +93,17 @@ impl<'py> SourceRef<'py> {
         }
         super::try_extract!(
             obj,
-            Cylinder: crate::magnets::CylinderMagnet,
-            Cuboid: crate::magnets::CuboidMagnet,
-            Dipole: crate::magnets::Dipole,
-            Sphere: crate::magnets::SphereMagnet,
-            TriangleMagnet: crate::magnets::TriangleMagnet,
-            TetrahedronMagnet: crate::magnets::TetrahedronMagnet,
-            MeshMagnet: crate::magnets::MeshMagnet,
-            CircularCurrent: crate::currents::CircularCurrent,
-            PathCurrent: crate::currents::PathCurrent,
-            TriangleCurrent: crate::currents::TriangleCurrent,
-            SheetCurrent: crate::currents::SheetCurrent,
+            Cylinder => crate::magnets::CylinderMagnet,
+            Cuboid => crate::magnets::CuboidMagnet,
+            Dipole => crate::magnets::Dipole,
+            Sphere => crate::magnets::SphereMagnet,
+            TriangleMagnet => crate::magnets::TriangleMagnet,
+            TetrahedronMagnet => crate::magnets::TetrahedronMagnet,
+            MeshMagnet => crate::magnets::MeshMagnet,
+            CircularCurrent => crate::currents::CircularCurrent,
+            PathCurrent => crate::currents::PathCurrent,
+            TriangleCurrent => crate::currents::TriangleCurrent,
+            SheetCurrent => crate::currents::SheetCurrent,
         );
         if let Ok(col) = obj.extract::<PyRef<'py, crate::SourceCollection>>() {
             let assembly = col.sync_assembly(py)?;
