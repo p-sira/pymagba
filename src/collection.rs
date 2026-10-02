@@ -54,30 +54,87 @@ fn check_cycle_containment(
     Ok(false)
 }
 
+pub(crate) struct CachedAssembly {
+    parent_pose: magba::base::Pose<f64>,
+    child_fingerprints: Vec<u64>,
+    assembly: std::sync::Arc<SourceAssembly<f64>>,
+}
+
+fn poses_equal(p1: &magba::base::Pose<f64>, p2: &magba::base::Pose<f64>) -> bool {
+    p1.position() == p2.position() && p1.orientation() == p2.orientation()
+}
+
 #[cfg_attr(feature = "stub-gen", gen_stub_pyclass)]
 #[pyclass(module = "pymagba.pymagba_binding", subclass)]
 pub struct SourceCollection {
     pub(crate) inner: magba::base::Pose<f64>,
     pub(crate) sources: Vec<Py<PyAny>>,
     pub(crate) local_offsets: Vec<nalgebra::Isometry3<f64>>,
+    pub(crate) cached: std::sync::Mutex<Option<CachedAssembly>>,
 }
 
 impl SourceCollection {
-    pub(crate) fn sync_assembly(&self, py: Python<'_>) -> PyResult<SourceAssembly<f64>> {
+    pub(crate) fn get_or_sync_assembly(
+        &self,
+        py: Python<'_>,
+    ) -> PyResult<std::sync::Arc<SourceAssembly<f64>>> {
         use magba::base::Transform;
+
+        let mut guard = self.cached.lock().unwrap();
+
+        if let Some(ref mut c) = *guard {
+            if c.child_fingerprints.len() == self.sources.len() {
+                let mut all_match = true;
+                for (src, &expected_fp) in self.sources.iter().zip(&c.child_fingerprints) {
+                    let s_ref = SourceRef::try_extract_with_py(src, py)?;
+                    if s_ref.state_fingerprint(py) != expected_fp {
+                        all_match = false;
+                        break;
+                    }
+                }
+                if all_match {
+                    if poses_equal(&c.parent_pose, &self.inner) {
+                        return Ok(c.assembly.clone());
+                    } else {
+                        let assembly_mut = std::sync::Arc::make_mut(&mut c.assembly);
+                        assembly_mut.set_pose(self.inner);
+                        c.parent_pose = self.inner;
+                        return Ok(c.assembly.clone());
+                    }
+                }
+            }
+        }
+
+        // Cache miss or child mismatch: rebuild components and fingerprints
         let mut components = Vec::with_capacity(self.sources.len());
+        let mut fingerprints = Vec::with_capacity(self.sources.len());
         for (src, local_offset) in self.sources.iter().zip(&self.local_offsets) {
             let s_ref = SourceRef::try_extract_with_py(src, py)?;
+            fingerprints.push(s_ref.state_fingerprint(py));
             let mut comp = s_ref.into_component();
             let eff_iso = self.inner.as_isometry() * local_offset;
             comp.set_pose(eff_iso.into());
             components.push(comp);
         }
-        Ok(SourceAssembly::new(
+
+        let assembly = std::sync::Arc::new(SourceAssembly::new(
             self.inner.position(),
             self.inner.orientation(),
             components,
-        ))
+        ));
+
+        *guard = Some(CachedAssembly {
+            parent_pose: self.inner,
+            child_fingerprints: fingerprints,
+            assembly: assembly.clone(),
+        });
+
+        Ok(assembly)
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn sync_assembly(&self, py: Python<'_>) -> PyResult<SourceAssembly<f64>> {
+        self.get_or_sync_assembly(py).map(|a| (*a).clone())
     }
 }
 
@@ -121,6 +178,7 @@ impl SourceCollection {
             inner: pose,
             sources: srcs,
             local_offsets,
+            cached: std::sync::Mutex::new(None),
         })
     }
 
@@ -151,6 +209,7 @@ impl SourceCollection {
         let s_ref = SourceRef::try_extract_with_py(&source, py)?;
         let child_pose = s_ref.pose();
         let mut inner = slf.borrow_mut();
+        inner.cached.lock().unwrap().take();
         let local_offset = inner.inner.as_isometry().inverse() * child_pose.as_isometry();
         inner.local_offsets.push(local_offset);
         inner.sources.push(source);
@@ -164,7 +223,7 @@ impl SourceCollection {
         points: crate::base::PointsLike,
     ) -> PyResult<pyo3::Bound<'py, numpy::PyArray2<f64>>> {
         use magba::base::Source;
-        let assembly = self.sync_assembly(py)?;
+        let assembly = self.get_or_sync_assembly(py)?;
         let pts = points.0;
         let b_field = if pts.len() <= 1 {
             assembly.compute_B_batch(&pts)
@@ -255,6 +314,7 @@ impl SourceCollection {
             };
 
         let mut inner = slf.borrow_mut();
+        inner.cached.lock().unwrap().take();
         inner.inner = pose;
         inner.sources = sources;
         inner.local_offsets = local_offsets;
@@ -272,6 +332,7 @@ impl SourceCollection {
     }
 
     fn __clear__(&mut self) {
+        self.cached.lock().unwrap().take();
         self.sources.clear();
         self.local_offsets.clear();
     }
