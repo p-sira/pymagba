@@ -220,15 +220,15 @@ impl SourceCollection {
     fn compute_B<'py>(
         &self,
         py: pyo3::Python<'py>,
-        points: crate::base::PointsLike,
+        points: crate::base::PointsLike<'py>,
     ) -> PyResult<pyo3::Bound<'py, numpy::PyArray2<f64>>> {
         use magba::base::Source;
         let assembly = self.get_or_sync_assembly(py)?;
-        let pts = points.0;
+        let pts = points.as_slice();
         let b_field = if pts.len() <= 1 {
-            assembly.compute_B_batch(&pts)
+            assembly.compute_B_batch(pts)
         } else {
-            py.detach(|| assembly.compute_B_batch(&pts))
+            py.detach(|| assembly.compute_B_batch(pts))
         };
         Ok(crate::util::vec3_to_pyarray2(py, b_field))
     }
