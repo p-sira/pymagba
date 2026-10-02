@@ -73,4 +73,4 @@ impl Dipole {
 }
 
 impl_pypose!(Dipole);
-impl_compute_B!(Dipole);
+impl_compute_B!(Dipole, 32);
