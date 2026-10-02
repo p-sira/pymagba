@@ -308,3 +308,19 @@ class PreparedGeometryReuse:
 
     def time_object_cached(self, mesh_name: str, n_points: int):
         self.mesh_obj.compute_B(self.observers)
+
+
+# Skip automatic execution during standard 'asv run' suites
+import inspect
+
+for _cls in [
+    RotationInput,
+    PointsInputRepresentation,
+    SmallBatchScaling,
+    CollectionAssemblyOverhead,
+    SourceTypeProbing,
+    PreparedGeometryReuse,
+]:
+    for _name, _member in inspect.getmembers(_cls):
+        if _name.startswith("time_"):
+            _member.skip_benchmark = True
