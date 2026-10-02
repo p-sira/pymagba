@@ -4,6 +4,7 @@
  */
 
 mod macros;
+pub mod mesh;
 mod pytypes;
 mod refs;
 
