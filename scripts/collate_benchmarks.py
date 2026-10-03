@@ -4,6 +4,7 @@ import itertools
 import json
 import math
 import os
+import subprocess
 import sys
 import warnings
 
@@ -135,6 +136,42 @@ def extract_environment(params: dict) -> dict[str, str]:
     }
 
 
+def find_target_file(target_files: list[str]) -> str | None:
+    if not target_files:
+        return None
+
+    # 1. Allow explicit CLI argument (file path or commit prefix)
+    if len(sys.argv) > 1:
+        arg = sys.argv[1]
+        if os.path.isfile(arg):
+            return arg
+        for f in target_files:
+            if os.path.basename(f).startswith(arg):
+                return f
+
+    # 2. Match current git HEAD commit
+    try:
+        head_commit = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True
+        ).strip()
+        head_short = head_commit[:8]
+        for f in target_files:
+            if os.path.basename(f).startswith(head_short):
+                return f
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+
+    # 3. Fallback: select by commit date inside JSON metadata rather than filesystem mtime
+    def get_commit_date(filepath: str) -> int:
+        try:
+            with open(filepath, "r") as f:
+                return json.load(f).get("date", 0)
+        except (json.JSONDecodeError, OSError):
+            return 0
+
+    return max(target_files, key=get_commit_date)
+
+
 def main():
     results_dir = ".asv/results"
     json_files = glob.glob(os.path.join(results_dir, "*", "*.json"))
@@ -147,9 +184,10 @@ def main():
     speedups: dict[str, dict[str, float]] = {}
     env: dict[str, str] = {}
 
-    if target_files:
-        latest_file = max(target_files, key=os.path.getmtime)
-        with open(latest_file, "r") as f:
+    target_file = find_target_file(target_files)
+    if target_file:
+        print(f"Collating benchmarks from: {target_file}")
+        with open(target_file, "r") as f:
             data = json.load(f)
 
         env = extract_environment(data.get("params", {}))
