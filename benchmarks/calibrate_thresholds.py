@@ -53,6 +53,15 @@ ALL_SENSOR_CASES = (
     "observer_mixed",
 )
 ALL_SENSOR_SOURCES = ("dipole", "path", "sheet", "collection")
+ALL_INPUT_LAYOUTS = (
+    "contiguous_f64",
+    "contiguous_f32",
+    "strided_f64",
+    "python_list",
+    "singleton_1d",
+    "singleton_list",
+)
+DEFAULT_VALIDATION_LAYOUTS = ALL_INPUT_LAYOUTS[1:]
 VARIABLE_CASES = frozenset(("mesh", "path", "sheet"))
 VARIABLE_SENSOR_SOURCES = frozenset(("path", "sheet", "collection"))
 DEFAULT_SIZES = (0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024)
@@ -122,6 +131,7 @@ def build_tasks(args: argparse.Namespace) -> list[dict[str, Any]]:
                             "case": case,
                             "api": api,
                             "source": None,
+                            "layout": "contiguous_f64",
                             "complexity": complexity,
                             "size": size,
                         }
@@ -140,6 +150,7 @@ def build_tasks(args: argparse.Namespace) -> list[dict[str, Any]]:
                             "case": case,
                             "api": "sensor",
                             "source": source,
+                            "layout": None,
                             "complexity": complexity,
                             "size": size,
                         }
@@ -201,6 +212,7 @@ def summarize(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "case": result["case"],
                 "api": result["api"],
                 "source": result["source"],
+                "layout": result["layout"],
                 "complexity": result["complexity"],
                 "size": result["size"],
                 "work_axis": "source_complexity"
@@ -238,6 +250,7 @@ def find_crossover(
             row["case"],
             row["api"],
             row["source"],
+            row["layout"],
             fixed_complexity,
             row["work_axis"],
         )
@@ -293,8 +306,9 @@ def find_crossover(
                 "case": group[1],
                 "api": group[2],
                 "source": group[3],
-                "complexity": group[4],
-                "work_axis": group[5],
+                "layout": group[4],
+                "complexity": group[5],
+                "work_axis": group[6],
                 "left_policy": left_policy,
                 "right_policy": right_policy,
                 "required_advantage": advantage,
@@ -355,11 +369,41 @@ def refinement_tasks(
                     "case": row["case"],
                     "api": row["api"],
                     "source": row["source"],
+                    "layout": row["layout"],
                     "complexity": value if source_complexity else row["complexity"],
                     "size": 1 if source_complexity else value,
                 }
                 key = tuple(task.values())
                 tasks[key] = task
+        result[comparison] = list(tasks.values())
+    return result
+
+
+def candidate_validation_tasks(
+    candidates: dict[str, list[dict[str, Any]]], layouts: list[str]
+) -> dict[str, list[dict[str, Any]]]:
+    """Build cutover-adjacent field tasks for non-primary input layouts."""
+    result: dict[str, list[dict[str, Any]]] = {}
+    for comparison, rows in candidates.items():
+        tasks: dict[tuple[Any, ...], dict[str, Any]] = {}
+        for row in rows:
+            candidate = row["candidate_work_size"]
+            if row["family"] != "field" or candidate is None:
+                continue
+            for size in sorted({max(0, candidate - 1), candidate, candidate + 1}):
+                for layout in layouts:
+                    if layout.startswith("singleton_") and size != 1:
+                        continue
+                    task = {
+                        "family": row["family"],
+                        "case": row["case"],
+                        "api": row["api"],
+                        "source": row["source"],
+                        "layout": layout,
+                        "complexity": row["complexity"],
+                        "size": size,
+                    }
+                    tasks[tuple(task.values())] = task
         result[comparison] = list(tasks.values())
     return result
 
@@ -414,6 +458,27 @@ def run_controller(args: argparse.Namespace) -> int:
             ),
             "gil": find_crossover(summaries, "auto:retain", "auto:detach"),
         }
+    validation_results: list[dict[str, Any]] = []
+    validations = candidate_validation_tasks(candidates, args.validation_layouts)
+    if args.validate_candidates:
+        for comparison, validation in validations.items():
+            if not validation:
+                continue
+            print(
+                f"validating {comparison} candidate layouts with "
+                f"{len(validation)} tasks",
+                flush=True,
+            )
+            policies_for_validation = list(comparison_policies[comparison])
+            random.Random(f"{args.order_seed}:{comparison}").shuffle(
+                policies_for_validation
+            )
+            for policy in policies_for_validation:
+                if policy not in args.policies:
+                    continue
+                worker = run_worker(policy, validation, args, phase="validation")
+                workers.append(worker["provenance"])
+                validation_results.extend(worker["results"])
     report = {
         "schema_version": 1,
         "created_unix_ns": time.time_ns(),
@@ -436,11 +501,15 @@ def run_controller(args: argparse.Namespace) -> int:
             "responsiveness": args.responsiveness,
             "responsiveness_repeats": args.responsiveness_repeats,
             "responsiveness_interval_ms": args.responsiveness_interval_ms,
+            "validate_candidates": args.validate_candidates,
+            "validation_layouts": args.validation_layouts,
         },
         "workers": workers,
         "results": all_results,
         "summaries": summaries,
         "candidates": candidates,
+        "validations": validation_results,
+        "validation_summaries": summarize(validation_results),
     }
 
     args.results_dir.mkdir(parents=True, exist_ok=True)
@@ -621,6 +690,23 @@ def make_field_call(task: dict[str, Any]) -> Any:
     seed = zlib.crc32(seed_text.encode())
     rng = np.random.default_rng(seed)
     points = rng.uniform((0.04, 0.03, 0.05), (0.12, 0.11, 0.14), (task["size"], 3))
+    layout = task["layout"]
+    if layout == "contiguous_f32":
+        points = points.astype(np.float32)
+    elif layout == "float32_reference":
+        points = points.astype(np.float32).astype(np.float64)
+    elif layout == "strided_f64":
+        storage = np.empty((task["size"] * 2, 3), dtype=np.float64)
+        storage[::2] = points
+        points = storage[::2]
+    elif layout == "python_list":
+        points = points.tolist()
+    elif layout == "singleton_1d":
+        points = points[0]
+    elif layout == "singleton_list":
+        points = points[0].tolist()
+    elif layout != "contiguous_f64":
+        raise ValueError(f"unknown input layout: {layout}")
     class_name, function_name, kwargs = case_parameters(
         task["case"], task["complexity"]
     )
@@ -803,7 +889,12 @@ def time_task(
 ) -> dict[str, Any]:
     import numpy as np
 
-    reference_call = make_call(task)
+    reference_task = task
+    if task["family"] == "field" and task["layout"] == "contiguous_f32":
+        reference_task = task | {"layout": "float32_reference"}
+    elif task["family"] == "field" and task["layout"] != "contiguous_f64":
+        reference_task = task | {"layout": "contiguous_f64"}
+    reference_call = make_call(reference_task)
     binding._set_threshold_calibration("serial", "retain", True)
     reference = reference_call()
     reference_state = binding._threshold_calibration_state()
@@ -962,6 +1053,17 @@ def parser() -> argparse.ArgumentParser:
     )
     result.add_argument("--responsiveness-repeats", type=int, default=3)
     result.add_argument("--responsiveness-interval-ms", type=float, default=0.5)
+    result.add_argument(
+        "--validate-candidates",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="measure candidate-adjacent non-primary input layouts",
+    )
+    result.add_argument(
+        "--validation-layouts",
+        type=lambda v: csv_values(v),
+        default=list(DEFAULT_VALIDATION_LAYOUTS),
+    )
     return result
 
 
@@ -982,6 +1084,11 @@ def validate_args(args: argparse.Namespace) -> None:
     unknown_apis = set(args.apis) - {"functional", "object"}
     if unknown_apis:
         raise SystemExit(f"unknown APIs: {', '.join(sorted(unknown_apis))}")
+    unknown_layouts = set(args.validation_layouts) - set(ALL_INPUT_LAYOUTS)
+    if unknown_layouts:
+        raise SystemExit(
+            f"unknown validation layouts: {', '.join(sorted(unknown_layouts))}"
+        )
     for policy in args.policies:
         try:
             rust_mode, gil_mode = policy.split(":", 1)
