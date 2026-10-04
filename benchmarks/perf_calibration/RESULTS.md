@@ -1,6 +1,10 @@
-# FFI threshold calibration results
+# FFI Threshold Calibration Results
 
-## Target machine
+See the [performance calibration guide](README.md) to reproduce a run or extract
+candidate tables from its `report.json`. The raw extracted results can be found in
+[generated_results.md](./generated_results.md).
+
+## Target Machine
 
 These production defaults were calibrated on 2026-10-04 on Linux x86-64 with
 12 logical CPUs visible to Rayon, Python 3.14.7, Rust 1.98.1, and the release
@@ -11,7 +15,7 @@ The broad discovery run contains 3,967 calibration records and 1,082 layout
 and point-distribution validation records. Its raw JSON remains in the ignored
 `benchmark-results/ffi-threshold-20261004-114138-158316/` directory.
 
-## Selected policy
+## Selected Policy
 
 The first discovery run exposed policy-process order drift, including an
 impossible functional/object disagreement for the same Dipole kernel. The
@@ -62,7 +66,7 @@ Rayon plus GIL detachment above it.
 
 ```console
 uv run maturin develop --release --features threshold-calibration
-RAYON_NUM_THREADS=12 uv run python benchmarks/calibrate_thresholds.py \
+RAYON_NUM_THREADS=12 uv run python benchmarks/perf_calibration/calibrate_thresholds.py \
   --policy-rounds 5 --results-dir benchmark-results
 ```
 

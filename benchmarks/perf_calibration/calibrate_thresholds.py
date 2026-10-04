@@ -7,6 +7,7 @@
 Build the extension first with:
 
     uv run maturin develop --release --features threshold-calibration
+    uv run python benchmarks/perf_calibration/calibrate_thresholds.py --preflight
 
 The controller launches one isolated worker per execution policy and writes raw
 samples, summaries, candidate crossovers, and build provenance to JSON.
@@ -613,7 +614,7 @@ def candidate_status_counts(
 
 
 def run_controller(args: argparse.Namespace) -> int:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
     run_dir = args.results_dir / f"ffi-threshold-{stamp}-{os.getpid()}"
     run_dir.mkdir(parents=True, exist_ok=False)
