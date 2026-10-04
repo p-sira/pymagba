@@ -41,7 +41,11 @@ ALL_CASES = (
     "path",
     "triangle_current",
     "sheet",
+    "collection",
 )
+COLLECTION_VARIANTS = ("homogeneous", "mixed", "nested")
+CYLINDER_VARIANTS = ("mixed", "axial")
+POINT_DISTRIBUTIONS = ("uniform", "clustered", "line")
 ALL_SENSOR_CASES = (
     "linear_read",
     "linear_voltage",
@@ -62,7 +66,7 @@ ALL_INPUT_LAYOUTS = (
     "singleton_list",
 )
 DEFAULT_VALIDATION_LAYOUTS = ALL_INPUT_LAYOUTS[1:]
-VARIABLE_CASES = frozenset(("mesh", "path", "sheet"))
+VARIABLE_CASES = frozenset(("mesh", "path", "sheet", "collection"))
 VARIABLE_SENSOR_SOURCES = frozenset(("path", "sheet", "collection"))
 DEFAULT_SIZES = (0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024)
 DEFAULT_POLICIES = (
@@ -123,19 +127,30 @@ def build_tasks(args: argparse.Namespace) -> list[dict[str, Any]]:
     for case in args.cases:
         complexities = args.complexities if case in VARIABLE_CASES else [1]
         for api in args.apis:
+            if case == "collection" and api == "functional":
+                continue
+            if case == "collection":
+                variants = args.collection_variants
+            elif case == "cylinder":
+                variants = args.cylinder_variants
+            else:
+                variants = ["default"]
             for complexity in complexities:
-                for size in args.sizes:
-                    tasks.append(
-                        {
-                            "family": "field",
-                            "case": case,
-                            "api": api,
-                            "source": None,
-                            "layout": "contiguous_f64",
-                            "complexity": complexity,
-                            "size": size,
-                        }
-                    )
+                for variant in variants:
+                    for size in args.sizes:
+                        tasks.append(
+                            {
+                                "family": "field",
+                                "case": case,
+                                "api": api,
+                                "source": None,
+                                "variant": variant,
+                                "distribution": "uniform",
+                                "layout": "contiguous_f64",
+                                "complexity": complexity,
+                                "size": size,
+                            }
+                        )
     for case in args.sensor_cases:
         sizes = args.sensor_counts if case == "observer_mixed" else [1]
         for source in args.sensor_sources:
@@ -150,6 +165,8 @@ def build_tasks(args: argparse.Namespace) -> list[dict[str, Any]]:
                             "case": case,
                             "api": "sensor",
                             "source": source,
+                            "variant": "default",
+                            "distribution": None,
                             "layout": None,
                             "complexity": complexity,
                             "size": size,
@@ -164,6 +181,7 @@ def run_worker(
     args: argparse.Namespace,
     *,
     phase: str = "coarse",
+    checkpoint_dir: Path | None = None,
 ) -> dict[str, Any]:
     rust_mode, gil_mode = policy.split(":", 1)
     request = {
@@ -191,12 +209,16 @@ def run_worker(
             f"{completed.stderr}"
         )
     try:
-        return json.loads(completed.stdout)
+        response = json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError(
             f"worker {policy} returned invalid JSON:\n{completed.stdout}\n"
             f"stderr:\n{completed.stderr}"
         ) from exc
+    if checkpoint_dir is not None:
+        checkpoint = checkpoint_dir / f"{phase}-{policy.replace(':', '-')}.json"
+        checkpoint.write_text(json.dumps(response, indent=2) + "\n")
+    return response
 
 
 def summarize(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -212,6 +234,8 @@ def summarize(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "case": result["case"],
                 "api": result["api"],
                 "source": result["source"],
+                "variant": result["variant"],
+                "distribution": result["distribution"],
                 "layout": result["layout"],
                 "complexity": result["complexity"],
                 "size": result["size"],
@@ -250,6 +274,8 @@ def find_crossover(
             row["case"],
             row["api"],
             row["source"],
+            row["variant"],
+            row["distribution"],
             row["layout"],
             fixed_complexity,
             row["work_axis"],
@@ -306,9 +332,11 @@ def find_crossover(
                 "case": group[1],
                 "api": group[2],
                 "source": group[3],
-                "layout": group[4],
-                "complexity": group[5],
-                "work_axis": group[6],
+                "variant": group[4],
+                "distribution": group[5],
+                "layout": group[6],
+                "complexity": group[7],
+                "work_axis": group[8],
                 "left_policy": left_policy,
                 "right_policy": right_policy,
                 "required_advantage": advantage,
@@ -354,6 +382,50 @@ def refinement_values(evidence: list[dict[str, Any]], count: int) -> list[int]:
     return sorted(value for value in values if value not in existing)
 
 
+def extension_values(
+    evidence: list[dict[str, Any]], steps: int, maximum: int
+) -> list[int]:
+    """Extend an unresolved logarithmic sweep without exceeding its work cap."""
+    if not evidence or steps == 0:
+        return []
+    value = max(row["work_size"] for row in evidence)
+    values = []
+    for _ in range(steps):
+        value = max(1, value * 2)
+        if value > maximum:
+            break
+        values.append(value)
+    return values
+
+
+def extension_tasks(
+    candidates: dict[str, list[dict[str, Any]]], steps: int, maximum: int
+) -> dict[str, list[dict[str, Any]]]:
+    """Build larger work sizes for comparisons without a stable crossover."""
+    result: dict[str, list[dict[str, Any]]] = {}
+    for comparison, rows in candidates.items():
+        tasks: dict[tuple[Any, ...], dict[str, Any]] = {}
+        for row in rows:
+            if row["status"] == "crossover":
+                continue
+            for value in extension_values(row["evidence"], steps, maximum):
+                source_complexity = row["work_axis"] == "source_complexity"
+                task = {
+                    "family": row["family"],
+                    "case": row["case"],
+                    "api": row["api"],
+                    "source": row["source"],
+                    "variant": row["variant"],
+                    "distribution": row["distribution"],
+                    "layout": row["layout"],
+                    "complexity": value if source_complexity else row["complexity"],
+                    "size": 1 if source_complexity else value,
+                }
+                tasks[tuple(task.values())] = task
+        result[comparison] = list(tasks.values())
+    return result
+
+
 def refinement_tasks(
     candidates: dict[str, list[dict[str, Any]]], count: int
 ) -> dict[str, list[dict[str, Any]]]:
@@ -369,6 +441,8 @@ def refinement_tasks(
                     "case": row["case"],
                     "api": row["api"],
                     "source": row["source"],
+                    "variant": row["variant"],
+                    "distribution": row["distribution"],
                     "layout": row["layout"],
                     "complexity": value if source_complexity else row["complexity"],
                     "size": 1 if source_complexity else value,
@@ -399,6 +473,8 @@ def candidate_validation_tasks(
                         "case": row["case"],
                         "api": row["api"],
                         "source": row["source"],
+                        "variant": row["variant"],
+                        "distribution": row["distribution"],
                         "layout": layout,
                         "complexity": row["complexity"],
                         "size": size,
@@ -408,8 +484,79 @@ def candidate_validation_tasks(
     return result
 
 
+def workload_validation_tasks(
+    candidates: dict[str, list[dict[str, Any]]], distributions: list[str]
+) -> dict[str, list[dict[str, Any]]]:
+    """Build candidate-sized field tasks for alternate point distributions."""
+    result: dict[str, list[dict[str, Any]]] = {}
+    for comparison, rows in candidates.items():
+        tasks: dict[tuple[Any, ...], dict[str, Any]] = {}
+        for row in rows:
+            candidate = row["candidate_work_size"]
+            if row["family"] != "field" or candidate is None:
+                continue
+            for distribution in distributions:
+                task = {
+                    "family": row["family"],
+                    "case": row["case"],
+                    "api": row["api"],
+                    "source": row["source"],
+                    "variant": row["variant"],
+                    "distribution": distribution,
+                    "layout": "contiguous_f64",
+                    "complexity": row["complexity"],
+                    "size": candidate,
+                }
+                tasks[tuple(task.values())] = task
+        result[comparison] = list(tasks.values())
+    return result
+
+
+def annotate_search_limits(
+    candidates: dict[str, list[dict[str, Any]]], args: argparse.Namespace
+) -> None:
+    for rows in candidates.values():
+        for row in rows:
+            tested = [point["work_size"] for point in row["evidence"]]
+            row["maximum_tested_work_size"] = max(tested) if tested else None
+            if row["status"] == "crossover":
+                row["search_limit_reason"] = None
+            elif not tested:
+                row["search_limit_reason"] = "missing_policy_pair"
+            elif max(tested) >= args.max_work_size:
+                row["search_limit_reason"] = "max_work_size"
+            elif args.extension_steps:
+                row["search_limit_reason"] = "extension_steps"
+            else:
+                row["search_limit_reason"] = "extension_disabled"
+
+
+def candidate_status_counts(
+    candidates: dict[str, list[dict[str, Any]]], policies: list[str]
+) -> dict[str, Any]:
+    required = {
+        "rayon": {"serial:detach", "parallel:detach"},
+        "gil": {"auto:retain", "auto:detach"},
+    }
+    selected = set(policies)
+    result = {}
+    for comparison, rows in candidates.items():
+        counts = {status: 0 for status in ("crossover", "inconclusive", "no_crossover")}
+        for row in rows:
+            counts[row["status"]] += 1
+        result[comparison] = {
+            "comparison_available": required[comparison] <= selected,
+            "candidate_count": len(rows),
+            "statuses": counts,
+        }
+    return result
+
+
 def run_controller(args: argparse.Namespace) -> int:
     root = Path(__file__).resolve().parents[1]
+    stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
+    run_dir = args.results_dir / f"ffi-threshold-{stamp}-{os.getpid()}"
+    run_dir.mkdir(parents=True, exist_ok=False)
     tasks = build_tasks(args)
     policies = list(args.policies)
     random.Random(args.order_seed).shuffle(policies)
@@ -423,7 +570,7 @@ def run_controller(args: argparse.Namespace) -> int:
             for task in tasks
             if task["family"] == "field" or policy.startswith("auto:")
         ]
-        worker = run_worker(policy, policy_tasks, args)
+        worker = run_worker(policy, policy_tasks, args, checkpoint_dir=run_dir)
         workers.append(worker["provenance"])
         all_results.extend(worker["results"])
 
@@ -432,11 +579,42 @@ def run_controller(args: argparse.Namespace) -> int:
         "rayon": find_crossover(summaries, "serial:detach", "parallel:detach"),
         "gil": find_crossover(summaries, "auto:retain", "auto:detach"),
     }
-    refined = refinement_tasks(candidates, args.refinement_points)
     comparison_policies = {
         "rayon": ("serial:detach", "parallel:detach"),
         "gil": ("auto:retain", "auto:detach"),
     }
+    extensions = extension_tasks(
+        candidates, args.extension_steps, args.max_work_size
+    )
+    if args.extension_steps:
+        for comparison, extension in extensions.items():
+            if not extension:
+                continue
+            print(
+                f"extending {comparison} sweep with {len(extension)} tasks",
+                flush=True,
+            )
+            for policy in comparison_policies[comparison]:
+                if policy not in args.policies:
+                    continue
+                worker = run_worker(
+                    policy,
+                    extension,
+                    args,
+                    phase="extension",
+                    checkpoint_dir=run_dir,
+                )
+                workers.append(worker["provenance"])
+                all_results.extend(worker["results"])
+        summaries = summarize(all_results)
+        candidates = {
+            "rayon": find_crossover(
+                summaries, "serial:detach", "parallel:detach"
+            ),
+            "gil": find_crossover(summaries, "auto:retain", "auto:detach"),
+        }
+
+    refined = refinement_tasks(candidates, args.refinement_points)
     if args.refinement_points:
         for comparison, refinement in refined.items():
             if not refinement:
@@ -448,7 +626,13 @@ def run_controller(args: argparse.Namespace) -> int:
             for policy in comparison_policies[comparison]:
                 if policy not in args.policies:
                     continue
-                worker = run_worker(policy, refinement, args, phase="refinement")
+                worker = run_worker(
+                    policy,
+                    refinement,
+                    args,
+                    phase="refinement",
+                    checkpoint_dir=run_dir,
+                )
                 workers.append(worker["provenance"])
                 all_results.extend(worker["results"])
         summaries = summarize(all_results)
@@ -460,6 +644,16 @@ def run_controller(args: argparse.Namespace) -> int:
         }
     validation_results: list[dict[str, Any]] = []
     validations = candidate_validation_tasks(candidates, args.validation_layouts)
+    workload_validations = workload_validation_tasks(
+        candidates, args.validation_distributions
+    )
+    for comparison, tasks_for_comparison in workload_validations.items():
+        existing = {tuple(task.values()) for task in validations[comparison]}
+        validations[comparison].extend(
+            task
+            for task in tasks_for_comparison
+            if tuple(task.values()) not in existing
+        )
     if args.validate_candidates:
         for comparison, validation in validations.items():
             if not validation:
@@ -476,11 +670,18 @@ def run_controller(args: argparse.Namespace) -> int:
             for policy in policies_for_validation:
                 if policy not in args.policies:
                     continue
-                worker = run_worker(policy, validation, args, phase="validation")
+                worker = run_worker(
+                    policy,
+                    validation,
+                    args,
+                    phase="validation",
+                    checkpoint_dir=run_dir,
+                )
                 workers.append(worker["provenance"])
                 validation_results.extend(worker["results"])
+    annotate_search_limits(candidates, args)
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "created_unix_ns": time.time_ns(),
         "provenance": controller_provenance(root),
         "configuration": {
@@ -491,6 +692,8 @@ def run_controller(args: argparse.Namespace) -> int:
             "apis": args.apis,
             "sizes": args.sizes,
             "complexities": args.complexities,
+            "collection_variants": args.collection_variants,
+            "cylinder_variants": args.cylinder_variants,
             "policies": policies,
             "repeats": args.repeats,
             "warmups": args.warmups,
@@ -498,11 +701,14 @@ def run_controller(args: argparse.Namespace) -> int:
             "max_loops": args.max_loops,
             "order_seed": args.order_seed,
             "refinement_points": args.refinement_points,
+            "extension_steps": args.extension_steps,
+            "max_work_size": args.max_work_size,
             "responsiveness": args.responsiveness,
             "responsiveness_repeats": args.responsiveness_repeats,
             "responsiveness_interval_ms": args.responsiveness_interval_ms,
             "validate_candidates": args.validate_candidates,
             "validation_layouts": args.validation_layouts,
+            "validation_distributions": args.validation_distributions,
         },
         "workers": workers,
         "results": all_results,
@@ -510,11 +716,10 @@ def run_controller(args: argparse.Namespace) -> int:
         "candidates": candidates,
         "validations": validation_results,
         "validation_summaries": summarize(validation_results),
+        "readiness": candidate_status_counts(candidates, args.policies),
     }
 
-    args.results_dir.mkdir(parents=True, exist_ok=True)
-    stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
-    destination = args.results_dir / f"ffi-threshold-{stamp}.json"
+    destination = run_dir / "report.json"
     destination.write_text(json.dumps(report, indent=2) + "\n")
     print(f"wrote {destination}")
     return 0
@@ -555,7 +760,9 @@ def path_fixture(complexity: int) -> Any:
     return np.column_stack((0.03 * t, 0.004 * np.sin(t * 7.0), 0.003 * np.cos(t * 5.0)))
 
 
-def case_parameters(case: str, complexity: int) -> tuple[str, str, dict[str, Any]]:
+def case_parameters(
+    case: str, complexity: int, variant: str = "default"
+) -> tuple[str, str, dict[str, Any]]:
     import numpy as np
 
     common = {
@@ -572,6 +779,7 @@ def case_parameters(case: str, complexity: int) -> tuple[str, str, dict[str, Any
     )
 
     if case == "cylinder":
+        cylinder_polarization = (0.0, 0.0, 0.9) if variant == "axial" else polarization
         return (
             "CylinderMagnet",
             "cylinder_B",
@@ -579,7 +787,7 @@ def case_parameters(case: str, complexity: int) -> tuple[str, str, dict[str, Any
             | {
                 "diameter": 0.02,
                 "height": 0.03,
-                "polarization": polarization,
+                "polarization": cylinder_polarization,
             },
         )
     if case == "dipole":
@@ -682,14 +890,59 @@ def case_parameters(case: str, complexity: int) -> tuple[str, str, dict[str, Any
     raise ValueError(f"unknown case: {case}")
 
 
+def collection_fixture(complexity: int, variant: str) -> Any:
+    from pymagba import currents, magnets
+
+    children = []
+    for index in range(complexity):
+        position = (index * 0.0005, (index % 3) * 0.0002, 0.0)
+        if variant == "homogeneous" or index % 3 == 0:
+            child = magnets.Dipole(position=position, moment=(0.2, -0.1, 0.5))
+        elif index % 3 == 1:
+            child = magnets.CuboidMagnet(
+                position=position,
+                dimensions=(0.004, 0.005, 0.006),
+                polarization=(0.3, -0.2, 0.8),
+            )
+        else:
+            child = currents.CircularCurrent(
+                position=position, diameter=0.006, current=1.5
+            )
+        children.append(child)
+
+    if variant == "nested":
+        midpoint = max(1, len(children) // 2)
+        nested = [magnets.SourceCollection(children[:midpoint])]
+        if midpoint < len(children):
+            nested.append(magnets.SourceCollection(children[midpoint:]))
+        return magnets.SourceCollection(nested)
+    return magnets.SourceCollection(children)
+
+
+def point_fixture(task: dict[str, Any]) -> Any:
+    import numpy as np
+
+    seed_text = (
+        f"{task['case']}:{task['variant']}:{task['distribution']}:"
+        f"{task['size']}:{task['complexity']}"
+    )
+    rng = np.random.default_rng(zlib.crc32(seed_text.encode()))
+    size = task["size"]
+    if task["distribution"] == "uniform":
+        return rng.uniform((0.04, 0.03, 0.05), (0.12, 0.11, 0.14), (size, 3))
+    if task["distribution"] == "clustered":
+        return rng.normal((0.075, 0.065, 0.09), (0.002, 0.003, 0.002), (size, 3))
+    if task["distribution"] == "line":
+        t = np.linspace(0.0, 1.0, size)
+        return np.column_stack((0.04 + 0.08 * t, 0.05 + 0.02 * t, 0.14 - 0.07 * t))
+    raise ValueError(f"unknown point distribution: {task['distribution']}")
+
+
 def make_field_call(task: dict[str, Any]) -> Any:
     import numpy as np
     from pymagba import currents, fields, magnets
 
-    seed_text = f"{task['case']}:{task['size']}:{task['complexity']}"
-    seed = zlib.crc32(seed_text.encode())
-    rng = np.random.default_rng(seed)
-    points = rng.uniform((0.04, 0.03, 0.05), (0.12, 0.11, 0.14), (task["size"], 3))
+    points = point_fixture(task)
     layout = task["layout"]
     if layout == "contiguous_f32":
         points = points.astype(np.float32)
@@ -707,8 +960,12 @@ def make_field_call(task: dict[str, Any]) -> Any:
         points = points[0].tolist()
     elif layout != "contiguous_f64":
         raise ValueError(f"unknown input layout: {layout}")
+    if task["case"] == "collection":
+        source = collection_fixture(task["complexity"], task["variant"])
+        return lambda: source.compute_B(points)
+
     class_name, function_name, kwargs = case_parameters(
-        task["case"], task["complexity"]
+        task["case"], task["complexity"], task["variant"]
     )
     if task["api"] == "functional":
         function = getattr(fields, function_name)
@@ -1032,6 +1289,16 @@ def parser() -> argparse.ArgumentParser:
         "--complexities", type=lambda v: csv_values(v, int), default=[4, 32]
     )
     result.add_argument(
+        "--collection-variants",
+        type=lambda v: csv_values(v),
+        default=list(COLLECTION_VARIANTS),
+    )
+    result.add_argument(
+        "--cylinder-variants",
+        type=lambda v: csv_values(v),
+        default=list(CYLINDER_VARIANTS),
+    )
+    result.add_argument(
         "--policies", type=lambda v: csv_values(v), default=list(DEFAULT_POLICIES)
     )
     result.add_argument("--repeats", type=int, default=7)
@@ -1044,6 +1311,18 @@ def parser() -> argparse.ArgumentParser:
         type=int,
         default=4,
         help="intermediate work sizes measured around each observed transition",
+    )
+    result.add_argument(
+        "--extension-steps",
+        type=int,
+        default=6,
+        help="doublings beyond an unresolved coarse sweep",
+    )
+    result.add_argument(
+        "--max-work-size",
+        type=int,
+        default=65_536,
+        help="point, sensor, or source-complexity cap for automatic extension",
     )
     result.add_argument(
         "--responsiveness",
@@ -1063,6 +1342,21 @@ def parser() -> argparse.ArgumentParser:
         "--validation-layouts",
         type=lambda v: csv_values(v),
         default=list(DEFAULT_VALIDATION_LAYOUTS),
+    )
+    result.add_argument(
+        "--validation-distributions",
+        type=lambda v: csv_values(v),
+        default=["clustered", "line"],
+    )
+    result.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="validate configuration and print the coarse execution plan",
+    )
+    result.add_argument(
+        "--preflight",
+        action="store_true",
+        help="verify the calibration build and every selected forced policy",
     )
     return result
 
@@ -1089,6 +1383,27 @@ def validate_args(args: argparse.Namespace) -> None:
         raise SystemExit(
             f"unknown validation layouts: {', '.join(sorted(unknown_layouts))}"
         )
+    unknown_collection_variants = set(args.collection_variants) - set(
+        COLLECTION_VARIANTS
+    )
+    if unknown_collection_variants:
+        raise SystemExit(
+            "unknown collection variants: "
+            f"{', '.join(sorted(unknown_collection_variants))}"
+        )
+    unknown_cylinder_variants = set(args.cylinder_variants) - set(CYLINDER_VARIANTS)
+    if unknown_cylinder_variants:
+        raise SystemExit(
+            f"unknown cylinder variants: {', '.join(sorted(unknown_cylinder_variants))}"
+        )
+    unknown_distributions = set(args.validation_distributions) - set(
+        POINT_DISTRIBUTIONS
+    )
+    if unknown_distributions:
+        raise SystemExit(
+            "unknown validation distributions: "
+            f"{', '.join(sorted(unknown_distributions))}"
+        )
     for policy in args.policies:
         try:
             rust_mode, gil_mode = policy.split(":", 1)
@@ -1108,8 +1423,83 @@ def validate_args(args: argparse.Namespace) -> None:
         raise SystemExit("invalid repeat, warmup, or loop count")
     if args.refinement_points < 0:
         raise SystemExit("refinement points must be non-negative")
+    if args.extension_steps < 0 or args.max_work_size < 1:
+        raise SystemExit("invalid extension step count or maximum work size")
     if args.responsiveness_repeats < 1 or args.responsiveness_interval_ms <= 0:
         raise SystemExit("invalid responsiveness repeat count or interval")
+    if args.target_sample_ms <= 0:
+        raise SystemExit("target sample duration must be positive")
+    if not args.cases and not args.sensor_cases:
+        raise SystemExit("at least one field or sensor case is required")
+
+
+def print_dry_run(args: argparse.Namespace) -> None:
+    tasks = build_tasks(args)
+    by_policy = {}
+    for policy in args.policies:
+        by_policy[policy] = sum(
+            task["family"] == "field" or policy.startswith("auto:") for task in tasks
+        )
+    print(
+        json.dumps(
+            {
+                "coarse_tasks": len(tasks),
+                "tasks_by_policy": by_policy,
+                "coarse_timing_samples": sum(by_policy.values()) * args.repeats,
+                "automatic_extension_steps": args.extension_steps,
+                "maximum_work_size": args.max_work_size,
+                "candidate_refinement_points": args.refinement_points,
+                "candidate_validation": args.validate_candidates,
+                "note": "extension, refinement, and validation counts depend on results",
+            },
+            indent=2,
+        )
+    )
+
+
+def run_preflight(args: argparse.Namespace) -> None:
+    quick_values = vars(args) | {
+        "repeats": 1,
+        "warmups": 0,
+        "target_sample_ms": 0.001,
+        "max_loops": 1,
+        "responsiveness": False,
+    }
+    quick = argparse.Namespace(**quick_values)
+    tasks = [
+        {
+            "family": "field",
+            "case": "dipole",
+            "api": "object",
+            "source": None,
+            "variant": "default",
+            "distribution": "uniform",
+            "layout": "contiguous_f64",
+            "complexity": 1,
+            "size": 2,
+        },
+        {
+            "family": "sensor",
+            "case": "linear_read",
+            "api": "sensor",
+            "source": "dipole",
+            "variant": "default",
+            "distribution": None,
+            "layout": None,
+            "complexity": 1,
+            "size": 1,
+        },
+    ]
+    extension = None
+    for policy in args.policies:
+        policy_tasks = [
+            task
+            for task in tasks
+            if task["family"] == "field" or policy.startswith("auto:")
+        ]
+        worker = run_worker(policy, policy_tasks, quick, phase="preflight")
+        extension = worker["provenance"]["extension"]
+    print(f"preflight passed for {len(args.policies)} policies using {extension}")
 
 
 def main() -> int:
@@ -1117,6 +1507,12 @@ def main() -> int:
     if args.worker:
         return run_worker_process()
     validate_args(args)
+    if args.preflight:
+        run_preflight(args)
+        return 0
+    if args.dry_run:
+        print_dry_run(args)
+        return 0
     return run_controller(args)
 
 
