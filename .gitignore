@@ -9,3 +9,4 @@ PyMagba.egg-info
 build
 .benchmarks
 .asv
+benchmark-results

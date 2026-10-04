@@ -194,26 +194,27 @@ def run_worker(
         "responsiveness": args.responsiveness,
         "responsiveness_repeats": args.responsiveness_repeats,
         "responsiveness_interval_ms": args.responsiveness_interval_ms,
+        "progress": args.progress,
         "phase": phase,
     }
     completed = subprocess.run(
         [sys.executable, str(Path(__file__).resolve()), "--worker"],
         input=json.dumps(request),
-        capture_output=True,
+        stdout=subprocess.PIPE,
         text=True,
         check=False,
     )
     if completed.returncode != 0:
         raise RuntimeError(
-            f"worker {policy} failed with exit code {completed.returncode}:\n"
-            f"{completed.stderr}"
+            f"worker {policy} failed with exit code {completed.returncode}; "
+            "see worker stderr above"
         )
     try:
         response = json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError(
             f"worker {policy} returned invalid JSON:\n{completed.stdout}\n"
-            f"stderr:\n{completed.stderr}"
+            "see worker stderr above"
         ) from exc
     if checkpoint_dir is not None:
         checkpoint = checkpoint_dir / f"{phase}-{policy.replace(':', '-')}.json"
@@ -313,6 +314,9 @@ def find_crossover(
                     policies[right_policy]["responsiveness"],
                 )
             )
+
+        if not comparable:
+            continue
 
         crossover = None
         for current, following in itertools.pairwise(comparable):
@@ -706,6 +710,7 @@ def run_controller(args: argparse.Namespace) -> int:
             "responsiveness": args.responsiveness,
             "responsiveness_repeats": args.responsiveness_repeats,
             "responsiveness_interval_ms": args.responsiveness_interval_ms,
+            "progress": args.progress,
             "validate_candidates": args.validate_candidates,
             "validation_layouts": args.validation_layouts,
             "validation_distributions": args.validation_distributions,
@@ -1227,6 +1232,7 @@ def run_worker_process() -> int:
 
     import numpy as np
     import pymagba.pymagba_binding as binding
+    from tqdm.auto import tqdm
 
     if not hasattr(binding, "_set_threshold_calibration"):
         raise RuntimeError(
@@ -1235,7 +1241,15 @@ def run_worker_process() -> int:
         )
     request = json.load(sys.stdin)
     policy = request["policy"]
-    results = [time_task(binding, task, policy, request) for task in request["tasks"]]
+    policy_name = f"{policy['rust_mode']}:{policy['gil_mode']}"
+    tasks = tqdm(
+        request["tasks"],
+        desc=f"{request['phase']} {policy_name}",
+        unit="task",
+        dynamic_ncols=True,
+        disable=None if request["progress"] else True,
+    )
+    results = [time_task(binding, task, policy, request) for task in tasks]
     response = {
         "provenance": {
             "pid": os.getpid(),
@@ -1357,6 +1371,12 @@ def parser() -> argparse.ArgumentParser:
         "--preflight",
         action="store_true",
         help="verify the calibration build and every selected forced policy",
+    )
+    result.add_argument(
+        "--progress",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="show per-worker task progress bars on interactive stderr",
     )
     return result
 
