@@ -139,7 +139,14 @@ impl HallLatch {
     }
 
     fn read_state(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<bool> {
+        #[cfg(feature = "threshold-calibration")]
+        let py = source.py();
         let source_ref = SourceRef::try_extract(&source)?;
+        #[cfg(feature = "threshold-calibration")]
+        if crate::execution::should_detach(false) {
+            let owned_source = source_ref.into_component();
+            return Ok(py.detach(|| self.inner.read_state(&owned_source)));
+        }
         Ok(self.inner.read_state(source_ref.as_source()))
     }
 }

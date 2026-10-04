@@ -66,6 +66,35 @@ impl<'py> ObserverRef<'py> {
             }
         }
     }
+
+    #[cfg(feature = "threshold-calibration")]
+    pub fn staged_at_isometry(
+        &self,
+        eff_isometry: &nalgebra::Isometry3<f64>,
+    ) -> magba::sensors::Sensor<f64> {
+        use magba::base::Transform;
+
+        let mut sensor = match self {
+            ObserverRef::Linear(s) => magba::sensors::Sensor::LinearHall(s.inner.clone()),
+            ObserverRef::Switch(s) => magba::sensors::Sensor::HallSwitch(s.inner.clone()),
+            ObserverRef::Latch(s) => magba::sensors::Sensor::HallLatch(s.inner.clone()),
+        };
+        sensor.set_pose((*eff_isometry).into());
+        sensor
+    }
+
+    #[cfg(feature = "threshold-calibration")]
+    pub fn sync_staged_state(&self, staged: &magba::sensors::Sensor<f64>) {
+        if let (ObserverRef::Latch(sensor), magba::sensors::Sensor::HallLatch(staged)) =
+            (self, staged)
+        {
+            let state = staged.state().load(std::sync::atomic::Ordering::SeqCst);
+            sensor
+                .inner
+                .state()
+                .store(state, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
 }
 
 pub enum SourceRef<'py> {

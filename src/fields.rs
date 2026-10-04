@@ -35,7 +35,12 @@ macro_rules! detach_if_multi {
         detach_if_multi!($py, $n, 1, $work);
     };
     ($py:expr, $n:expr, $threshold:expr, $work:expr) => {
-        if $n <= $threshold {
+        #[cfg(feature = "threshold-calibration")]
+        let detach = crate::execution::should_detach($n > $threshold);
+        #[cfg(not(feature = "threshold-calibration"))]
+        let detach = $n > $threshold;
+
+        if !detach {
             $work;
         } else {
             $py.detach(|| {

@@ -34,6 +34,7 @@ stl_io = "0.11"
 default = ["extension-module"]
 extension-module = ["pyo3/extension-module"]
 stub-gen = ["dep:pyo3-stub-gen"]
+threshold-calibration = ["magba/threshold-calibration"]
 
 [profile.release]
 opt-level = 3
