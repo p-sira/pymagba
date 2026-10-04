@@ -23,6 +23,7 @@ import random
 import statistics
 import subprocess
 import sys
+import threading
 import time
 import zlib
 from pathlib import Path
@@ -147,7 +148,11 @@ def build_tasks(args: argparse.Namespace) -> list[dict[str, Any]]:
 
 
 def run_worker(
-    policy: str, tasks: list[dict[str, Any]], args: argparse.Namespace
+    policy: str,
+    tasks: list[dict[str, Any]],
+    args: argparse.Namespace,
+    *,
+    phase: str = "coarse",
 ) -> dict[str, Any]:
     rust_mode, gil_mode = policy.split(":", 1)
     request = {
@@ -157,6 +162,10 @@ def run_worker(
         "warmups": args.warmups,
         "target_sample_ms": args.target_sample_ms,
         "max_loops": args.max_loops,
+        "responsiveness": args.responsiveness,
+        "responsiveness_repeats": args.responsiveness_repeats,
+        "responsiveness_interval_ms": args.responsiveness_interval_ms,
+        "phase": phase,
     }
     completed = subprocess.run(
         [sys.executable, str(Path(__file__).resolve()), "--worker"],
@@ -206,6 +215,8 @@ def summarize(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "max_ns": max(samples),
                 "samples_ns": samples,
                 "loops": result["loops"],
+                "phase": result["phase"],
+                "responsiveness": result["responsiveness"],
             }
         )
     return summaries
@@ -252,7 +263,17 @@ def find_crossover(
             ]
             win_fraction = sum(wins) / len(wins)
             qualifies = right <= left * (1.0 - advantage) and win_fraction >= 2.0 / 3.0
-            comparable.append((size, qualifies, left, right, win_fraction))
+            comparable.append(
+                (
+                    size,
+                    qualifies,
+                    left,
+                    right,
+                    win_fraction,
+                    policies[left_policy]["responsiveness"],
+                    policies[right_policy]["responsiveness"],
+                )
+            )
 
         crossover = None
         for current, following in itertools.pairwise(comparable):
@@ -285,12 +306,62 @@ def find_crossover(
                         "left_median_ns": item[2],
                         "right_median_ns": item[3],
                         "right_win_fraction": item[4],
+                        "qualifies": item[1],
+                        "left_responsiveness": item[5],
+                        "right_responsiveness": item[6],
                     }
                     for item in comparable
                 ],
             }
         )
     return candidates
+
+
+def refinement_values(evidence: list[dict[str, Any]], count: int) -> list[int]:
+    """Return several integer probes around the first observed advantage."""
+    qualifying = [index for index, row in enumerate(evidence) if row["qualifies"]]
+    if not qualifying:
+        return []
+
+    index = qualifying[0]
+    lower_index = max(0, index - 1)
+    upper_index = min(len(evidence) - 1, index + 1)
+    lower = evidence[lower_index]["work_size"]
+    upper = evidence[upper_index]["work_size"]
+    if lower == upper:
+        lower = max(0, lower - 2)
+        upper += 2
+
+    existing = {row["work_size"] for row in evidence}
+    values = {max(0, evidence[index]["work_size"] - 1), evidence[index]["work_size"] + 1}
+    span = upper - lower
+    for step in range(1, count + 1):
+        values.add(lower + round(span * step / (count + 1)))
+    return sorted(value for value in values if value not in existing)
+
+
+def refinement_tasks(
+    candidates: dict[str, list[dict[str, Any]]], count: int
+) -> dict[str, list[dict[str, Any]]]:
+    """Build focused tasks for each independent policy comparison."""
+    result: dict[str, list[dict[str, Any]]] = {}
+    for comparison, rows in candidates.items():
+        tasks: dict[tuple[Any, ...], dict[str, Any]] = {}
+        for row in rows:
+            for value in refinement_values(row["evidence"], count):
+                source_complexity = row["work_axis"] == "source_complexity"
+                task = {
+                    "family": row["family"],
+                    "case": row["case"],
+                    "api": row["api"],
+                    "source": row["source"],
+                    "complexity": value if source_complexity else row["complexity"],
+                    "size": 1 if source_complexity else value,
+                }
+                key = tuple(task.values())
+                tasks[key] = task
+        result[comparison] = list(tasks.values())
+    return result
 
 
 def run_controller(args: argparse.Namespace) -> int:
@@ -317,6 +388,32 @@ def run_controller(args: argparse.Namespace) -> int:
         "rayon": find_crossover(summaries, "serial:detach", "parallel:detach"),
         "gil": find_crossover(summaries, "auto:retain", "auto:detach"),
     }
+    refined = refinement_tasks(candidates, args.refinement_points)
+    comparison_policies = {
+        "rayon": ("serial:detach", "parallel:detach"),
+        "gil": ("auto:retain", "auto:detach"),
+    }
+    if args.refinement_points:
+        for comparison, refinement in refined.items():
+            if not refinement:
+                continue
+            print(
+                f"refining {comparison} transition with {len(refinement)} tasks",
+                flush=True,
+            )
+            for policy in comparison_policies[comparison]:
+                if policy not in args.policies:
+                    continue
+                worker = run_worker(policy, refinement, args, phase="refinement")
+                workers.append(worker["provenance"])
+                all_results.extend(worker["results"])
+        summaries = summarize(all_results)
+        candidates = {
+            "rayon": find_crossover(
+                summaries, "serial:detach", "parallel:detach"
+            ),
+            "gil": find_crossover(summaries, "auto:retain", "auto:detach"),
+        }
     report = {
         "schema_version": 1,
         "created_unix_ns": time.time_ns(),
@@ -335,6 +432,10 @@ def run_controller(args: argparse.Namespace) -> int:
             "target_sample_ms": args.target_sample_ms,
             "max_loops": args.max_loops,
             "order_seed": args.order_seed,
+            "refinement_points": args.refinement_points,
+            "responsiveness": args.responsiveness,
+            "responsiveness_repeats": args.responsiveness_repeats,
+            "responsiveness_interval_ms": args.responsiveness_interval_ms,
         },
         "workers": workers,
         "results": all_results,
@@ -628,6 +729,72 @@ def validate_branches(
         raise RuntimeError(f"forced detach path was not observed: {state}")
 
 
+def measure_responsiveness(
+    call: Any, *, repeats: int, interval_ms: float
+) -> dict[str, Any]:
+    """Measure whether a sleeping Python ticker runs during one extension call."""
+    interval_s = interval_ms / 1_000.0
+    samples = []
+    for _ in range(repeats):
+        timestamps: list[int] = []
+        ready = threading.Event()
+        stop = threading.Event()
+
+        def ticker(
+            ready_event: threading.Event = ready,
+            stop_event: threading.Event = stop,
+            samples: list[int] = timestamps,
+        ) -> None:
+            ready_event.set()
+            while not stop_event.wait(interval_s):
+                samples.append(time.perf_counter_ns())
+
+        thread = threading.Thread(target=ticker, daemon=True)
+        thread.start()
+        ready.wait()
+        time.sleep(interval_s * 2)
+        try:
+            start = time.perf_counter_ns()
+            result = call()
+            end = time.perf_counter_ns()
+            if result is None:
+                raise AssertionError("responsiveness call returned no result")
+        finally:
+            stop.set()
+            thread.join()
+
+        duration_ns = max(end - start, 1)
+        interval_ns = interval_s * 1_000_000_000
+        ticks = sum(
+            start + interval_ns < timestamp < end - interval_ns
+            for timestamp in timestamps
+        )
+        expected_ticks = max(duration_ns - 2 * interval_ns, 1) / interval_ns
+        samples.append(
+            {
+                "duration_ns": duration_ns,
+                "interior_ticks": ticks,
+                "progress_fraction": min(ticks / expected_ticks, 1.0),
+            }
+        )
+
+    median_duration = statistics.median(row["duration_ns"] for row in samples)
+    return {
+        "status": "measured"
+        if median_duration >= interval_s * 4 * 1_000_000_000
+        else "too_short",
+        "interval_ms": interval_ms,
+        "median_duration_ns": median_duration,
+        "median_interior_ticks": statistics.median(
+            row["interior_ticks"] for row in samples
+        ),
+        "median_progress_fraction": statistics.median(
+            row["progress_fraction"] for row in samples
+        ),
+        "samples": samples,
+    }
+
+
 def time_task(
     binding: Any,
     task: dict[str, Any],
@@ -682,10 +849,24 @@ def time_task(
             raise AssertionError("timing loop did not execute")
         samples.append(duration / loops)
 
+    responsiveness = None
+    if (
+        request["responsiveness"]
+        and policy["rust_mode"] == "auto"
+        and policy["gil_mode"] in {"retain", "detach"}
+    ):
+        responsiveness = measure_responsiveness(
+            call,
+            repeats=request["responsiveness_repeats"],
+            interval_ms=request["responsiveness_interval_ms"],
+        )
+
     return task | {
         "policy": f"{policy['rust_mode']}:{policy['gil_mode']}",
+        "phase": request["phase"],
         "loops": loops,
         "samples_ns_per_call": samples,
+        "responsiveness": responsiveness,
         "verification": {
             "reference_state": reference_state,
             "policy_state": policy_state,
@@ -717,6 +898,7 @@ def run_worker_process() -> int:
             "gil_enabled": getattr(sys, "_is_gil_enabled", lambda: True)(),
             "extension": str(Path(binding.__file__).resolve()),
             "rayon_num_threads": os.environ.get("RAYON_NUM_THREADS"),
+            "phase": request["phase"],
         },
         "results": results,
     }
@@ -766,6 +948,20 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--target-sample-ms", type=float, default=20.0)
     result.add_argument("--max-loops", type=int, default=100_000)
     result.add_argument("--order-seed", type=int, default=20251004)
+    result.add_argument(
+        "--refinement-points",
+        type=int,
+        default=4,
+        help="intermediate work sizes measured around each observed transition",
+    )
+    result.add_argument(
+        "--responsiveness",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="measure background Python-thread progress for GIL comparisons",
+    )
+    result.add_argument("--responsiveness-repeats", type=int, default=3)
+    result.add_argument("--responsiveness-interval-ms", type=float, default=0.5)
     return result
 
 
@@ -803,6 +999,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise SystemExit("complexities must be positive")
     if args.repeats < 1 or args.warmups < 0 or args.max_loops < 1:
         raise SystemExit("invalid repeat, warmup, or loop count")
+    if args.refinement_points < 0:
+        raise SystemExit("refinement points must be non-negative")
+    if args.responsiveness_repeats < 1 or args.responsiveness_interval_ms <= 0:
+        raise SystemExit("invalid responsiveness repeat count or interval")
 
 
 def main() -> int:
