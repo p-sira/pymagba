@@ -192,9 +192,9 @@ checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
 
 [[package]]
 name = "ellip"
-version = "1.1.2"
+version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00bc906ba318f3f863c278d47da93fec3b48e8709fb6398c2664944a1e8ddb43"
+checksum = "7cb9fd6c59c491fa027eeb526f68f4e70a241052d4cba4050a9030ac4acc1c22"
 dependencies = [
  "num-lazy",
  "num-traits",
@@ -528,9 +528,9 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "magba"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c25d7b5e1615e2278deea87282a3dc73546536ce2b319b7f8058a1de765716e8"
+checksum = "9e056d62c3f1526600798ee86342b03511b3aa610ef633336cf3e91a1721f71e"
 dependencies = [
  "concat-idents",
  "delegate",
@@ -541,6 +541,7 @@ dependencies = [
  "getset",
  "itertools 0.14.0",
  "nalgebra",
+ "num-lazy",
  "num-traits",
  "numeric_literals",
  "openmesh",
