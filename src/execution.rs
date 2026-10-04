@@ -3,10 +3,26 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-//! Calibration-only interpreter execution controls.
+//! Interpreter detachment thresholds and calibration-only overrides.
 
+#[cfg(feature = "threshold-calibration")]
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 
+// Calibrated on a 12-logical-CPU x86-64 host. These intentionally match the
+// conservative Rayon cutovers so small serial calls avoid GIL transition cost.
+pub(crate) const CIRCULAR_THRESHOLD: usize = 1023;
+pub(crate) const CUBOID_THRESHOLD: usize = 159;
+pub(crate) const CYLINDER_THRESHOLD: usize = 767;
+pub(crate) const DIPOLE_THRESHOLD: usize = 24575;
+pub(crate) const MESH_THRESHOLD: usize = 15;
+pub(crate) const PATH_THRESHOLD: usize = 409;
+pub(crate) const SHEET_THRESHOLD: usize = 47;
+pub(crate) const SPHERE_THRESHOLD: usize = 24575;
+pub(crate) const TETRAHEDRON_THRESHOLD: usize = 159;
+pub(crate) const TRIANGLE_THRESHOLD: usize = 818;
+pub(crate) const TRIANGLE_CURRENT_THRESHOLD: usize = 255;
+
+#[cfg(feature = "threshold-calibration")]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub(crate) enum GilMode {
@@ -15,15 +31,21 @@ pub(crate) enum GilMode {
     Detach = 2,
 }
 
+#[cfg(feature = "threshold-calibration")]
 static MODE: AtomicU8 = AtomicU8::new(GilMode::Auto as u8);
+#[cfg(feature = "threshold-calibration")]
 static INSTRUMENT: AtomicBool = AtomicBool::new(false);
+#[cfg(feature = "threshold-calibration")]
 static RETAINED_BRANCHES: AtomicU64 = AtomicU64::new(0);
+#[cfg(feature = "threshold-calibration")]
 static DETACHED_BRANCHES: AtomicU64 = AtomicU64::new(0);
 
+#[cfg(feature = "threshold-calibration")]
 pub(crate) fn set_gil_mode(mode: GilMode) {
     MODE.store(mode as u8, Ordering::Relaxed);
 }
 
+#[cfg(feature = "threshold-calibration")]
 pub(crate) fn gil_mode() -> GilMode {
     match MODE.load(Ordering::Relaxed) {
         1 => GilMode::Retain,
@@ -32,19 +54,23 @@ pub(crate) fn gil_mode() -> GilMode {
     }
 }
 
+#[cfg(feature = "threshold-calibration")]
 pub(crate) fn set_instrumentation(enabled: bool) {
     INSTRUMENT.store(enabled, Ordering::Relaxed);
 }
 
+#[cfg(feature = "threshold-calibration")]
 pub(crate) fn instrumentation() -> bool {
     INSTRUMENT.load(Ordering::Relaxed)
 }
 
+#[cfg(feature = "threshold-calibration")]
 pub(crate) fn reset_branch_counts() {
     RETAINED_BRANCHES.store(0, Ordering::Relaxed);
     DETACHED_BRANCHES.store(0, Ordering::Relaxed);
 }
 
+#[cfg(feature = "threshold-calibration")]
 pub(crate) fn branch_counts() -> (u64, u64) {
     (
         RETAINED_BRANCHES.load(Ordering::Relaxed),
@@ -53,6 +79,7 @@ pub(crate) fn branch_counts() -> (u64, u64) {
 }
 
 #[inline]
+#[cfg(feature = "threshold-calibration")]
 pub(crate) fn should_detach(auto: bool) -> bool {
     let detach = match gil_mode() {
         GilMode::Auto => auto,
@@ -70,7 +97,13 @@ pub(crate) fn should_detach(auto: bool) -> bool {
     detach
 }
 
-#[cfg(test)]
+#[inline]
+#[cfg(not(feature = "threshold-calibration"))]
+pub(crate) const fn should_detach(auto: bool) -> bool {
+    auto
+}
+
+#[cfg(all(test, feature = "threshold-calibration"))]
 mod tests {
     use super::*;
 

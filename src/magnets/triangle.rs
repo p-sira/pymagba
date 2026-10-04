@@ -117,4 +117,4 @@ impl TriangleMagnet {
 }
 
 impl_pypose!(TriangleMagnet);
-impl_compute_B!(TriangleMagnet);
+impl_compute_B!(TriangleMagnet, crate::execution::TRIANGLE_THRESHOLD);

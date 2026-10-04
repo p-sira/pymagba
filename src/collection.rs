@@ -225,10 +225,7 @@ impl SourceCollection {
         use magba::base::Source;
         let assembly = self.get_or_sync_assembly(py)?;
         let pts = points.as_slice();
-        #[cfg(feature = "threshold-calibration")]
         let detach = crate::execution::should_detach(pts.len() > 1);
-        #[cfg(not(feature = "threshold-calibration"))]
-        let detach = pts.len() > 1;
 
         let b_field = if detach {
             py.detach(|| assembly.compute_B_batch(pts))

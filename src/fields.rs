@@ -35,10 +35,7 @@ macro_rules! detach_if_multi {
         detach_if_multi!($py, $n, 1, $work);
     };
     ($py:expr, $n:expr, $threshold:expr, $work:expr) => {
-        #[cfg(feature = "threshold-calibration")]
         let detach = crate::execution::should_detach($n > $threshold);
-        #[cfg(not(feature = "threshold-calibration"))]
-        let detach = $n > $threshold;
 
         if !detach {
             $work;
@@ -106,6 +103,7 @@ pub fn cylinder_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::CYLINDER_THRESHOLD,
         magba::fields::cylinder_B_batch(
             points.as_slice(),
             pos.into(),
@@ -157,7 +155,7 @@ pub fn dipole_B<'py>(
     detach_if_multi!(
         py,
         n,
-        32,
+        crate::execution::DIPOLE_THRESHOLD,
         magba::fields::dipole_B_batch(
             points.as_slice(),
             pos.into(),
@@ -217,6 +215,7 @@ pub fn cuboid_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::CUBOID_THRESHOLD,
         magba::fields::cuboid_B_batch(
             points.as_slice(),
             pos.into(),
@@ -276,7 +275,7 @@ pub fn sphere_B<'py>(
     detach_if_multi!(
         py,
         n,
-        32,
+        crate::execution::SPHERE_THRESHOLD,
         magba::fields::sphere_B_batch(
             points.as_slice(),
             pos.into(),
@@ -335,6 +334,7 @@ pub fn circular_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::CIRCULAR_THRESHOLD,
         magba::fields::circular_B_batch(
             points.as_slice(),
             pos.into(),
@@ -393,6 +393,7 @@ pub fn triangle_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::TRIANGLE_THRESHOLD,
         magba::fields::triangle_B_batch(
             points.as_slice(),
             pos.into(),
@@ -457,6 +458,7 @@ pub fn tetrahedron_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::TETRAHEDRON_THRESHOLD,
         magba::fields::tetrahedron_B_batch(
             points.as_slice(),
             pos.into(),
@@ -523,6 +525,7 @@ pub fn mesh_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::MESH_THRESHOLD,
         magba::fields::mesh_B_batch(
             points.as_slice(),
             pos.into(),
@@ -567,6 +570,7 @@ pub fn path_current_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::PATH_THRESHOLD,
         magba::fields::path_current_B_batch(
             points.as_slice(),
             pos.into(),
@@ -610,6 +614,7 @@ pub fn triangle_current_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::TRIANGLE_CURRENT_THRESHOLD,
         magba::fields::triangle_current_B_batch(
             points.as_slice(),
             pos.into(),
@@ -676,6 +681,7 @@ pub fn sheet_current_B<'py>(
     detach_if_multi!(
         py,
         n,
+        crate::execution::SHEET_THRESHOLD,
         magba::fields::sheet_current_B_batch(
             points.as_slice(),
             pos.into(),

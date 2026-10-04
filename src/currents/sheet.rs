@@ -210,4 +210,4 @@ impl SheetCurrent {
 }
 
 impl_pypose!(SheetCurrent);
-impl_compute_B!(SheetCurrent);
+impl_compute_B!(SheetCurrent, crate::execution::SHEET_THRESHOLD);

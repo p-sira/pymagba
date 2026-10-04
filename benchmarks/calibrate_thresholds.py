@@ -182,6 +182,7 @@ def run_worker(
     *,
     phase: str = "coarse",
     checkpoint_dir: Path | None = None,
+    round_index: int = 0,
 ) -> dict[str, Any]:
     rust_mode, gil_mode = policy.split(":", 1)
     request = {
@@ -217,43 +218,95 @@ def run_worker(
             "see worker stderr above"
         ) from exc
     if checkpoint_dir is not None:
-        checkpoint = checkpoint_dir / f"{phase}-{policy.replace(':', '-')}.json"
+        checkpoint = checkpoint_dir / (
+            f"{phase}-round-{round_index + 1}-{policy.replace(':', '-')}.json"
+        )
         checkpoint.write_text(json.dumps(response, indent=2) + "\n")
     return response
 
 
 def summarize(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    summaries = []
+    grouped: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
     for result in results:
-        samples = result["samples_ns_per_call"]
         individual_sensor = (
             result["family"] == "sensor" and result["case"] != "observer_mixed"
         )
+        work_axis = (
+            "source_complexity"
+            if individual_sensor
+            else ("sensor_count" if result["family"] == "sensor" else "points")
+        )
+        work_size = result["complexity"] if individual_sensor else result["size"]
+        key = (
+            result["family"],
+            result["case"],
+            result["api"],
+            result["source"],
+            result["variant"],
+            result["distribution"],
+            result["layout"],
+            result["complexity"],
+            result["size"],
+            work_axis,
+            work_size,
+            result["policy"],
+            result["phase"],
+        )
+        grouped.setdefault(key, []).append(result)
+
+    summaries = []
+    for key, rows in grouped.items():
+        samples = [sample for row in rows for sample in row["samples_ns_per_call"]]
+        responsiveness_rows = [
+            row["responsiveness"] for row in rows if row["responsiveness"] is not None
+        ]
+        responsiveness = None
+        if responsiveness_rows:
+            response_samples = [
+                sample
+                for response in responsiveness_rows
+                for sample in response["samples"]
+            ]
+            median_duration = statistics.median(
+                sample["duration_ns"] for sample in response_samples
+            )
+            interval_ms = responsiveness_rows[0]["interval_ms"]
+            responsiveness = {
+                "status": "measured"
+                if median_duration >= interval_ms * 4 * 1_000_000
+                else "too_short",
+                "interval_ms": interval_ms,
+                "median_duration_ns": median_duration,
+                "median_interior_ticks": statistics.median(
+                    sample["interior_ticks"] for sample in response_samples
+                ),
+                "median_progress_fraction": statistics.median(
+                    sample["progress_fraction"] for sample in response_samples
+                ),
+                "samples": response_samples,
+            }
         summaries.append(
             {
-                "family": result["family"],
-                "case": result["case"],
-                "api": result["api"],
-                "source": result["source"],
-                "variant": result["variant"],
-                "distribution": result["distribution"],
-                "layout": result["layout"],
-                "complexity": result["complexity"],
-                "size": result["size"],
-                "work_axis": "source_complexity"
-                if individual_sensor
-                else ("sensor_count" if result["family"] == "sensor" else "points"),
-                "work_size": result["complexity"]
-                if individual_sensor
-                else result["size"],
-                "policy": result["policy"],
+                "family": key[0],
+                "case": key[1],
+                "api": key[2],
+                "source": key[3],
+                "variant": key[4],
+                "distribution": key[5],
+                "layout": key[6],
+                "complexity": key[7],
+                "size": key[8],
+                "work_axis": key[9],
+                "work_size": key[10],
+                "policy": key[11],
                 "median_ns": statistics.median(samples),
                 "min_ns": min(samples),
                 "max_ns": max(samples),
                 "samples_ns": samples,
-                "loops": result["loops"],
-                "phase": result["phase"],
-                "responsiveness": result["responsiveness"],
+                "loops": [row["loops"] for row in rows],
+                "phase": key[12],
+                "policy_rounds": len(rows),
+                "responsiveness": responsiveness,
             }
         )
     return summaries
@@ -379,7 +432,10 @@ def refinement_values(evidence: list[dict[str, Any]], count: int) -> list[int]:
         upper += 2
 
     existing = {row["work_size"] for row in evidence}
-    values = {max(0, evidence[index]["work_size"] - 1), evidence[index]["work_size"] + 1}
+    values = {
+        max(0, evidence[index]["work_size"] - 1),
+        evidence[index]["work_size"] + 1,
+    }
     span = upper - lower
     for step in range(1, count + 1):
         values.add(lower + round(span * step / (count + 1)))
@@ -567,16 +623,56 @@ def run_controller(args: argparse.Namespace) -> int:
 
     workers = []
     all_results = []
-    for index, policy in enumerate(policies, 1):
-        print(f"[{index}/{len(policies)}] running isolated policy {policy}", flush=True)
-        policy_tasks = [
-            task
-            for task in tasks
-            if task["family"] == "field" or policy.startswith("auto:")
-        ]
-        worker = run_worker(policy, policy_tasks, args, checkpoint_dir=run_dir)
-        workers.append(worker["provenance"])
-        all_results.extend(worker["results"])
+
+    def execute_rounds(
+        selected_policies: list[str],
+        selected_tasks: list[dict[str, Any]],
+        *,
+        phase: str,
+        destination: list[dict[str, Any]],
+        filter_forced_sensor_policies: bool = False,
+    ) -> None:
+        if not selected_policies:
+            return
+        total = len(selected_policies) * args.policy_rounds
+        completed = 0
+        base_order = list(selected_policies)
+        random.Random(f"{args.order_seed}:{phase}").shuffle(base_order)
+        for round_index in range(args.policy_rounds):
+            offset = round_index % len(base_order)
+            round_policies = base_order[offset:] + base_order[:offset]
+            for policy in round_policies:
+                completed += 1
+                print(
+                    f"[{completed}/{total}] running {phase} round "
+                    f"{round_index + 1}/{args.policy_rounds} policy {policy}",
+                    flush=True,
+                )
+                policy_tasks = selected_tasks
+                if filter_forced_sensor_policies:
+                    policy_tasks = [
+                        task
+                        for task in selected_tasks
+                        if task["family"] == "field" or policy.startswith("auto:")
+                    ]
+                worker = run_worker(
+                    policy,
+                    policy_tasks,
+                    args,
+                    phase=phase,
+                    checkpoint_dir=run_dir,
+                    round_index=round_index,
+                )
+                workers.append(worker["provenance"])
+                destination.extend(worker["results"])
+
+    execute_rounds(
+        policies,
+        tasks,
+        phase="coarse",
+        destination=all_results,
+        filter_forced_sensor_policies=True,
+    )
 
     summaries = summarize(all_results)
     candidates = {
@@ -587,9 +683,7 @@ def run_controller(args: argparse.Namespace) -> int:
         "rayon": ("serial:detach", "parallel:detach"),
         "gil": ("auto:retain", "auto:detach"),
     }
-    extensions = extension_tasks(
-        candidates, args.extension_steps, args.max_work_size
-    )
+    extensions = extension_tasks(candidates, args.extension_steps, args.max_work_size)
     if args.extension_steps:
         for comparison, extension in extensions.items():
             if not extension:
@@ -598,23 +692,20 @@ def run_controller(args: argparse.Namespace) -> int:
                 f"extending {comparison} sweep with {len(extension)} tasks",
                 flush=True,
             )
-            for policy in comparison_policies[comparison]:
-                if policy not in args.policies:
-                    continue
-                worker = run_worker(
-                    policy,
-                    extension,
-                    args,
-                    phase="extension",
-                    checkpoint_dir=run_dir,
-                )
-                workers.append(worker["provenance"])
-                all_results.extend(worker["results"])
+            extension_policies = [
+                policy
+                for policy in comparison_policies[comparison]
+                if policy in args.policies
+            ]
+            execute_rounds(
+                extension_policies,
+                extension,
+                phase=f"extension-{comparison}",
+                destination=all_results,
+            )
         summaries = summarize(all_results)
         candidates = {
-            "rayon": find_crossover(
-                summaries, "serial:detach", "parallel:detach"
-            ),
+            "rayon": find_crossover(summaries, "serial:detach", "parallel:detach"),
             "gil": find_crossover(summaries, "auto:retain", "auto:detach"),
         }
 
@@ -627,23 +718,20 @@ def run_controller(args: argparse.Namespace) -> int:
                 f"refining {comparison} transition with {len(refinement)} tasks",
                 flush=True,
             )
-            for policy in comparison_policies[comparison]:
-                if policy not in args.policies:
-                    continue
-                worker = run_worker(
-                    policy,
-                    refinement,
-                    args,
-                    phase="refinement",
-                    checkpoint_dir=run_dir,
-                )
-                workers.append(worker["provenance"])
-                all_results.extend(worker["results"])
+            refinement_policies = [
+                policy
+                for policy in comparison_policies[comparison]
+                if policy in args.policies
+            ]
+            execute_rounds(
+                refinement_policies,
+                refinement,
+                phase=f"refinement-{comparison}",
+                destination=all_results,
+            )
         summaries = summarize(all_results)
         candidates = {
-            "rayon": find_crossover(
-                summaries, "serial:detach", "parallel:detach"
-            ),
+            "rayon": find_crossover(summaries, "serial:detach", "parallel:detach"),
             "gil": find_crossover(summaries, "auto:retain", "auto:detach"),
         }
     validation_results: list[dict[str, Any]] = []
@@ -667,22 +755,17 @@ def run_controller(args: argparse.Namespace) -> int:
                 f"{len(validation)} tasks",
                 flush=True,
             )
-            policies_for_validation = list(comparison_policies[comparison])
-            random.Random(f"{args.order_seed}:{comparison}").shuffle(
-                policies_for_validation
+            policies_for_validation = [
+                policy
+                for policy in comparison_policies[comparison]
+                if policy in args.policies
+            ]
+            execute_rounds(
+                policies_for_validation,
+                validation,
+                phase=f"validation-{comparison}",
+                destination=validation_results,
             )
-            for policy in policies_for_validation:
-                if policy not in args.policies:
-                    continue
-                worker = run_worker(
-                    policy,
-                    validation,
-                    args,
-                    phase="validation",
-                    checkpoint_dir=run_dir,
-                )
-                workers.append(worker["provenance"])
-                validation_results.extend(worker["results"])
     annotate_search_limits(candidates, args)
     report = {
         "schema_version": 2,
@@ -704,6 +787,7 @@ def run_controller(args: argparse.Namespace) -> int:
             "target_sample_ms": args.target_sample_ms,
             "max_loops": args.max_loops,
             "order_seed": args.order_seed,
+            "policy_rounds": args.policy_rounds,
             "refinement_points": args.refinement_points,
             "extension_steps": args.extension_steps,
             "max_work_size": args.max_work_size,
@@ -1321,6 +1405,12 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--max-loops", type=int, default=100_000)
     result.add_argument("--order-seed", type=int, default=20251004)
     result.add_argument(
+        "--policy-rounds",
+        type=int,
+        default=3,
+        help="repeat isolated policies in balanced, rotating order rounds",
+    )
+    result.add_argument(
         "--refinement-points",
         type=int,
         default=4,
@@ -1439,7 +1529,12 @@ def validate_args(args: argparse.Namespace) -> None:
         raise SystemExit("sensor counts must be non-negative")
     if any(value < 1 for value in args.complexities):
         raise SystemExit("complexities must be positive")
-    if args.repeats < 1 or args.warmups < 0 or args.max_loops < 1:
+    if (
+        args.repeats < 1
+        or args.warmups < 0
+        or args.max_loops < 1
+        or args.policy_rounds < 1
+    ):
         raise SystemExit("invalid repeat, warmup, or loop count")
     if args.refinement_points < 0:
         raise SystemExit("refinement points must be non-negative")
@@ -1465,7 +1560,10 @@ def print_dry_run(args: argparse.Namespace) -> None:
             {
                 "coarse_tasks": len(tasks),
                 "tasks_by_policy": by_policy,
-                "coarse_timing_samples": sum(by_policy.values()) * args.repeats,
+                "policy_rounds": args.policy_rounds,
+                "coarse_timing_samples": (
+                    sum(by_policy.values()) * args.repeats * args.policy_rounds
+                ),
                 "automatic_extension_steps": args.extension_steps,
                 "maximum_work_size": args.max_work_size,
                 "candidate_refinement_points": args.refinement_points,

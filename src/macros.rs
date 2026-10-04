@@ -83,10 +83,7 @@ macro_rules! impl_compute_B {
                 use magba::base::Source;
 
                 let pts = points.as_slice();
-                #[cfg(feature = "threshold-calibration")]
                 let detach = crate::execution::should_detach(pts.len() > $gil_threshold);
-                #[cfg(not(feature = "threshold-calibration"))]
-                let detach = pts.len() > $gil_threshold;
 
                 let b_field = if detach {
                     py.detach(|| self.inner.compute_B_batch(pts))

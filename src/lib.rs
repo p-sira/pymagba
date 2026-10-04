@@ -16,7 +16,6 @@ mod fields;
 mod magnets;
 mod sensors;
 
-#[cfg(feature = "threshold-calibration")]
 mod execution;
 
 #[macro_use]

@@ -171,4 +171,4 @@ impl MeshMagnet {
 }
 
 impl_pypose!(MeshMagnet);
-impl_compute_B!(MeshMagnet);
+impl_compute_B!(MeshMagnet, crate::execution::MESH_THRESHOLD);

@@ -123,4 +123,7 @@ impl TriangleCurrent {
 }
 
 impl_pypose!(TriangleCurrent);
-impl_compute_B!(TriangleCurrent);
+impl_compute_B!(
+    TriangleCurrent,
+    crate::execution::TRIANGLE_CURRENT_THRESHOLD
+);

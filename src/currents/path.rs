@@ -119,4 +119,4 @@ impl PathCurrent {
 }
 
 impl_pypose!(PathCurrent);
-impl_compute_B!(PathCurrent);
+impl_compute_B!(PathCurrent, crate::execution::PATH_THRESHOLD);
