@@ -14,8 +14,23 @@ permissions:
 
 jobs:
   codspeed:
-    name: Run benchmarks
+    name: Run benchmarks (${{ matrix.mode }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Single-threaded instruction counts: stable serial kernel and FFI cost.
+          # Multi-threaded Rayon benchmarks are excluded since simulation cannot
+          # measure parallel speedups.
+          - mode: simulation
+            rayon_num_threads: "1"
+            pytest_args: '-m "not rayon"'
+          # Wall-clock time with Rayon using every available CPU
+          # ("0" means Rayon's default), to capture parallel gains.
+          - mode: walltime
+            rayon_num_threads: "0"
+            pytest_args: ""
     steps:
       - uses: actions/checkout@v7
         with:
@@ -27,11 +42,15 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
       - name: Build and install package
+        # Keep symbols in benchmark builds so flamegraphs show function names.
+        # This does not change the generated code.
+        env:
+          CARGO_PROFILE_RELEASE_STRIP: "false"
         run: uv run maturin develop --release
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v5
         env:
-          RAYON_NUM_THREADS: "1"
+          RAYON_NUM_THREADS: ${{ matrix.rayon_num_threads }}
         with:
-          mode: simulation
-          run: uv run pytest python/benchmarks --codspeed
+          mode: ${{ matrix.mode }}
+          run: uv run pytest python/benchmarks --codspeed ${{ matrix.pytest_args }}
