@@ -1,3 +1,6 @@
 [submodule "testing"]
 	path = testing
 	url = https://github.com/p-sira/magba-testing
+[submodule "vendor/magba"]
+	path = vendor/magba
+	url = https://github.com/p-sira/magba.git
