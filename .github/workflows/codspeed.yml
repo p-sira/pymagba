@@ -28,6 +28,8 @@ jobs:
         run: uv run maturin develop --release
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v5
+        env:
+          RAYON_NUM_THREADS: "1"
         with:
           mode: simulation
           run: uv run pytest python/benchmarks --codspeed
