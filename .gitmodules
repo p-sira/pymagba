@@ -4,3 +4,4 @@
 [submodule "vendor/magba"]
 	path = vendor/magba
 	url = https://github.com/p-sira/magba.git
+	branch = vendor/pymagba
