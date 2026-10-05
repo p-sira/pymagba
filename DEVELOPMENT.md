@@ -9,6 +9,12 @@ git clone https://github.com/p-sira/pymagba.git
 cd pymagba
 ```
 
+Set up git hooks:
+
+```shell
+chmod +x scripts/setup_git_hooks.sh && scripts/setup_git_hooks.sh
+```
+
 To reproduce the build:
 
 ```shell
