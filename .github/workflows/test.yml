@@ -57,4 +57,4 @@ jobs:
           uv run mypy python/pymagba
       - name: Run tests
         run: |
-          uv run pytest python/tests/
+          uv run pytest -o addopts="" python/tests/
