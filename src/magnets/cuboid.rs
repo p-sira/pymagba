@@ -97,4 +97,4 @@ impl CuboidMagnet {
 }
 
 impl_pypose!(CuboidMagnet);
-impl_compute_B!(CuboidMagnet);
+impl_compute_B!(CuboidMagnet, crate::execution::CUBOID_THRESHOLD);

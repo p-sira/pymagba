@@ -115,4 +115,4 @@ impl CylinderMagnet {
 }
 
 impl_pypose!(CylinderMagnet);
-impl_compute_B!(CylinderMagnet);
+impl_compute_B!(CylinderMagnet, crate::execution::CYLINDER_THRESHOLD);

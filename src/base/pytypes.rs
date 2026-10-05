@@ -3,9 +3,9 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-use numpy::{PyReadonlyArray1, PyReadonlyArray2};
+use numpy::{PyReadonlyArray1, PyReadonlyArray2, PyUntypedArray};
 use pyo3::prelude::*;
-use pyo3::types::PySequence;
+use pyo3::types::{PyList, PySequence, PyTuple};
 
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::{ImportRef, PyStubType, TypeInfo};
@@ -315,6 +315,35 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PyRotation {
     type Error = PyErr;
 
     fn extract(ob: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
+        // 0. Scipy Rotation: check it first so it does not pay for the failed
+        //    NumPy/sequence extraction attempts below. NumPy arrays, lists and
+        //    tuples skip the `hasattr` lookup entirely.
+        let is_array_or_seq = ob.is_instance_of::<PyUntypedArray>()
+            || ob.is_instance_of::<PyList>()
+            || ob.is_instance_of::<PyTuple>();
+        if !is_array_or_seq && ob.hasattr("as_quat")? {
+            let as_quat = ob.call_method0("as_quat")?;
+            if let Ok(arr1) = as_quat.extract::<PyReadonlyArray1<'py, f64>>() {
+                let view = arr1.as_array();
+                if view.shape()[0] == 4 {
+                    if let Some(slice) = view.as_slice() {
+                        return validate_and_normalize_quaternion([
+                            slice[0], slice[1], slice[2], slice[3],
+                        ])
+                        .map(PyRotation);
+                    } else {
+                        return validate_and_normalize_quaternion([
+                            view[0], view[1], view[2], view[3],
+                        ])
+                        .map(PyRotation);
+                    }
+                }
+            }
+            if let Ok(arr) = as_quat.extract::<[f64; 4]>() {
+                return validate_and_normalize_quaternion(arr).map(PyRotation);
+            }
+        }
+
         // 1. Fast path: 1D NumPy array [x, y, z, w] f64 (Zero-copy slice read)
         if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f64>>() {
             let view = arr1.as_array();
@@ -358,30 +387,6 @@ impl<'a, 'py> FromPyObject<'a, 'py> for PyRotation {
         // 3. Fast path: Native Python list or tuple (e.g., [x, y, z, w])
         if let Ok(arr) = ob.extract::<[f64; 4]>() {
             return validate_and_normalize_quaternion(arr).map(PyRotation);
-        }
-
-        // 4. Try Scipy Rotation (avoid calling as_quat if attribute does not exist)
-        if ob.hasattr("as_quat")? {
-            let as_quat = ob.call_method0("as_quat")?;
-            if let Ok(arr1) = as_quat.extract::<PyReadonlyArray1<'py, f64>>() {
-                let view = arr1.as_array();
-                if view.shape()[0] == 4 {
-                    if let Some(slice) = view.as_slice() {
-                        return validate_and_normalize_quaternion([
-                            slice[0], slice[1], slice[2], slice[3],
-                        ])
-                        .map(PyRotation);
-                    } else {
-                        return validate_and_normalize_quaternion([
-                            view[0], view[1], view[2], view[3],
-                        ])
-                        .map(PyRotation);
-                    }
-                }
-            }
-            if let Ok(arr) = as_quat.extract::<[f64; 4]>() {
-                return validate_and_normalize_quaternion(arr).map(PyRotation);
-            }
         }
 
         Err(pyo3::exceptions::PyTypeError::new_err(

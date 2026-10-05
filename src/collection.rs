@@ -225,10 +225,12 @@ impl SourceCollection {
         use magba::base::Source;
         let assembly = self.get_or_sync_assembly(py)?;
         let pts = points.as_slice();
-        let b_field = if pts.len() <= 1 {
-            assembly.compute_B_batch(pts)
-        } else {
+        let detach = crate::execution::should_detach(pts.len() > 1);
+
+        let b_field = if detach {
             py.detach(|| assembly.compute_B_batch(pts))
+        } else {
+            assembly.compute_B_batch(pts)
         };
         Ok(crate::util::vec3_to_pyarray2(py, b_field))
     }
@@ -475,6 +477,26 @@ impl ObserverCollection {
     fn read_all(&self, source: Bound<'_, PyAny>, py: Python<'_>) -> PyResult<Py<PyAny>> {
         let s_ref = SourceRef::try_extract(&source)?;
         let list = PyList::empty(py);
+
+        #[cfg(feature = "threshold-calibration")]
+        if crate::execution::should_detach(false) {
+            use magba::base::Observer;
+
+            let owned_source = s_ref.into_component();
+            for (sensor_py, local_offset) in self.sensors.iter().zip(&self.local_offsets) {
+                let o_ref = ObserverRef::try_extract_with_py(sensor_py, py)?;
+                let eff_isometry = self.inner.as_isometry() * local_offset;
+                let staged = o_ref.staged_at_isometry(&eff_isometry);
+                let (staged, output) = py.detach(|| {
+                    let output = staged.read(&owned_source);
+                    (staged, output)
+                });
+                o_ref.sync_staged_state(&staged);
+                list.append(sensor_output_to_py(py, output)?)?;
+            }
+            return Ok(list.into_any().unbind());
+        }
+
         for (sensor_py, local_offset) in self.sensors.iter().zip(&self.local_offsets) {
             let o_ref = ObserverRef::try_extract_with_py(sensor_py, py)?;
             let eff_isometry = self.inner.as_isometry() * local_offset;

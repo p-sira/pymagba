@@ -21,6 +21,13 @@ TETRA_VERTICES = np.array(
 TETRA_FACES = np.array([[0, 2, 1], [0, 1, 3], [1, 2, 3], [0, 3, 2]])
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "rayon: multi-threaded Rayon benchmark, meant for the walltime job only",
+    )
+
+
 def make_grid(n_per_axis: int) -> np.ndarray:
     """Regular grid of observer points in a [-0.5, 0.5]^3 cube."""
     linsp = np.linspace(-0.5, 0.5, n_per_axis)

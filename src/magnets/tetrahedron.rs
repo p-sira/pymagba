@@ -126,4 +126,4 @@ impl TetrahedronMagnet {
 }
 
 impl_pypose!(TetrahedronMagnet);
-impl_compute_B!(TetrahedronMagnet);
+impl_compute_B!(TetrahedronMagnet, crate::execution::TETRAHEDRON_THRESHOLD);

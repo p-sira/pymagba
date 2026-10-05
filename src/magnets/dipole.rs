@@ -73,4 +73,4 @@ impl Dipole {
 }
 
 impl_pypose!(Dipole);
-impl_compute_B!(Dipole, 32);
+impl_compute_B!(Dipole, crate::execution::DIPOLE_THRESHOLD);

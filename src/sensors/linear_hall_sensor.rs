@@ -150,12 +150,26 @@ impl LinearHallSensor {
     }
 
     fn read_voltage(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
+        #[cfg(feature = "threshold-calibration")]
+        let py = source.py();
         let source_ref = SourceRef::try_extract(&source)?;
+        #[cfg(feature = "threshold-calibration")]
+        if crate::execution::should_detach(false) {
+            let owned_source = source_ref.into_component();
+            return Ok(py.detach(|| self.inner.read_voltage(&owned_source)));
+        }
         Ok(self.inner.read_voltage(source_ref.as_source()))
     }
 
     fn compute_B_perp(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
+        #[cfg(feature = "threshold-calibration")]
+        let py = source.py();
         let source_ref = SourceRef::try_extract(&source)?;
+        #[cfg(feature = "threshold-calibration")]
+        if crate::execution::should_detach(false) {
+            let owned_source = source_ref.into_component();
+            return Ok(py.detach(|| self.inner.compute_B_perp(&owned_source)));
+        }
         Ok(self.inner.compute_B_perp(source_ref.as_source()))
     }
 }

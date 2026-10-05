@@ -93,4 +93,4 @@ impl CircularCurrent {
 }
 
 impl_pypose!(CircularCurrent);
-impl_compute_B!(CircularCurrent);
+impl_compute_B!(CircularCurrent, crate::execution::CIRCULAR_THRESHOLD);

@@ -94,4 +94,4 @@ impl SphereMagnet {
 }
 
 impl_pypose!(SphereMagnet);
-impl_compute_B!(SphereMagnet, 32);
+impl_compute_B!(SphereMagnet, crate::execution::SPHERE_THRESHOLD);

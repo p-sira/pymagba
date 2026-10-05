@@ -28,6 +28,16 @@
 
 **PyMagba** is a package for analytical magnetic computation, powered by Rust [Magba](https://github.com/p-sira/magba). All functions support numpy and parallelization.
 
+## Features
+
+### Machine-Calibrated Parallel Execution
+
+PyMagba automatically chooses between serial and Rayon execution for each field
+kernel and releases the Python interpreter only when the calibrated workload
+justifies it. For advanced users who wish to best optimize for their specific machine,
+see the [performance calibration guide](benchmarks/perf_calibration/README.md) for the
+complete procedure and current results.
+
 ## Quick Start
 
 ```python
