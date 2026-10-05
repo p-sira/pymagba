@@ -68,6 +68,9 @@ pub(crate) use impl_pypose;
 /// Requires `inner` to implement `magba::base::Source`.
 macro_rules! impl_compute_B {
     ($struct:ty) => {
+        impl_compute_B!($struct, 1);
+    };
+    ($struct:ty, $gil_threshold:expr) => {
         #[cfg_attr(feature = "stub-gen", gen_stub_pymethods)]
         #[pyo3::pymethods]
         impl $struct {
@@ -75,12 +78,18 @@ macro_rules! impl_compute_B {
             fn compute_B<'py>(
                 &self,
                 py: pyo3::Python<'py>,
-                points: crate::base::PointsLike,
+                points: crate::base::PointsLike<'py>,
             ) -> pyo3::Bound<'py, numpy::PyArray2<f64>> {
                 use magba::base::Source;
 
-                let pts = points.0;
-                let b_field = self.inner.compute_B_batch(&pts);
+                let pts = points.as_slice();
+                let detach = crate::execution::should_detach(pts.len() > $gil_threshold);
+
+                let b_field = if detach {
+                    py.detach(|| self.inner.compute_B_batch(pts))
+                } else {
+                    self.inner.compute_B_batch(pts)
+                };
 
                 crate::util::vec3_to_pyarray2(py, b_field)
             }

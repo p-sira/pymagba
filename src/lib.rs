@@ -16,6 +16,8 @@ mod fields;
 mod magnets;
 mod sensors;
 
+mod execution;
+
 #[macro_use]
 mod macros;
 
@@ -86,9 +88,75 @@ fn pymagba_binding(m: Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(fields::triangle_current_B, &m)?)?;
     m.add_function(wrap_pyfunction!(fields::sheet_current_B, &m)?)?;
 
+    #[cfg(feature = "threshold-calibration")]
+    {
+        m.add_function(wrap_pyfunction!(_set_threshold_calibration, &m)?)?;
+        m.add_function(wrap_pyfunction!(_threshold_calibration_state, &m)?)?;
+    }
+
     let fields_mod = PyModule::new(m.py(), "fields")?;
     fields::fields(&fields_mod)?;
     m.add_submodule(&fields_mod)?;
 
     Ok(())
+}
+
+#[cfg(feature = "threshold-calibration")]
+#[pyfunction]
+#[pyo3(signature = (rust_mode="auto", gil_mode="auto", instrument=false))]
+fn _set_threshold_calibration(rust_mode: &str, gil_mode: &str, instrument: bool) -> PyResult<()> {
+    use execution::GilMode;
+    use magba::threshold_calibration::ExecutionMode;
+
+    let rust_mode = match rust_mode {
+        "auto" => ExecutionMode::Auto,
+        "serial" => ExecutionMode::Serial,
+        "parallel" => ExecutionMode::Parallel,
+        value => {
+            return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "invalid Rust execution mode {value:?}; expected auto, serial, or parallel"
+            )))
+        }
+    };
+    let gil_mode = match gil_mode {
+        "auto" => GilMode::Auto,
+        "retain" => GilMode::Retain,
+        "detach" => GilMode::Detach,
+        value => {
+            return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "invalid GIL mode {value:?}; expected auto, retain, or detach"
+            )))
+        }
+    };
+
+    magba::threshold_calibration::set_execution_mode(rust_mode);
+    magba::threshold_calibration::set_instrumentation(instrument);
+    magba::threshold_calibration::reset_branch_counts();
+    execution::set_gil_mode(gil_mode);
+    execution::set_instrumentation(instrument);
+    execution::reset_branch_counts();
+    Ok(())
+}
+
+#[cfg(feature = "threshold-calibration")]
+#[pyfunction]
+fn _threshold_calibration_state(py: Python<'_>) -> PyResult<Py<PyAny>> {
+    use pyo3::types::PyDict;
+
+    let state = PyDict::new(py);
+    state.set_item(
+        "rust_mode",
+        format!("{:?}", magba::threshold_calibration::execution_mode()).to_lowercase(),
+    )?;
+    state.set_item(
+        "gil_mode",
+        format!("{:?}", execution::gil_mode()).to_lowercase(),
+    )?;
+    state.set_item("instrument", execution::instrumentation())?;
+    state.set_item(
+        "rust_branches",
+        magba::threshold_calibration::branch_counts(),
+    )?;
+    state.set_item("gil_branches", execution::branch_counts())?;
+    Ok(state.into_any().unbind())
 }

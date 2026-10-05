@@ -2,7 +2,6 @@
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
 import numpy as np
-import pytest
 from pymagba.magnets import CylinderMagnet
 from pymagba.sensors import HallSwitch, LinearHallSensor, ObserverCollection
 
@@ -93,5 +92,35 @@ def test_observer_collection_read_source_collection():
     assert np.allclose(results[0], res_direct)
 
 
-if __name__ == "__main__":
-    pytest.main([__file__])
+def test_observer_child_mutation():
+    # Mutating indexed observer child must reflect in collection read_all
+    from pymagba.magnets import SphereMagnet
+
+    magnet = SphereMagnet()
+    sensor = LinearHallSensor()
+    observers = ObserverCollection([sensor])
+
+    v_initial = observers.read_all(magnet)[0]
+    observers[0].sensitivity = 2.0
+
+    v_mutated = observers.read_all(magnet)[0]
+    assert v_mutated != v_initial
+    assert np.isclose(v_mutated, observers[0].read_voltage(magnet))
+
+
+def test_observer_collection_latch_state_sync():
+    # Activating collection latch must update authoritative child state
+    from pymagba.magnets import SphereMagnet
+    from pymagba.sensors import HallLatch
+
+    magnet = SphereMagnet()
+    zero = SphereMagnet(polarization=[0, 0, 0])
+    latch = HallLatch()
+    observers = ObserverCollection([latch])
+
+    assert observers.read_all(magnet)[0] is True
+    # The authoritative child must now be active:
+    assert observers[0].read_state(zero) is True
+    assert latch.read_state(zero) is True
+    # Reading collection at zero must maintain hysteresis:
+    assert observers.read_all(zero)[0] is True

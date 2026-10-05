@@ -30,6 +30,23 @@ pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
+macro_rules! detach_if_multi {
+    ($py:expr, $n:expr, $work:expr) => {
+        detach_if_multi!($py, $n, 1, $work);
+    };
+    ($py:expr, $n:expr, $threshold:expr, $work:expr) => {
+        let detach = crate::execution::should_detach($n > $threshold);
+
+        if !detach {
+            $work;
+        } else {
+            $py.detach(|| {
+                $work;
+            });
+        }
+    };
+}
+
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
 #[pyfunction]
 /// Calculates the magnetic field of a cylindrical magnet.
@@ -46,21 +63,31 @@ pub fn fields(m: &Bound<'_, PyModule>) -> PyResult<()> {
 ///     height (float, optional): Height of the cylinder in meters.
 ///         Defaults to 1.0.
 ///     polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
-///         in Tesla. Defaults to [0.0, 0.0, 0.0].
+///         in Tesla. Defaults to [0.0, 0.0, 1.0].
 ///
 /// Returns:
 ///     numpy.ndarray: Magnetic field (N, 3) in Tesla.
 #[pyo3(signature = (points, position=None, orientation=None, diameter=1.0, height=1.0, polarization=None))]
 pub fn cylinder_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     diameter: f64,
     height: f64,
     polarization: Option<ArrayLike3>,
-) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    if !diameter.is_finite() || diameter <= 0.0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Diameter cannot be negative.",
+        ));
+    }
+    if !height.is_finite() || height <= 0.0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Height cannot be negative.",
+        ));
+    }
+
     let n = points.len();
 
     // Map options to defaults
@@ -73,20 +100,22 @@ pub fn cylinder_B<'py>(
     // Pre-allocate the result buffer
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    // Multithreaded computation
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::CYLINDER_THRESHOLD,
         magba::fields::cylinder_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
             diameter,
             height,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
-    vec3_to_pyarray2(py, results)
+    Ok(vec3_to_pyarray2(py, results))
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
@@ -108,12 +137,11 @@ pub fn cylinder_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, moment=None))]
 pub fn dipole_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     moment: Option<ArrayLike3>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -124,9 +152,18 @@ pub fn dipole_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
-        magba::fields::dipole_B_batch(&points, pos.into(), rot, m.into(), results.as_mut_slice());
-    });
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::DIPOLE_THRESHOLD,
+        magba::fields::dipole_B_batch(
+            points.as_slice(),
+            pos.into(),
+            rot,
+            m.into(),
+            results.as_mut_slice(),
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -145,43 +182,51 @@ pub fn dipole_B<'py>(
 ///     dimensions (ArrayLike3, optional): Side lengths [dx, dy, dz] in meters.
 ///         Defaults to [1.0, 1.0, 1.0].
 ///     polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
-///         in Tesla. Defaults to [0.0, 0.0, 0.0].
+///         in Tesla. Defaults to [0.0, 0.0, 1.0].
 ///
 /// Returns:
 ///     numpy.ndarray: Magnetic field (N, 3) in Tesla.
 #[pyo3(signature = (points, position=None, orientation=None, dimensions=None, polarization=None))]
 pub fn cuboid_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     dimensions: Option<ArrayLike3>,
     polarization: Option<ArrayLike3>,
-) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
+    if dim.iter().any(|&d| !d.is_finite() || d < 0.0) {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Dimensions must be non-negative.",
+        ));
+    }
+
     let n = points.len();
 
     let pos = try_into_slice!(position);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-    let dim = dimensions.map(|d| d.0).unwrap_or([1.0, 1.0, 1.0]);
     let pol = try_into_slice_or!(polarization, [0.0, 0.0, 1.0]);
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::CUBOID_THRESHOLD,
         magba::fields::cuboid_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
             dim.into(),
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
-    vec3_to_pyarray2(py, results)
+    Ok(vec3_to_pyarray2(py, results))
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
@@ -198,20 +243,25 @@ pub fn cuboid_B<'py>(
 ///     diameter (float, optional): Diameter of the sphere in meters.
 ///         Defaults to 1.0.
 ///     polarization (ArrayLike3, optional): Remanence polarization vector [Bx, By, Bz]
-///         in Tesla. Defaults to [0.0, 0.0, 0.0].
+///         in Tesla. Defaults to [0.0, 0.0, 1.0].
 ///
 /// Returns:
 ///     numpy.ndarray: Magnetic field (N, 3) in Tesla.
 #[pyo3(signature = (points, position=None, orientation=None, diameter=1.0, polarization=None))]
 pub fn sphere_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     diameter: f64,
     polarization: Option<ArrayLike3>,
-) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    if !diameter.is_finite() || diameter <= 0.0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Diameter cannot be negative.",
+        ));
+    }
+
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -222,18 +272,21 @@ pub fn sphere_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::SPHERE_THRESHOLD,
         magba::fields::sphere_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
             diameter,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
-    vec3_to_pyarray2(py, results)
+    Ok(vec3_to_pyarray2(py, results))
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
@@ -257,13 +310,18 @@ pub fn sphere_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, diameter=1.0, current=1.0))]
 pub fn circular_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     diameter: f64,
     current: f64,
-) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
+) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
+    if !diameter.is_finite() || diameter <= 0.0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Diameter must be positive.",
+        ));
+    }
+
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -273,18 +331,21 @@ pub fn circular_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::CIRCULAR_THRESHOLD,
         magba::fields::circular_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             diameter,
             current,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
-    vec3_to_pyarray2(py, results)
+    Ok(vec3_to_pyarray2(py, results))
 }
 
 #[cfg_attr(feature = "stub-gen", gen_stub_pyfunction)]
@@ -307,13 +368,12 @@ pub fn circular_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, polarization=None, vertices=None))]
 pub fn triangle_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     polarization: Option<ArrayLike3>,
     vertices: Option<[[f64; 3]; 3]>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -330,16 +390,19 @@ pub fn triangle_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::TRIANGLE_THRESHOLD,
         magba::fields::triangle_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
             v,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -364,13 +427,12 @@ pub fn triangle_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, polarization=None, vertices=None))]
 pub fn tetrahedron_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     polarization: Option<ArrayLike3>,
     vertices: Option<[[f64; 3]; 4]>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -393,16 +455,19 @@ pub fn tetrahedron_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::TETRAHEDRON_THRESHOLD,
         magba::fields::tetrahedron_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
             v,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -428,14 +493,13 @@ pub fn tetrahedron_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, polarization=None, vertices=None, faces=None))]
 pub fn mesh_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     polarization: Option<ArrayLike3>,
-    vertices: Option<PointsLike>,
+    vertices: Option<PointsLike<'py>>,
     faces: Option<FacesLike>,
 ) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -446,8 +510,7 @@ pub fn mesh_B<'py>(
 
     let verts = vertices
         .map(|pts| {
-            pts.0
-                .into_iter()
+            pts.iter()
                 .map(|p| Vector3::new(p.x, p.y, p.z))
                 .collect::<Vec<_>>()
         })
@@ -455,21 +518,23 @@ pub fn mesh_B<'py>(
 
     let f = faces.map(|fs| fs.0).unwrap_or_default();
 
-    let trimesh = magba::base::mesh::TriMesh::new(verts, f)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+    let trimesh = crate::base::mesh::get_or_build_trimesh(&verts, &f)?;
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::MESH_THRESHOLD,
         magba::fields::mesh_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             pol.into(),
             &trimesh,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     Ok(vec3_to_pyarray2(py, results))
 }
@@ -479,24 +544,22 @@ pub fn mesh_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, current=1.0, vertices=None))]
 pub fn path_current_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     current: f64,
-    vertices: Option<PointsLike>,
+    vertices: Option<PointsLike<'py>>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
     let rot = orientation
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
-        
+
     let verts = vertices
         .map(|pts| {
-            pts.0
-                .into_iter()
+            pts.iter()
                 .map(|p| Vector3::new(p.x, p.y, p.z))
                 .collect::<Vec<_>>()
         })
@@ -504,16 +567,19 @@ pub fn path_current_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::PATH_THRESHOLD,
         magba::fields::path_current_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             current,
             &verts,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -523,13 +589,12 @@ pub fn path_current_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, current_density=None, vertices=None))]
 pub fn triangle_current_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
     current_density: Option<ArrayLike3>,
     vertices: Option<[[f64; 3]; 3]>,
 ) -> Bound<'py, numpy::PyArray2<f64>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -546,16 +611,19 @@ pub fn triangle_current_B<'py>(
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::TRIANGLE_CURRENT_THRESHOLD,
         magba::fields::triangle_current_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             j.into(),
             v,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     vec3_to_pyarray2(py, results)
 }
@@ -565,14 +633,13 @@ pub fn triangle_current_B<'py>(
 #[pyo3(signature = (points, position=None, orientation=None, current_densities=None, vertices=None, faces=None))]
 pub fn sheet_current_B<'py>(
     py: Python<'py>,
-    points: PointsLike,
+    points: PointsLike<'py>,
     position: Option<ArrayLike3>,
     orientation: Option<PyRotation>,
-    current_densities: Option<PointsLike>,
-    vertices: Option<PointsLike>,
+    current_densities: Option<PointsLike<'py>>,
+    vertices: Option<PointsLike<'py>>,
     faces: Option<FacesLike>,
 ) -> PyResult<Bound<'py, numpy::PyArray2<f64>>> {
-    let points = points.0;
     let n = points.len();
 
     let pos = try_into_slice!(position);
@@ -580,41 +647,50 @@ pub fn sheet_current_B<'py>(
         .map(|rot| rot.0)
         .unwrap_or_else(nalgebra::UnitQuaternion::identity);
 
-    let j = current_densities
-        .map(|pts| {
-            pts.0
-                .into_iter()
-                .map(|p| Vector3::new(p.x, p.y, p.z))
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-
     let verts = vertices
         .map(|pts| {
-            pts.0
-                .into_iter()
+            pts.iter()
                 .map(|p| Vector3::new(p.x, p.y, p.z))
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
 
     let f = faces.map(|fs| fs.0).unwrap_or_default();
+    let num_faces = f.len();
 
-    let trimesh = magba::base::mesh::TriMesh::new(verts, f)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("{:?}", e)))?;
+    let j = match current_densities {
+        Some(pts) => {
+            if pts.len() != num_faces {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Number of current densities ({}) must match number of faces ({})",
+                    pts.len(),
+                    num_faces
+                )));
+            }
+            pts.iter()
+                .map(|p| Vector3::new(p.x, p.y, p.z))
+                .collect::<Vec<_>>()
+        }
+        None => vec![Vector3::zeros(); num_faces],
+    };
+
+    let trimesh = crate::base::mesh::get_or_build_trimesh(&verts, &f)?;
 
     let mut results: Vec<Vector3<f64>> = vec![Vector3::zeros(); n];
 
-    py.detach(|| {
+    detach_if_multi!(
+        py,
+        n,
+        crate::execution::SHEET_THRESHOLD,
         magba::fields::sheet_current_B_batch(
-            &points,
+            points.as_slice(),
             pos.into(),
             rot,
             &j,
             &trimesh,
             results.as_mut_slice(),
-        );
-    });
+        )
+    );
 
     Ok(vec3_to_pyarray2(py, results))
 }

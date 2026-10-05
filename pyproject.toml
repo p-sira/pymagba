@@ -13,7 +13,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "magpylib>=5.2.2",
     "scipy>=1.16.2",
 ]
 
@@ -38,7 +37,9 @@ dev = [
     "jinja2>=3.1.2",
     "scipy-stubs>=1.17.1.5",
     "numpy-stl>=4.0.1",
+    "ruff>=0.16.8",
     "pytest-codspeed>=5.0.3",
+    "tqdm>=4.67.1",
 ]
 docs = [
     "sphinx>=8.2.3",
@@ -51,3 +52,4 @@ docs = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+addopts = ["--ignore=python/tests/test_stubs.py"]

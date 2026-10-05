@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{extract_states, try_into_quat, try_into_slice, ArrayLike3, PyRotation},
+    base::{extract_states, get_state_item, try_into_quat, try_into_slice, ArrayLike3, PyRotation},
     macros::{impl_compute_B, impl_pypose},
     util::catch_unwind_to_pyerr,
 };
@@ -63,18 +63,15 @@ impl TriangleCurrent {
         let opt_cd = Some(current_density);
         let cd = try_into_slice!(opt_cd);
         catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
-            self.inner.set_current_density(Vector3::new(cd[0], cd[1], cd[2]));
+            self.inner
+                .set_current_density(Vector3::new(cd[0], cd[1], cd[2]));
         }))
     }
 
     #[getter]
     fn vertices(&self) -> [[f64; 3]; 3] {
         let v = self.inner.vertices();
-        [
-            v[0].into(),
-            v[1].into(),
-            v[2].into(),
-        ]
+        [v[0].into(), v[1].into(), v[2].into()]
     }
 
     #[setter]
@@ -103,25 +100,30 @@ impl TriangleCurrent {
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, current_density;3]);
-        
-        let vertices: [[f64; 3]; 3] = state
-            .get_item("vertices")?
-            .ok_or_else(|| pyo3::exceptions::PyKeyError::new_err("vertices"))?
-            .extract()?;
 
-        self.inner = MagbaTriangleCurrent::new(
-            position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
-            Vector3::new(current_density[0], current_density[1], current_density[2]),
-            [
-                Vector3::new(vertices[0][0], vertices[0][1], vertices[0][2]),
-                Vector3::new(vertices[1][0], vertices[1][1], vertices[1][2]),
-                Vector3::new(vertices[2][0], vertices[2][1], vertices[2][2]),
-            ],
-        );
+        let vertices: [[f64; 3]; 3] = get_state_item!(state, "vertices", [[f64; 3]; 3])?;
+
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaTriangleCurrent::new(
+                position,
+                rot,
+                Vector3::new(current_density[0], current_density[1], current_density[2]),
+                [
+                    Vector3::new(vertices[0][0], vertices[0][1], vertices[0][2]),
+                    Vector3::new(vertices[1][0], vertices[1][1], vertices[1][2]),
+                    Vector3::new(vertices[2][0], vertices[2][1], vertices[2][2]),
+                ],
+            )
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }
 
 impl_pypose!(TriangleCurrent);
-impl_compute_B!(TriangleCurrent);
+impl_compute_B!(
+    TriangleCurrent,
+    crate::execution::TRIANGLE_CURRENT_THRESHOLD
+);

@@ -10,10 +10,7 @@ use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 
 use crate::{
-    base::{
-        extract_states, try_into_quat, try_into_slice, try_into_slice_or, ArrayLike3, PyRotation,
-        SourceRef,
-    },
+    base::{extract_states, try_into_quat, try_into_slice, ArrayLike3, PyRotation, SourceRef},
     macros::impl_pypose,
     util::catch_unwind_to_pyerr,
 };
@@ -39,7 +36,22 @@ impl LinearHallSensor {
     ) -> PyResult<Self> {
         let pos = try_into_slice!(position);
         let rot = try_into_quat!(orientation);
-        let s_axis = try_into_slice_or!(sensitive_axis, [0.0, 0.0, 1.0]);
+        let s_axis = if let Some(axis) = sensitive_axis {
+            crate::base::validate_and_normalize_axis(axis.0)?
+        } else {
+            nalgebra::Vector3::z()
+        };
+
+        if !sensitivity.is_finite() {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Sensitivity must be finite.",
+            ));
+        }
+        if !supply_voltage.is_finite() || supply_voltage <= 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Supply voltage must be positive.",
+            ));
+        }
 
         catch_unwind_to_pyerr(move || Self {
             inner: MagbaLinearHallSensor::new(pos, rot, s_axis, sensitivity, supply_voltage),
@@ -54,17 +66,18 @@ impl LinearHallSensor {
 
     #[setter]
     fn set_sensitive_axis(&mut self, axis: ArrayLike3) -> PyResult<()> {
+        let s_axis = crate::base::validate_and_normalize_axis(axis.0)?;
         let sensitivity = self.inner.sensitivity();
-        catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
-            let new_inner = MagbaLinearHallSensor::new(
-                self.inner.position(),
-                self.inner.orientation(),
-                axis.0,
-                sensitivity,
-                self.inner.supply_voltage(),
-            );
-            self.inner = new_inner;
-        }))
+        let supply_voltage = self.inner.supply_voltage();
+        let new_inner = MagbaLinearHallSensor::new(
+            self.inner.position(),
+            self.inner.orientation(),
+            s_axis,
+            sensitivity,
+            supply_voltage,
+        );
+        self.inner = new_inner;
+        Ok(())
     }
 
     #[getter]
@@ -73,8 +86,14 @@ impl LinearHallSensor {
     }
 
     #[setter]
-    fn set_sensitivity(&mut self, sensitivity: f64) {
+    fn set_sensitivity(&mut self, sensitivity: f64) -> PyResult<()> {
+        if !sensitivity.is_finite() {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Sensitivity must be finite.",
+            ));
+        }
         self.inner.set_sensitivity(sensitivity);
+        Ok(())
     }
 
     #[getter]
@@ -84,6 +103,11 @@ impl LinearHallSensor {
 
     #[setter]
     fn set_supply_voltage(&mut self, voltage: f64) -> PyResult<()> {
+        if !voltage.is_finite() || voltage <= 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Supply voltage must be positive.",
+            ));
+        }
         catch_unwind_to_pyerr(std::panic::AssertUnwindSafe(move || {
             self.inner.set_supply_voltage(voltage);
         }))
@@ -105,24 +129,47 @@ impl LinearHallSensor {
 
     fn __setstate__(&mut self, state: pyo3::Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, sensitive_axis;3, sensitivity, supply_voltage]);
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        let s_axis = crate::base::validate_and_normalize_axis(sensitive_axis)?;
+        if !sensitivity.is_finite() {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Sensitivity must be finite.",
+            ));
+        }
+        if !supply_voltage.is_finite() || supply_voltage <= 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Supply voltage must be positive.",
+            ));
+        }
 
-        self.inner = MagbaLinearHallSensor::new(
-            position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
-            sensitive_axis,
-            sensitivity,
-            supply_voltage,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaLinearHallSensor::new(position, rot, s_axis, sensitivity, supply_voltage)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 
     fn read_voltage(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
+        #[cfg(feature = "threshold-calibration")]
+        let py = source.py();
         let source_ref = SourceRef::try_extract(&source)?;
+        #[cfg(feature = "threshold-calibration")]
+        if crate::execution::should_detach(false) {
+            let owned_source = source_ref.into_component();
+            return Ok(py.detach(|| self.inner.read_voltage(&owned_source)));
+        }
         Ok(self.inner.read_voltage(source_ref.as_source()))
     }
 
     fn compute_B_perp(&self, source: pyo3::Bound<'_, pyo3::PyAny>) -> pyo3::PyResult<f64> {
+        #[cfg(feature = "threshold-calibration")]
+        let py = source.py();
         let source_ref = SourceRef::try_extract(&source)?;
+        #[cfg(feature = "threshold-calibration")]
+        if crate::execution::should_detach(false) {
+            let owned_source = source_ref.into_component();
+            return Ok(py.detach(|| self.inner.compute_B_perp(&owned_source)));
+        }
         Ok(self.inner.compute_B_perp(source_ref.as_source()))
     }
 }

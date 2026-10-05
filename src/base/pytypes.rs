@@ -3,9 +3,9 @@
  * Copyright 2025 Sira Pornsiriprasert <code@psira.me>
  */
 
-use numpy::{PyReadonlyArray1, PyReadonlyArray2};
+use numpy::{PyReadonlyArray1, PyReadonlyArray2, PyUntypedArray};
 use pyo3::prelude::*;
-use pyo3::types::PySequence;
+use pyo3::types::{PyList, PySequence, PyTuple};
 
 #[cfg(feature = "stub-gen")]
 use pyo3_stub_gen::{ImportRef, PyStubType, TypeInfo};
@@ -48,6 +48,19 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
                 )));
             }
         }
+        if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f32>>() {
+            let view = arr1.as_array();
+            let shape = view.shape();
+
+            if shape[0] == 3 {
+                return Ok(ArrayLike3([view[0] as f64, view[1] as f64, view[2] as f64]));
+            } else {
+                return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                    "Expected exactly 3 elements, got shape {:?}",
+                    shape
+                )));
+            }
+        }
 
         // 2. Fallback for native Python lists: [x, y, z]
         if let Ok(list_1d) = ob.extract::<[f64; 3]>() {
@@ -70,14 +83,40 @@ impl<'a, 'py> FromPyObject<'a, 'py> for ArrayLike3 {
     }
 }
 
+/// Internal storage for extracted points to avoid unnecessary heap allocations.
+pub enum PointsStorage<'a> {
+    Borrowed(&'a [nalgebra::Point3<f64>]),
+    Single([nalgebra::Point3<f64>; 1]),
+    Owned(Vec<nalgebra::Point3<f64>>),
+}
+
 /// A wrapper for extracting a batch of 3D points (N, 3).
 ///
 /// Supports lists, tuples, and numpy arrays. Also handles a single 1D point
-/// [x, y, z] by converting it to a single-element batch [[x, y, z]].
-pub struct PointsLike(pub Vec<nalgebra::Point3<f64>>);
+/// [x, y, z] by converting it to a single-element batch [[x, y, z]] without
+/// heap allocation, and borrows C-contiguous f64 NumPy arrays zero-copy.
+pub struct PointsLike<'a>(pub PointsStorage<'a>);
+
+impl<'a> std::ops::Deref for PointsLike<'a> {
+    type Target = [nalgebra::Point3<f64>];
+
+    fn deref(&self) -> &Self::Target {
+        match &self.0 {
+            PointsStorage::Borrowed(s) => s,
+            PointsStorage::Single(s) => s.as_slice(),
+            PointsStorage::Owned(v) => v.as_slice(),
+        }
+    }
+}
+
+impl<'a> PointsLike<'a> {
+    pub fn as_slice(&self) -> &[nalgebra::Point3<f64>] {
+        self
+    }
+}
 
 #[cfg(feature = "stub-gen")]
-impl PyStubType for PointsLike {
+impl PyStubType for PointsLike<'_> {
     fn type_output() -> TypeInfo {
         TypeInfo {
             name: "numpy.typing.ArrayLike".to_string(),
@@ -90,45 +129,101 @@ impl PyStubType for PointsLike {
     }
 }
 
-impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike {
+impl<'a, 'py> FromPyObject<'a, 'py> for PointsLike<'py> {
     type Error = PyErr;
 
     fn extract(ob: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
-        // 1. Try extracting as an N x 3 numpy array
+        // 1. Fast path: 2D NumPy array (N, 3) f64 (batch zero-copy fast-path)
         if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, f64>>() {
             let view = arr2.as_array();
             let shape = view.shape();
 
             if shape[1] == 3 {
                 let n = shape[0];
-                let mut pts = Vec::with_capacity(n);
-                for i in 0..n {
-                    pts.push(nalgebra::Point3::new(
-                        view[[i, 0]],
-                        view[[i, 1]],
-                        view[[i, 2]],
-                    ));
+                if let Some(slice) = view.as_slice() {
+                    let pt_slice = unsafe {
+                        std::slice::from_raw_parts(
+                            slice.as_ptr() as *const nalgebra::Point3<f64>,
+                            n,
+                        )
+                    };
+                    return Ok(PointsLike(PointsStorage::Borrowed(pt_slice)));
+                } else {
+                    let mut pts = Vec::with_capacity(n);
+                    for i in 0..n {
+                        pts.push(nalgebra::Point3::new(
+                            view[[i, 0]],
+                            view[[i, 1]],
+                            view[[i, 2]],
+                        ));
+                    }
+                    return Ok(PointsLike(PointsStorage::Owned(pts)));
                 }
-                return Ok(PointsLike(pts));
             }
         }
 
-        // 2. Native Python lists of lists: [[x, y, z], ...]
+        // 2. Fast path: 1D NumPy array (3,) f64 (scalar stack fast-path)
+        if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f64>>() {
+            let view = arr1.as_array();
+            if view.shape()[0] == 3 {
+                return Ok(PointsLike(PointsStorage::Single([nalgebra::Point3::new(
+                    view[0], view[1], view[2],
+                )])));
+            }
+        }
+
+        // 3. 2D NumPy array (N, 3) f32 (batch float32)
+        if let Ok(arr2) = ob.extract::<PyReadonlyArray2<'py, f32>>() {
+            let view = arr2.as_array();
+            let shape = view.shape();
+
+            if shape[1] == 3 {
+                let n = shape[0];
+                let mut pts = Vec::with_capacity(n);
+                if let Some(slice) = view.as_slice() {
+                    for &[x, y, z] in slice.as_chunks::<3>().0 {
+                        pts.push(nalgebra::Point3::new(x as f64, y as f64, z as f64));
+                    }
+                } else {
+                    for i in 0..n {
+                        pts.push(nalgebra::Point3::new(
+                            view[[i, 0]] as f64,
+                            view[[i, 1]] as f64,
+                            view[[i, 2]] as f64,
+                        ));
+                    }
+                }
+                return Ok(PointsLike(PointsStorage::Owned(pts)));
+            }
+        }
+
+        // 4. 1D NumPy array (3,) f32 (scalar float32)
+        if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f32>>() {
+            let view = arr1.as_array();
+            if view.shape()[0] == 3 {
+                return Ok(PointsLike(PointsStorage::Single([nalgebra::Point3::new(
+                    view[0] as f64,
+                    view[1] as f64,
+                    view[2] as f64,
+                )])));
+            }
+        }
+
+        // 5. Native Python lists of lists: [[x, y, z], ...]
         if let Ok(list_2d) = ob.extract::<Vec<[f64; 3]>>() {
             let pts = list_2d
                 .into_iter()
                 .map(|p| nalgebra::Point3::new(p[0], p[1], p[2]))
                 .collect();
-            return Ok(PointsLike(pts));
+            return Ok(PointsLike(PointsStorage::Owned(pts)));
         }
 
-        // 3. Delegate to ArrayLike3 for the single point / 1D cases
-        // This handles both PyReadonlyArray1 and flat python lists [x, y, z]
+        // 6. Native Python single point / sequence: [x, y, z] or (x, y, z)
         if let Ok(single_point) = ob.extract::<ArrayLike3>() {
             let arr = single_point.0;
-            return Ok(PointsLike(vec![nalgebra::Point3::new(
+            return Ok(PointsLike(PointsStorage::Single([nalgebra::Point3::new(
                 arr[0], arr[1], arr[2],
-            )]));
+            )])));
         }
 
         Err(pyo3::exceptions::PyTypeError::new_err(
@@ -160,35 +255,138 @@ impl PyStubType for PyRotation {
     }
 }
 
+/// Validates that quaternion elements are finite and non-zero norm,
+/// and normalizes with scaling to prevent overflow/underflow.
+pub fn validate_and_normalize_quaternion(arr: [f64; 4]) -> PyResult<nalgebra::UnitQuaternion<f64>> {
+    let [x, y, z, w] = arr;
+    if !x.is_finite() || !y.is_finite() || !z.is_finite() || !w.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Quaternion elements must be finite numbers.",
+        ));
+    }
+    let max_val = x.abs().max(y.abs()).max(z.abs()).max(w.abs());
+    if max_val == 0.0 || !max_val.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Quaternion norm must be non-zero and finite.",
+        ));
+    }
+    let x_s = x / max_val;
+    let y_s = y / max_val;
+    let z_s = z / max_val;
+    let w_s = w / max_val;
+    let norm = (x_s * x_s + y_s * y_s + z_s * z_s + w_s * w_s).sqrt();
+    if norm == 0.0 || !norm.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Quaternion norm must be non-zero and finite.",
+        ));
+    }
+    let q = nalgebra::Quaternion::new(w_s / norm, x_s / norm, y_s / norm, z_s / norm);
+    Ok(nalgebra::UnitQuaternion::from_quaternion(q))
+}
+
+/// Validates that axis elements are finite and non-zero norm,
+/// and normalizes with scaling to prevent overflow/underflow.
+pub fn validate_and_normalize_axis(axis: [f64; 3]) -> PyResult<nalgebra::Vector3<f64>> {
+    let [x, y, z] = axis;
+    if !x.is_finite() || !y.is_finite() || !z.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Sensitive axis must be finite numbers.",
+        ));
+    }
+    let max_val = x.abs().max(y.abs()).max(z.abs());
+    if max_val == 0.0 || !max_val.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Sensitive axis must be finite and non-zero.",
+        ));
+    }
+    let x_s = x / max_val;
+    let y_s = y / max_val;
+    let z_s = z / max_val;
+    let norm = (x_s * x_s + y_s * y_s + z_s * z_s).sqrt();
+    if norm == 0.0 || !norm.is_finite() {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "Sensitive axis must be finite and non-zero.",
+        ));
+    }
+    Ok(nalgebra::Vector3::new(x_s / norm, y_s / norm, z_s / norm))
+}
+
 impl<'a, 'py> FromPyObject<'a, 'py> for PyRotation {
     type Error = PyErr;
 
     fn extract(ob: pyo3::Borrowed<'a, 'py, PyAny>) -> Result<Self, Self::Error> {
-        // 1. Try Scipy Rotation (calls `as_quat()` which returns a numpy array)
-        if let Ok(as_quat) = ob.call_method0("as_quat") {
-            // Extract directly into a fixed-size stack array [f64; 4]
+        // 0. Scipy Rotation: check it first so it does not pay for the failed
+        //    NumPy/sequence extraction attempts below. NumPy arrays, lists and
+        //    tuples skip the `hasattr` lookup entirely.
+        let is_array_or_seq = ob.is_instance_of::<PyUntypedArray>()
+            || ob.is_instance_of::<PyList>()
+            || ob.is_instance_of::<PyTuple>();
+        if !is_array_or_seq && ob.hasattr("as_quat")? {
+            let as_quat = ob.call_method0("as_quat")?;
+            if let Ok(arr1) = as_quat.extract::<PyReadonlyArray1<'py, f64>>() {
+                let view = arr1.as_array();
+                if view.shape()[0] == 4 {
+                    if let Some(slice) = view.as_slice() {
+                        return validate_and_normalize_quaternion([
+                            slice[0], slice[1], slice[2], slice[3],
+                        ])
+                        .map(PyRotation);
+                    } else {
+                        return validate_and_normalize_quaternion([
+                            view[0], view[1], view[2], view[3],
+                        ])
+                        .map(PyRotation);
+                    }
+                }
+            }
             if let Ok(arr) = as_quat.extract::<[f64; 4]>() {
-                return Ok(PyRotation(nalgebra::UnitQuaternion::from_quaternion(
-                    nalgebra::Quaternion::new(arr[3], arr[0], arr[1], arr[2]),
-                )));
+                return validate_and_normalize_quaternion(arr).map(PyRotation);
             }
         }
 
-        // 2. Fast path: 1D NumPy array [x, y, z, w] (Zero-copy)
+        // 1. Fast path: 1D NumPy array [x, y, z, w] f64 (Zero-copy slice read)
         if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f64>>() {
             let view = arr1.as_array();
             if view.shape()[0] == 4 {
-                return Ok(PyRotation(nalgebra::UnitQuaternion::from_quaternion(
-                    nalgebra::Quaternion::new(view[3], view[0], view[1], view[2]),
-                )));
+                if let Some(slice) = view.as_slice() {
+                    return validate_and_normalize_quaternion([
+                        slice[0], slice[1], slice[2], slice[3],
+                    ])
+                    .map(PyRotation);
+                } else {
+                    return validate_and_normalize_quaternion([view[0], view[1], view[2], view[3]])
+                        .map(PyRotation);
+                }
+            }
+        }
+
+        // 2. Fast path: 1D NumPy array [x, y, z, w] f32
+        if let Ok(arr1) = ob.extract::<PyReadonlyArray1<'py, f32>>() {
+            let view = arr1.as_array();
+            if view.shape()[0] == 4 {
+                if let Some(slice) = view.as_slice() {
+                    return validate_and_normalize_quaternion([
+                        slice[0] as f64,
+                        slice[1] as f64,
+                        slice[2] as f64,
+                        slice[3] as f64,
+                    ])
+                    .map(PyRotation);
+                } else {
+                    return validate_and_normalize_quaternion([
+                        view[0] as f64,
+                        view[1] as f64,
+                        view[2] as f64,
+                        view[3] as f64,
+                    ])
+                    .map(PyRotation);
+                }
             }
         }
 
         // 3. Fast path: Native Python list or tuple (e.g., [x, y, z, w])
         if let Ok(arr) = ob.extract::<[f64; 4]>() {
-            return Ok(PyRotation(nalgebra::UnitQuaternion::from_quaternion(
-                nalgebra::Quaternion::new(arr[3], arr[0], arr[1], arr[2]),
-            )));
+            return validate_and_normalize_quaternion(arr).map(PyRotation);
         }
 
         Err(pyo3::exceptions::PyTypeError::new_err(

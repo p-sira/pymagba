@@ -77,16 +77,20 @@ impl CircularCurrent {
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, diameter, current]);
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        if !diameter.is_finite() || diameter <= 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Diameter must be positive.",
+            ));
+        }
 
-        self.inner = MagbaCircularCurrent::new(
-            position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
-            diameter,
-            current,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaCircularCurrent::new(position, rot, diameter, current)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }
 
 impl_pypose!(CircularCurrent);
-impl_compute_B!(CircularCurrent);
+impl_compute_B!(CircularCurrent, crate::execution::CIRCULAR_THRESHOLD);

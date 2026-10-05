@@ -1,9 +1,13 @@
 # PyMagba is licensed under The 3-Clause BSD, see LICENSE.
 # Copyright 2025 Sira Pornsiriprasert <code@psira.me>
 
+from typing import Any
+
+import numpy as np
 import pymagba.magnets
 from magpylib import Collection as MagpyCollection
 from magpylib.magnet import Cuboid, Cylinder
+from magpylib.misc import Dipole
 from scipy.spatial.transform import Rotation
 
 from .common import get_standard_rotation
@@ -13,13 +17,17 @@ class ObjectCreation:
     params = (["PyMagba", "MagpyLib"], ["Cylinder", "Collection"])
     param_names = ("library", "geometry")
 
+    def setup(self, library, geometry):
+        self.rot = get_standard_rotation()
+
     def time_creation(self, library, geometry):
+        rot = self.rot
         if library == "PyMagba":
             if geometry == "Cylinder":
                 for _ in range(10000):
                     pymagba.magnets.CylinderMagnet(
                         position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
+                        orientation=rot,
                         diameter=0.1,
                         height=0.2,
                         polarization=(1, 2, 3),
@@ -43,7 +51,7 @@ class ObjectCreation:
                 for _ in range(10000):
                     Cylinder(
                         position=(0, 0, 0),
-                        orientation=get_standard_rotation(),
+                        orientation=rot,
                         dimension=(0.1, 0.2),
                         polarization=(1, 2, 3),
                     )
@@ -133,3 +141,97 @@ class ObjectManipulation:
             else:
                 for _ in range(10000):
                     self.rotate_by(self.rot)
+
+
+class SmallBatchComputation:
+    params = (
+        ["PyMagba", "MagpyLib"],
+        ["Cylinder", "Cuboid", "Dipole", "Collection"],
+        [1, 10],
+    )
+    param_names = ("library", "geometry", "n_points")
+
+    def setup(self, library, geometry, n_points):
+        self.source: Any = None
+        self.func: Any = None
+        if n_points == 1:
+            self.observers = np.array([0.1, 0.2, 0.3])
+        else:
+            self.observers = np.linspace(-1, 1, n_points * 3).reshape(n_points, 3)
+
+        if library == "PyMagba":
+            if geometry == "Cylinder":
+                self.source = pymagba.magnets.CylinderMagnet(
+                    position=(0, 0, 0),
+                    orientation=get_standard_rotation(),
+                    diameter=0.1,
+                    height=0.2,
+                    polarization=(1, 2, 3),
+                )
+            elif geometry == "Cuboid":
+                self.source = pymagba.magnets.CuboidMagnet(
+                    position=(0, 0, 0),
+                    orientation=get_standard_rotation(),
+                    dimensions=(0.1, 0.2, 0.3),
+                    polarization=(1, 2, 3),
+                )
+            elif geometry == "Dipole":
+                self.source = pymagba.magnets.Dipole(
+                    position=(0, 0, 0),
+                    orientation=get_standard_rotation(),
+                    moment=(1, 2, 3),
+                )
+            elif geometry == "Collection":
+                m1 = pymagba.magnets.CylinderMagnet(
+                    position=(0.005, 0.0, 0.0),
+                    diameter=0.01,
+                    height=0.02,
+                    polarization=(0.0, 0.0, 1.0),
+                )
+                m2 = pymagba.magnets.CuboidMagnet(
+                    position=(-0.005, 0.0, 0.0),
+                    dimensions=(0.01, 0.01, 0.01),
+                    polarization=(0.0, 0.0, -1.0),
+                )
+                self.source = pymagba.magnets.SourceCollection([m1, m2])
+            self.func = self.source.compute_B
+        else:
+            if geometry == "Cylinder":
+                self.source = Cylinder(
+                    position=(0, 0, 0),
+                    orientation=get_standard_rotation(),
+                    dimension=(0.1, 0.2),
+                    polarization=(1, 2, 3),
+                )
+            elif geometry == "Cuboid":
+                self.source = Cuboid(
+                    position=(0, 0, 0),
+                    orientation=get_standard_rotation(),
+                    dimension=(0.1, 0.2, 0.3),
+                    polarization=(1, 2, 3),
+                )
+            elif geometry == "Dipole":
+                self.source = Dipole(
+                    position=(0, 0, 0),
+                    orientation=get_standard_rotation(),
+                    moment=(1, 2, 3),
+                )
+            elif geometry == "Collection":
+                m1 = Cylinder(
+                    position=(0.005, 0.0, 0.0),
+                    dimension=(0.01, 0.02),
+                    polarization=(0.0, 0.0, 1.0),
+                )
+                m2 = Cuboid(
+                    position=(-0.005, 0.0, 0.0),
+                    dimension=(0.01, 0.01, 0.01),
+                    polarization=(0.0, 0.0, -1.0),
+                )
+                self.source = MagpyCollection(m1, m2)
+            self.func = self.source.getB
+
+    def time_small_batch(self, library, geometry, n_points):
+        func = self.func
+        obs = self.observers
+        for _ in range(10000):
+            func(obs)

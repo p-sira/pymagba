@@ -24,6 +24,25 @@ fn main() -> pyo3_stub_gen::Result<()> {
 
     fs::write(path, new_content.as_ref()).expect("Failed to write stub file");
 
+    // Format generated stub file with ruff if available
+    let _ = std::process::Command::new("uv")
+        .args(["run", "ruff", "check", "--fix", path])
+        .status()
+        .or_else(|_| {
+            std::process::Command::new("ruff")
+                .args(["check", "--fix", path])
+                .status()
+        });
+
+    let _ = std::process::Command::new("uv")
+        .args(["run", "ruff", "format", path])
+        .status()
+        .or_else(|_| {
+            std::process::Command::new("ruff")
+                .args(["format", path])
+                .status()
+        });
+
     Ok(())
 }
 

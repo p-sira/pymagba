@@ -94,17 +94,25 @@ impl CylinderMagnet {
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, diameter, height, polarization;3]);
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        if !diameter.is_finite() || diameter <= 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Diameter cannot be negative.",
+            ));
+        }
+        if !height.is_finite() || height <= 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Height cannot be negative.",
+            ));
+        }
 
-        self.inner = MagbaCylinderMagnet::new(
-            position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
-            polarization,
-            diameter,
-            height,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaCylinderMagnet::new(position, rot, polarization, diameter, height)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }
 
 impl_pypose!(CylinderMagnet);
-impl_compute_B!(CylinderMagnet);
+impl_compute_B!(CylinderMagnet, crate::execution::CYLINDER_THRESHOLD);

@@ -78,16 +78,20 @@ impl SphereMagnet {
 
     fn __setstate__(&mut self, state: Bound<'_, pyo3::types::PyDict>) -> PyResult<()> {
         extract_states!(state, [position;3, orientation;4, diameter, polarization;3]);
+        let rot = crate::base::validate_and_normalize_quaternion(orientation)?;
+        if !diameter.is_finite() || diameter <= 0.0 {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "Diameter cannot be negative.",
+            ));
+        }
 
-        self.inner = MagbaSphereMagnet::new(
-            position,
-            nalgebra::UnitQuaternion::from_quaternion(orientation.into()),
-            polarization,
-            diameter,
-        );
+        let new_inner = catch_unwind_to_pyerr(move || {
+            MagbaSphereMagnet::new(position, rot, polarization, diameter)
+        })?;
+        self.inner = new_inner;
         Ok(())
     }
 }
 
 impl_pypose!(SphereMagnet);
-impl_compute_B!(SphereMagnet);
+impl_compute_B!(SphereMagnet, crate::execution::SPHERE_THRESHOLD);
