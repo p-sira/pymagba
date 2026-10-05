@@ -2,7 +2,7 @@
 
 See the [performance calibration guide](README.md) to reproduce a run or extract
 candidate tables from its `report.json`. The raw extracted results can be found in
-[generated_results.md](./generated_results.md).
+[generated_results.md](generated_results.md).
 
 ## Target Machine
 

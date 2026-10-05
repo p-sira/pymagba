@@ -1,33 +1,39 @@
 # Performance Calibration
 
-PyMagba uses calibrated thresholds to decide when a magnetic-field batch should
-switch from serial execution to Rayon and when the Python interpreter can be
-released for that work. This directory contains the reproducible calibration
-workflow, the report extractor, and the curated results for the current target
-machine.
+PyMagba makes two separate performance decisions for magnetic-field work:
+
+1. Magba decides whether Rust should process a batch serially or with Rayon.
+2. PyMagba decides whether to detach the calling thread from Python while Rust
+   performs the work. On GIL-enabled Python builds, detaching lets other Python
+   threads run.
+
+Both operations have overhead, so they are not automatically faster for small
+workloads. The defaults are calibrated on a reference machine and are intended
+as reasonable general defaults, not optimal values for every machine. This
+directory contains the reproducible workflow, report extractor, and reviewed
+results.
 
 - [`calibrate_thresholds.py`](calibrate_thresholds.py) runs the benchmark sweep.
-- [`extract_thresholds.py`](extract_thresholds.py) converts report JSON into a
-  readable Markdown table or machine-readable JSON.
-- [`RESULTS.md`](RESULTS.md) records the reviewed production thresholds and
-  their measured transition gains.
+- [`extract_thresholds.py`](extract_thresholds.py) converts report JSON into
+  Markdown tables or machine-readable JSON.
+- [`RESULTS.md`](RESULTS.md) documents the reviewed calibration run and the
+  thresholds selected from it.
 
 ## Calibration Feature
 
-The non-default Cargo feature `threshold-calibration` adds private controls for
-benchmarking only. It can independently force:
+The non-default Cargo feature `threshold-calibration` exposes private controls
+used only by the benchmark. It can independently force:
 
-- Magba execution to `auto`, `serial`, or `parallel`;
+- Magba execution to `auto`, `serial`, or `parallel`.
 - PyMagba interpreter handling to `auto`, `retain`, or `detach`.
 
-It also provides branch counters so every benchmark can verify the path it
-actually measured. These controls are not exported by normal PyMagba builds and
-do not change the public Python API.
+Branch counters verify that each sample used the requested path. These controls
+are absent from normal builds and do not change the public Python API.
 
 ## Run a Calibration
 
 From the repository root, build the release extension with the calibration
-feature and verify every selected policy:
+feature. Then verify every selected policy and inspect the planned workload:
 
 ```console
 uv run maturin develop --release --features threshold-calibration
@@ -35,7 +41,7 @@ uv run python benchmarks/perf_calibration/calibrate_thresholds.py --preflight
 uv run python benchmarks/perf_calibration/calibrate_thresholds.py --dry-run
 ```
 
-Run the complete sweep:
+Run the complete sweep on an otherwise idle machine:
 
 ```console
 RAYON_NUM_THREADS=12 uv run python \
@@ -44,9 +50,9 @@ RAYON_NUM_THREADS=12 uv run python \
   --results-dir benchmark-results
 ```
 
-Set `RAYON_NUM_THREADS` explicitly when producing reproducible results. If it is
-unset, Rayon uses Rust's available parallelism: the logical CPUs visible to the
-process after affinity or container restrictions.
+Set `RAYON_NUM_THREADS` explicitly for reproducible results. If it is unset,
+Rayon uses the parallelism available to the process, normally the number of
+visible logical CPUs after affinity or container restrictions.
 
 The default run covers all field kernels, functional and object APIs, geometry
 complexity, source collections, sensor methods, observer collections, input
@@ -63,8 +69,9 @@ Each run creates a timestamped directory containing:
 - CPU, toolchain, extension, repository, and thread-count provenance;
 - a final `report.json`.
 
-The output directory is ignored by Git because reports are large and specific to
-one machine. Preserve reports needed for review outside disposable workspaces.
+The output directory is ignored by Git because reports are large and
+machine-specific. Preserve any report needed for review before cleaning the
+workspace.
 
 ## View or Export Results
 
@@ -85,96 +92,106 @@ uv run python benchmarks/perf_calibration/extract_thresholds.py \
   --output benchmark-results/thresholds.json
 ```
 
-The extractor's conservative Rayon recommendation is the largest stable
-functional/object crossover for each kernel among the supplied reports. Pass
-only reports from the calibration set being reviewed; mixing runs from different
-machines or thread counts produces a combined recommendation and is usually not
-meaningful. Treat collection and variable-complexity workloads separately before
-changing constants.
+For each non-collection kernel, the extractor's summary selects the largest
+stable crossover across its detailed workloads, including functional and object
+APIs. This favors the later, safer transition when workloads disagree. Supply
+only reports from the calibration set under review; combining different
+machines or thread counts does not produce a meaningful threshold.
 
-The reviewed results currently used by the source code are easier to read in
-[`RESULTS.md`](RESULTS.md).
+The reviewed run is summarized in [`RESULTS.md`](RESULTS.md). Its generated
+extraction is available in [generated_results.md](generated_results.md).
 
 ## Interpreting Results
 
 Rayon and GIL results answer different questions and should be reviewed
 separately:
 
-- The **Rayon comparison** holds GIL handling constant and compares forced
-  serial against forced parallel Rust execution. It determines when parallel
-  computation repays Rayon scheduling overhead.
-- The **GIL comparison** uses automatic Rust dispatch and compares retaining
-  against detaching the interpreter. It considers Python-call latency, while the
-  responsiveness probe separately records whether another Python thread can
-  progress during a sufficiently long call.
+- The **Rayon comparison** keeps Python handling fixed and compares forced
+  serial and forced parallel Rust execution. It finds when useful computation
+  repays Rayon's scheduling and reduction overhead.
+- The **GIL comparison** uses Magba's automatic Rust dispatch and compares
+  retaining and detaching the Python thread state. It measures call latency;
+  the responsiveness probe separately checks whether another Python thread can
+  make progress during a sufficiently long call.
 
 ### Candidate Status
 
 Each candidate group has one of three statuses:
 
-- `crossover` means the right-hand policy was at least 5% faster in at least
-  two neighboring work sizes and won at least two-thirds of paired samples;
-- `inconclusive` means an isolated size qualified but neighboring evidence did
+- `crossover` means the right-hand policy was at least 5% faster at two adjacent
+  tested work sizes and won at least two-thirds of sample comparisons;
+- `inconclusive` means at least one size qualified, but adjacent evidence did
   not confirm a stable transition;
 - `no_crossover` means no tested size met the required advantage.
 
-`maximum_tested_work_size` and `search_limit_reason` distinguish an actual
-negative result from a sweep that stopped before finding a stable transition.
-Do not convert `inconclusive` or `no_crossover` into a threshold by using the
-largest tested size.
+Use `maximum_tested_work_size` and `search_limit_reason` to distinguish a
+negative result from a sweep that simply stopped too early. Do not turn an
+`inconclusive` or `no_crossover` result into a threshold by using the largest
+tested size.
 
 ### First Parallel Size and Stored Threshold
 
-Reports express a candidate as the first work size where the parallel policy is
-supported. The Rust and PyMagba dispatch conditions use `len > threshold`, so
-the stored constant is normally one less. For example, a first parallel size of
-160 corresponds to a stored threshold of 159: sizes through 159 remain serial,
-and size 160 switches to Rayon.
+For fixed-cost kernels, reports identify the first point count supporting the
+parallel policy. Rust and PyMagba use the strict condition `len > threshold`, so
+the stored point threshold is one less. For example, a first parallel size of
+160 produces a threshold of 159: sizes through 159 stay serial, and size 160
+uses Rayon.
 
-The extraction script shows both values. Its conservative summary chooses the
-largest stable functional/object crossover for each fixed kernel represented in
-the supplied reports. This aggregation is a starting point for review, not an
-automatic source-code update.
+The extractor displays both values, but this point-count conversion is literal
+only for fixed-cost kernels. Its summary is a review aid, not a source-code
+patch.
 
 ### Workload Shape and Complexity
 
-Mesh, Path, and Sheet cost depends on faces or segments as well as point count.
-SourceCollection cost also depends on child types, nesting, and source count.
-Review their detailed rows instead of assuming that a point-only summary applies
-to every workload. A conservative production value can deliberately delay
-parallelism for expensive geometries to avoid regressing cheaper ones.
+Mesh, Path, and Sheet work depends on both point count and the number of active
+faces or segments. Magba therefore converts a calibrated total-work threshold
+into a point threshold at runtime. More expensive geometry can profit from
+parallelism at fewer points; choosing a later crossover across fixtures protects
+cheaper geometry from premature parallelization. This adaptive calculation
+controls Rayon's execution; PyMagba makes its GIL-detachment decision
+separately.
 
-Layout and point-distribution validation is supporting evidence around an
+`SourceCollection` uses a separate model. Magba sums each child's relative
+complexity, including nested collections, and considers approximately
+`point_count * total_relative_complexity`. It parallelizes across the
+collection's direct children only when there is more than one direct child and
+the work estimate exceeds the collection threshold. Consequently, a single
+point-only constant cannot describe collection behavior. Review the detailed
+homogeneous, mixed, and nested collection rows independently. PyMagba's
+GIL-detachment rule is separate and currently detaches collection field calls
+containing more than one observation point.
+
+Layout and point-distribution validations are supporting evidence around an
 already measured transition. Conversion-heavy Python lists or `float32` inputs
-can dilute an end-to-end percentage improvement, but should not silently replace
-the primary contiguous-`float64` kernel comparison.
+can hide an end-to-end improvement and should not replace the primary
+contiguous-`float64` kernel comparison.
 
 ### Sensors and Responsiveness
 
 An individual sensor evaluates one field point, so its work axis is source
-complexity rather than batch length. Observer collections use sensor count plus
-source complexity. A missing sensor crossover means the cloning and staging cost
-of detachment was not recovered in the measured range; it does not imply that
-the ordinary field-batch threshold should be applied to sensor reads.
+complexity rather than batch length. Observer collections scale with both sensor
+count and source complexity. Forced sensor detachment also has cloning and
+staging costs. A missing crossover means those costs were not recovered in the
+tested range; it does not justify applying a field-batch threshold to sensor
+reads. Production sensor reads currently remain attached to Python.
 
-Treat a responsiveness result marked `too_short` as unmeasurable, not as proof
-that the GIL was retained. For long computations, interpreter responsiveness can
-justify detachment even when isolated call latency is similar.
+A responsiveness result of `too_short` means the call ended before the probe
+could measure it, not that Python was retained. For long calls, responsiveness
+may justify detachment even when isolated call latency is similar.
 
 ### Comparing Runs
 
-Only combine reports produced with compatible CPU affinity, Rayon thread count,
-compiler settings, Python mode, and benchmark configuration. Check report
-provenance before comparing thresholds. Recalibrate rather than transplanting
-the current values when those conditions differ materially.
+Only combine reports with compatible CPU affinity, Rayon thread count, compiler
+settings, Python mode, and benchmark configuration. Check the provenance stored
+in each report. Recalibrate when these conditions differ materially.
 
 ## Return to a Normal Build
 
-After calibration, reinstall PyMagba without the private feature:
+After calibration, reinstall PyMagba without the private benchmarking feature:
 
 ```console
 uv run maturin develop --release
 ```
 
-Thresholds are compile-time defaults. PyMagba never calibrates during import,
-installation, or an ordinary user call.
+Thresholds are compile-time defaults. PyMagba does not run calibration during
+import, installation, or ordinary API calls.
