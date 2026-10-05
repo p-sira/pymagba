@@ -26,17 +26,15 @@
 
 ---
 
-**PyMagba** is a package for analytical magnetic computation, powered by Rust [Magba](https://github.com/p-sira/magba). All functions support numpy and parallelization.
+**PyMagba** is a high-performance analytical magnetic computation for Python, powered by Rust [Magba](https://github.com/p-sira/magba). Designed for **large-scale magnetic computations and real-time processing** with seamless integration with NumPy/SciPy.
 
 ## Features
 
-### Machine-Calibrated Parallel Execution
-
-PyMagba automatically chooses between serial and Rayon execution for each field
-kernel and releases the Python interpreter only when the calibrated workload
-justifies it. For advanced users who wish to best optimize for their specific machine,
-see the [performance calibration guide](benchmarks/perf_calibration/README.md) for the
-complete procedure and current results.
+- ⚡ **Adaptive Rust-Native Performance:** Automatically routes to serial or multithreaded kernels based on machine-calibrated thresholds, completely bypassing the Python GIL. Smart workload estimators balance parallelization based on geometry complexity.
+- 🧲 **Comprehensive Analytical Kernels:** Compute fields for cuboid, cylinder, sphere, triangle, tetrahedron, mesh, and dipole magnets. Includes current sources like circular, path, triangle, and meshed-sheet currents.
+- 🐍 **NumPy/SciPy-Native & Flexible APIs:** Choose between object-oriented or functional paradigms. Fully supports single or batched observation points, returning standard `ndarray` results for seamless SciPy/NumPy integration.
+- 🏗️ **Composable 3D Scenes:** Build complex magnetic environments using translations, quaternion/SciPy rotations, batched observer collections, and nested hierarchical source groups.
+- 📐 **Advanced Mesh Geometry & Sensor Modeling:** Native support for STL-backed mesh sources and hardware modeling, including linear Hall sensors, threshold switches, and stateful Hall latches.
 
 ## Quick Start
 
@@ -72,47 +70,8 @@ pip install pymagba
 uv add pymagba
 ```
 
-To install from source see the [Reproducibility](#reproducibility) section.
+For building from source and advanced installation, please see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Testing
 
 Users should refer to [Magba](https://github.com/p-sira/magba/blob/main/tests/README.md) for comprehensive accuracy report. For performance comparison between PyMagba and MagpyLib, please see [PERFORMANCE.md](https://github.com/p-sira/magba/blob/main/PERFORMANCE.md).
-
-## Reproducibility
-
-Clone into the repository:
-
-```shell
-git clone https://github.com/p-sira/pymagba.git
-cd pymagba
-```
-
-To reproduce the build:
-
-```shell
-uv sync --group dev
-cargo stub-gen
-maturin build --release
-```
-
-Installing the build:
-
-```shell
-pip install target/wheels/pymagba-*.whl
-```
-
-Generating the docs:
-
-```shell
-uv sync --group dev
-mkdir docs
-cd docs
-make html
-```
-
-To verify the installation and the generated stubs:
-
-```shell
-uv run pytest python/tests
-uv run mypy python/pymagba
-```
