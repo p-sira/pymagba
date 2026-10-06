@@ -74,4 +74,4 @@ For building from source and advanced installation, please see [DEVELOPMENT.md](
 
 ## Testing
 
-Users should refer to [Magba](https://github.com/p-sira/magba/blob/main/tests/README.md) for comprehensive accuracy report. For performance comparison between PyMagba and MagpyLib, please see [PERFORMANCE.md](https://github.com/p-sira/magba/blob/main/PERFORMANCE.md).
+Users should refer to [Magba](https://github.com/p-sira/magba/blob/main/tests/README.md) for comprehensive accuracy report. For performance comparison between PyMagba and MagpyLib, please see [PERFORMANCE.md](PERFORMANCE.md).
